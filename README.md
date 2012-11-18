@@ -20,7 +20,7 @@ Contributions are always welcome, and if you're ready to do so, please follow th
 
 ### TODO
 
-A TODO list can be found by creating an issue (milestone) on top of this page.
+A TODO list can be found [here](https://github.com/allanference/csnippets/issues), also they can be created there.
 
 ### License(s)
 

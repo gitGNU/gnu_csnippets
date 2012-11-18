@@ -275,7 +275,6 @@ static void *poll_on_server(void *_socket)
 {
     socket_t *socket = (socket_t *)_socket;
     int ret, fd;
-    connection_t *conn = NULL;
     socklen_t len = sizeof(struct sockaddr_in);
 
     socket->events = __socket_set_init(socket->fd);
@@ -284,6 +283,7 @@ static void *poll_on_server(void *_socket)
 
     __socket_set_add(socket->events, socket->fd);
     for (;;) {
+        connection_t *conn = NULL;
         ret = __socket_set_poll(socket, socket->fd, &conn);
         switch (ret) {
         case 1:
