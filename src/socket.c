@@ -274,7 +274,7 @@ static void *poll_on_client(void *client)
 static void *poll_on_server(void *_socket)
 {
     socket_t *socket = (socket_t *)_socket;
-    int n_fds, fd;
+    int ret, fd;
     connection_t *conn = NULL;
     socklen_t len = sizeof(struct sockaddr_in);
 
@@ -284,8 +284,8 @@ static void *poll_on_server(void *_socket)
 
     __socket_set_add(socket->events, socket->fd);
     for (;;) {
-        n_fds = __socket_set_poll(socket, socket->fd, &conn);
-        switch (n_fds) {
+        ret = __socket_set_poll(socket, socket->fd, &conn);
+        switch (ret) {
         case 1:
             /* Loop until we have finished every single connection waiting */
             for (;;) {

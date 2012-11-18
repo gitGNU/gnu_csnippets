@@ -13,7 +13,7 @@ MAKEOPT=$(($CORES + 1))
 # arguments to pass to the executable generated
 ARGS=""
 # Executable
-EXE="./server"
+EXE="server"
 # Directory where the executable is.
 EXE_DIR=""
 # the "make" command
@@ -39,14 +39,17 @@ run() {
     if [ "$1" = "$DBG" ]; then
         $1 --args $EXE $ARGS
     else
-        $EXE $ARGS
+        ./$EXE $ARGS
     fi
     # return back to the old directory
     cd ..
 }
 
 _make() {
-    $MAKE $1 || exit
+    echo "Making Library"
+    $MAKE $1 -j$MAKEOPT || exit
+    echo "Making executable"
+    $MAKE $EXE $1 -j$MAKEOPT || exit
 }
 
 case "$1" in

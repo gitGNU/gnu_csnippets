@@ -104,7 +104,7 @@ extern void socket_free(socket_t *socket);
  *
  * @param on_connect, the callback to use for on_connect
  */
-connection_t *connection_create(void (*on_connect) (connection_t *));
+extern connection_t *connection_create(void (*on_connect) (connection_t *));
 
 /**
  * Close & Free the connection
