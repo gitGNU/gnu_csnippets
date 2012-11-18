@@ -554,10 +554,12 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 
     buffer[count] = '\0';
 
-    buff->data = buffer;
-    buff->size = count;
-    if (conn && conn->on_read)
-        (*conn->on_read) (conn, buff);
+    if (buff) {
+        buff->data = buffer;
+        buff->size = count;
+        if (conn && conn->on_read)
+            (*conn->on_read) (conn, buff);
+    }
 
     return true;
 }
