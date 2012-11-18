@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 asamy <f.fallen45@gmail.com>
+ * Copyright (c) 2012 Allan Ference <f.fallen45@gmail.com>
  *
  * The first few static net_* functions are borrowed from ccan/net.
  *

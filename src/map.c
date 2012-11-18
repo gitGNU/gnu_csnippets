@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2009, 2011 Per Ola Kristensson <pok21@cam.ac.uk>.
- * Copyright (c) 2012 asamy <f.fallen45@gmail.com>
+ * Copyright (c) 2012 Allan Ference <f.fallen45@gmail.com>
  *
  * LGPL v3 or later.
  *
