@@ -24,7 +24,7 @@ A TODO list can be found [here](https://github.com/allanference/csnippets/issues
 
 ### License(s)
 
-Personally, I prefer GNU GPL v(X) but some of the code is licensed under MIT (or BSD-MIT)
+MIT, BSD-MIT, GPL or LGPL.
 
 ### Building
 

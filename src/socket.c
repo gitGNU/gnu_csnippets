@@ -240,7 +240,7 @@ static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *
         if (parent_socket)
             socket_remove(parent_socket, conn);
         else
-            __socket_set_deinit(sock_events);
+            __socket_set_del(sock_events, conn->fd);
         return false;
     }
 
