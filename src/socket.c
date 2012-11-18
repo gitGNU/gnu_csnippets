@@ -51,8 +51,8 @@ extern void *__socket_set_init(int);
 extern void __socket_set_deinit(void *);
 extern void __socket_set_add(void *, int);
 extern void __socket_set_del(void *, int);
-extern int  __socket_set_poll(void *);
-extern int  __socket_set_get_active_fd(void *, int);
+extern int  __socket_set_poll(socket_t *, int, connection_t **);
+extern int __socket_set_poll_and_get_fd(void *, int);
 
 #ifdef _WIN32
 static bool is_initialized = false;
@@ -140,14 +140,14 @@ static int net_connect(const struct addrinfo *addrinfo)
     pollfd pfd[MAX_PROTOS];
 
     for (; addrinfo; addrinfo = addrinfo->ai_next) {
-	switch (addrinfo->ai_family) {
-	case AF_INET:
-	    if (!ipv4)
-		ipv4 = addrinfo;
-	    break;
-	case AF_INET6:
-	    if (!ipv6)
-		ipv6 = addrinfo;
+        switch (addrinfo->ai_family) {
+        case AF_INET:
+            if (!ipv4)
+                ipv4 = addrinfo;
+            break;
+        case AF_INET6:
+            if (!ipv6)
+                ipv6 = addrinfo;
 	    break;
 	}
     }
@@ -155,21 +155,21 @@ static int net_connect(const struct addrinfo *addrinfo)
     num = 0;
     /* We give IPv6 a slight edge by connecting it first. */
     if (ipv6) {
-	addr[num] = ipv6;
-	slen[num] = sizeof(struct sockaddr_in6);
-	pfd[num].fd = socket(AF_INET6, ipv6->ai_socktype,
-				ipv6->ai_protocol);
-	if (pfd[num].fd != -1)
-	    num++;
+        addr[num] = ipv6;
+        slen[num] = sizeof(struct sockaddr_in6);
+        pfd[num].fd = socket(AF_INET6, ipv6->ai_socktype,
+                ipv6->ai_protocol);
+        if (pfd[num].fd != -1)
+            num++;
     }
 
     if (ipv4) {
-	addr[num] = ipv4;
-	slen[num] = sizeof(struct sockaddr_in);
-	pfd[num].fd = socket(AF_INET, ipv4->ai_socktype,
-				ipv4->ai_protocol);
-	if (pfd[num].fd != -1)
-	    num++;
+        addr[num] = ipv4;
+        slen[num] = sizeof(struct sockaddr_in);
+        pfd[num].fd = socket(AF_INET, ipv4->ai_socktype,
+                ipv4->ai_protocol);
+        if (pfd[num].fd != -1)
+            num++;
     }
 
     for (i = 0; i < num; i++) {
@@ -258,7 +258,7 @@ static void *poll_on_client(void *client)
 
     __socket_set_add(sock_events, conn->fd);
     for (;;) {
-        int fd = __socket_set_poll(sock_events);
+        int fd = __socket_set_poll_and_get_fd(sock_events, conn->fd);
         if (fd < 0) {
             __socket_set_deinit(sock_events);
             break;
@@ -275,7 +275,7 @@ static void *poll_on_server(void *_socket)
 {
     socket_t *socket = (socket_t *)_socket;
     int n_fds, fd;
-    connection_t *conn;
+    connection_t *conn = NULL;
     socklen_t len = sizeof(struct sockaddr_in);
 
     socket->events = __socket_set_init(socket->fd);
@@ -284,69 +284,65 @@ static void *poll_on_server(void *_socket)
 
     __socket_set_add(socket->events, socket->fd);
     for (;;) {
-        n_fds = __socket_set_poll(socket->events);
-        for (fd = 0; fd < n_fds; ++fd) {
-            int active_fd = __socket_set_get_active_fd(socket->events, fd);
-            if (active_fd < 0)
-                continue;
+        n_fds = __socket_set_poll(socket, socket->fd, &conn);
+        switch (n_fds) {
+        case 1:
+            /* Loop until we have finished every single connection waiting */
+            for (;;) {
+                struct sockaddr_in their_addr;
+                int their_fd;
 
-            if (socket->fd == active_fd) {
-                /* Loop until we have finished every single connection waiting */
-                for (;;) {
-                    struct sockaddr_in their_addr;
-                    int their_fd;
-
-                    their_fd = accept(socket->fd, (struct sockaddr *)&their_addr, &len);
-                    if (their_fd == -1) {
-                        if (ERRNO == E_AGAIN || ERRNO == E_BLOCK) {
-                            /* We have processed all of the incoming connections */
-                            break;
-                        } else {
-                            perror("accept");
-                            goto out; 
-                        }
-                        continue;
-                    }
-
-                    if (!socket->accept_connections) {
-                        close(their_fd);
-                        continue;
-                    }
-
-                    xmalloc(conn, sizeof(*conn), close(their_fd); goto out);
-                    conn->auto_read = true;
-                    conn->fd = their_fd;
-
-                    if (!set_nonblock(conn->fd, true)) {
-                        close(conn->fd);
-                        free(conn);
-                        continue;
-                    }
-
-                    strncpy(conn->ip, inet_ntoa(their_addr.sin_addr), 16);
-                    conn->last_active = time(NULL);
-                    /*  TODO: set conn->remote here */
-
-                    if (likely(socket->on_accept)) {
-                        socket->on_accept(socket, conn);
-                        if (likely(conn->on_connect))
-                            conn->on_connect(conn);
-                    }
-
-                    if (unlikely(!socket->conn))
-                        socket->conn = conn;
-
-                    add_connection(socket, conn);
-                    __socket_set_add(socket->events, their_fd);
-                }
-            } else {
-                list_for_each(&socket->children, conn, node)
-                    if (conn->fd == active_fd)
+                their_fd = accept(socket->fd, (struct sockaddr *)&their_addr, &len);
+                if (their_fd == -1) {
+                    if (ERRNO == E_AGAIN || ERRNO == E_BLOCK) {
+                        /* We have processed all of the incoming connections */
                         break;
+                    } else {
+                        perror("accept");
+                        goto out; 
+                    }
+                    continue;
+                }
 
-                if (conn)
-                    __poll_on_client(socket, conn, socket->events);
+                if (!socket->accept_connections) {
+                    close(their_fd);
+                    continue;
+                }
+
+                xmalloc(conn, sizeof(*conn), close(their_fd); goto out);
+                conn->auto_read = true;
+                conn->fd = their_fd;
+
+                if (!set_nonblock(conn->fd, true)) {
+                    close(conn->fd);
+                    free(conn);
+                    continue;
+                }
+
+                strncpy(conn->ip, inet_ntoa(their_addr.sin_addr), 16);
+                conn->last_active = time(NULL);
+                /*  TODO: set conn->remote here */
+
+                if (likely(socket->on_accept)) {
+                    socket->on_accept(socket, conn);
+                    if (likely(conn->on_connect))
+                         conn->on_connect(conn);
+                }
+
+                if (unlikely(!socket->conn))
+                    socket->conn = conn;
+
+                add_connection(socket, conn);
+                __socket_set_add(socket->events, their_fd);
             }
+            break;
+        case 0:
+            if (conn)
+                __poll_on_client(socket, conn, socket->events);
+            break;
+        default:
+            warning("An error occured during __socket_set_poll()!  Terminating the loop now!\n");
+            goto out;
         }
     }
 

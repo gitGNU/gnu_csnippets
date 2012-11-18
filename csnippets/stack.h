@@ -82,9 +82,9 @@ static inline void stack_free(struct stack *s, void (*destructor) (void *))
  */
 static inline bool stack_grow(struct stack *s, int new_size)
 {
-    void *tmp = realloc(s->ptr, new_size * sizeof(void *));
-    if (!tmp)
-        return false;
+    void *tmp;
+
+    xrealloc(tmp, s->ptr, new_size * sizeof(void *), return false);
     s->ptr = tmp;
     s->size = new_size;
     return true;

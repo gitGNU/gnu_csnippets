@@ -22,6 +22,8 @@
 #ifdef __use_epoll
 
 #define MAX_EVENTS 1024
+#include "socket.h"
+
 #include <sys/epoll.h>
 #include <unistd.h>   /* close() */
 
@@ -80,27 +82,54 @@ void __socket_set_del(int fd)
     /* nothing... */
 }
 
-int __socket_set_poll(void *p)
+int __socket_set_poll(socket_t *sock, int desired_fd, connection_t **conn)
 {
-    struct sock_events *evs = (struct sock_events *)p;
+    struct sock_events *evs = sock->events;
+    int nfds, fd;
+    connection_t *ret;
+    uint32_t events;
+    int active;
+
     if (unlikely(!evs))
-        return 0;
-    return epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
+        return -1;
+    
+    nfds = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
+    for (fd = 0; fd < nfds; ++fd) {
+        events = evs->events[fd].events;
+        if (events & EPOLLERR || events & EPOLLHUP || !(events & EPOLLIN)) {
+            close(evs->events[fd].data.fd);
+            return -1;
+        }
+
+        active = evs->events[fd].data.fd;
+        if (desired_fd == active)
+            return 1;
+
+        list_for_each(&sock->children, ret, node)
+            if (ret->fd == active) {
+                *conn = ret;
+                return 0;
+            }
+    }
+
+    return -1;
 }
 
-int __socket_set_get_active_fd(void *p, int fd)
+int __socket_set_poll_and_get_fd(void *events, int desired_fd)
 {
-    uint32_t events;
-    struct sock_events *evs = (struct sock_events *)p;
+    struct sock_events *evs = (struct sock_events *)events;
+    int n, fd;
     if (unlikely(!evs))
         return -1;
 
-    events = evs->events[fd].events;
-    if (events & EPOLLERR || events & EPOLLHUP || !(events & EPOLLIN)) {
-        close(evs->events[fd].data.fd);
+    n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
+    if (n < 0)
         return -1;
-    }
-    return evs->events[fd].data.fd;
+
+    for (fd = 0; fd < n; ++fd)
+        if (fd == desired_fd)
+            return 0;
+    return -1;
 }
 
 #endif

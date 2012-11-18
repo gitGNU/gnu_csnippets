@@ -62,14 +62,14 @@ typedef enum _Bool {
 #define xcalloc(p, l, s, action) do { \
     p = calloc(l, s); \
     if (unlikely(!p)) { \
-        __alloc_failure(s * l); \
+        __alloc_failure((s) * (l)); \
         action; \
     } \
 } while (0)
 #define xrealloc(new_ptr, old_ptr, count, action) do { \
-    new_ptr = realloc(old_ptr, count);  \
+    new_ptr = realloc((old_ptr), count);  \
     if (unlikely(!new_ptr)) {\
-        __alloc_failure(count); \
+        __alloc_failure((count)); \
         action; \
     } \
 } while (0)

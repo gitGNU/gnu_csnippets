@@ -15,7 +15,7 @@ ARGS=""
 # Executable
 EXE="./server"
 # Directory where the executable is.
-EXE_DIR="examples"
+EXE_DIR=""
 # the "make" command
 MAKE="make"
 # the debugger
@@ -33,7 +33,9 @@ $MAKE clean
 
 run() {
     echo "Running $EXE with $ARGS"
-    cd $EXE_DIR
+    if [ -d "$EXE_DIR" ]; then
+        cd $EXE_DIR
+    fi
     if [ "$1" = "$DBG" ]; then
         $1 --args $EXE $ARGS
     else
@@ -43,20 +45,19 @@ run() {
     cd ..
 }
 
-# http://shawnwilsher.com/archives/184
 _make() {
     $MAKE $1 || exit
 }
 
 case "$1" in
     -g) _make
-        run gdb
+        run $DBG
         ;;
     -a) _make
         run
         ;;
     -gv) _make V=1
-        run gdb
+        run $DBG
         ;;
     -av) _make V=1
         run
