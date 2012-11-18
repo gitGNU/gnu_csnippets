@@ -132,7 +132,7 @@ extern bool socket_listen(socket_t *socket, const char *address,
         const char *service, long max_conns);
 
 /**
- * Write on a socket connection
+ * socket_write() - Write string on socket connection
  *
  * @param conn a connection created by socket_connect() or from the listening socket.
  * @param data the data to send
@@ -141,6 +141,15 @@ extern bool socket_listen(socket_t *socket, const char *address,
  * Calls conn->on_write if present.
  */
 extern int socket_write(connection_t *conn, const char *fmt, ...);
+
+/**
+ * socket_bwrite() - Write byte array on socket connection
+ *
+ * @param conn the socket connection
+ * @param bytes the byte array to send
+ * @param size the size of `bytes'.
+ */
+extern int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size);
 
 /**
  * socket_remove() - close and free a socket connection.

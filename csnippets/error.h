@@ -19,7 +19,7 @@
 #define print(str, args...)     error(LOG_NULL, str, ##args)
 
 /** Initialize log file */
-#define log_init()          freopen(LOG_FILE, "w", stderr);
+#define log_init()              freopen(LOG_FILE, "w", stderr);
 
 /**
  * Log a formatted/non-formatted string to stderr and stdout.

@@ -482,6 +482,15 @@ bool socket_remove(socket_t *socket, connection_t *conn)
     return true;
 }
 
+#define s_send(fd, d, l) \
+    ({ \
+        int err; \
+        do \
+            err = send((fd), (d), (l), 0); \
+        while (err == -1 && errno == EINTR); \
+        err; \
+     })
+
 int socket_write(connection_t *conn, const char *fmt, ...)
 {
     char *data;
@@ -500,10 +509,7 @@ int socket_write(connection_t *conn, const char *fmt, ...)
     if (!data)
         return -ENOMEM;
 
-    do
-        err = send(conn->fd, data, len, 0);
-    while (err == -1 && errno == EINTR);
-
+    err = s_send(conn->fd, data, len);
     if (unlikely(err < 0)) {
         err = -errno;
         goto out;
@@ -523,6 +529,23 @@ int socket_write(connection_t *conn, const char *fmt, ...)
 
 out:
     free(data);
+    return err;
+}
+
+int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size)
+{
+    size_t i;
+    int err = 0;
+
+    if (unlikely(!conn))
+        return -1;
+
+    for (i = 0; i < size; ++i)
+        err = s_send(conn->fd, (char *)&bytes[i], sizeof(uint8_t));
+
+    if (unlikely(err < 0))
+        return err;
+
     return err;
 }
 

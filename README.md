@@ -1,6 +1,6 @@
 ## C Snippets
 
-[![Build Status](https://secure.travis-ci.org/otfallen/csnippets.png?branch=master)](http://travis-ci.org/otfallen/csnippets)
+[![Build Status](https://secure.travis-ci.org/allanference/csnippets.png?branch=master)](http://travis-ci.org/allanference/csnippets)
 
 A nice snippets of C code that's meant to take part of other software.
 

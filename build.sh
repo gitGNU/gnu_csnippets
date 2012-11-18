@@ -11,25 +11,21 @@ CORES=`grep processor /proc/cpuinfo | wc -l`
 # Process to be passed to make -jN
 MAKEOPT=$(($CORES + 1))
 # arguments to pass to the executable generated
-ARGS=""
+ARGS=
 # Executable
-EXE="server"
+EXE=server
 # Directory where the executable is.
-EXE_DIR=""
+EXE_DIR=
 # the "make" command
-MAKE="make"
+MAKE=make
 # the debugger
-DBG="gdb"
+DBG=gdb
+# build options
+buildopt=
 
 if [ ! -d build ]; then
     mkdir build
 fi
-
-cd build
-cmake ..
-
-echo "Cleaning up stuff..."
-$MAKE clean
 
 run() {
     echo "Running $EXE with $ARGS"
@@ -51,6 +47,18 @@ _make() {
     echo "Making executable"
     $MAKE $EXE $1 -j$MAKEOPT || exit
 }
+
+case "$2" in
+    -s) buildopt=-DUSE_SELECT_HANDLER=ON ;;
+     *) buildopt=-DUSE_SELECT_HANDLER=OFF ;;
+esac
+
+cd build
+cmake .. $buildopt
+
+echo "Cleaning up stuff..."
+$MAKE clean
+
 
 case "$1" in
     -g) _make
