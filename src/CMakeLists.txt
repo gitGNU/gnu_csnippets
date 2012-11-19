@@ -5,7 +5,7 @@ endif(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
 
 set(src_LIBRARIES "")
 set(src_DEFINITIONS "")
-set(src_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../csnippets")
+set(src_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/..")
 set(src_SOURCES ${src_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/asprintf.c
     ${CMAKE_CURRENT_LIST_DIR}/config.c
@@ -19,6 +19,7 @@ set(src_SOURCES ${src_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/list.c
     ${CMAKE_CURRENT_LIST_DIR}/rwlock.c
     ${CMAKE_CURRENT_LIST_DIR}/task.c
+    ${CMAKE_CURRENT_LIST_DIR}/module.c
 )
 
 set(BUILD_COMMIT "devel" CACHE "Git commit string (intended for releases)" STRING)
@@ -30,7 +31,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # gcc compile flags
-set(WARNS_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-variable")
+set(WARNS_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-variable -Wno-sign-compare")
 set(CMAKE_C_FLAGS                   "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
 set(CMAKE_C_FLAGS_DEBUG             "-O0 -g")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O1 -g -fno-omit-frame-pointer")
@@ -50,13 +51,18 @@ if(WIN32)
     set(src_DEFINITIONS ${src_DEFINITIONS} -D_WIN32_WINNT=0x0600)
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--large-address-aware") # strip all debug information
     set(src_LIBRARIES "-lws2_32")
+    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_windows.c)
 elseif(APPLE)
     set(src_DEFINITIONS ${src_DEFINITIONS} -D_REENTRANT) # enable thread safe code
+else()
+    set(src_LIBRARIES ${src_LIBRARIES} -ldl)
+    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_linux.c)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(src_DEFINITIONS ${src_DEFINITIONS} -D__debug_socket -D__debug_events -D__debug_tasks -D__debug_modules)
     message(STATUS "Debug information: ON")
 else()
     message(STATUS "Debug information: OFF")

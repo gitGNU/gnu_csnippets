@@ -1,7 +1,7 @@
 /* See list.h for more information.
  * Licensed under BSD-MIT - see LICENSE file for details
  */
-#include "list.h"
+#include <csnippets/list.h>
 
 static void *corrupt(const char *abortstr,
     const struct list_node *head,

@@ -3,8 +3,8 @@ obj/
 bin/
 lib/
 .kdev4/
-.deps/
 
-.depcomp
+!.gitignore
+!.travis.yml
 *.kdev4
 

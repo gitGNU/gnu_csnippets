@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "map.h"
-#include "strmisc.h"
+#include <csnippets/map.h>
+#include <csnippets/strmisc.h>
 
 static struct pair *get_pair(const struct map *map, const char *key)
 {

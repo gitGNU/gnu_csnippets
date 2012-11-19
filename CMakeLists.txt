@@ -4,7 +4,8 @@ project(csnippets)
 set(VERSION "0.1")
 
 include(src/CMakeLists.txt)
-include(examples/CMakeLists.txt)
+include(examples/server/CMakeLists.txt)
+include(examples/modules/CMakeLists.txt)
 
 option(USE_SELECT_HANDLER "Use select handler instead of epoll (enabled by default on windows)" OFF)
 add_definitions(-D"VERSION=\\"${VERSION}\\"")
@@ -15,6 +16,9 @@ add_library(csnippets ${src_SOURCES})
 
 target_link_libraries(csnippets ${src_LIBRARIES})
 
-add_custom_target(run COMMAND server DEPENDS server WORKING_DIRECTORY ${CMAKE_PROJECT_DIR})
-add_executable(server EXCLUDE_FROM_ALL ${examples_SOURCES})
-target_link_libraries(server -L../build -lcsnippets ${examples_LIBRARIES})
+add_executable(server EXCLUDE_FROM_ALL ${server_SOURCES})
+target_link_libraries(server -L../build -lcsnippets ${server_LIBRARIES})
+
+add_executable(modloader EXCLUDE_FROM_ALL ${modules_SOURCES})
+target_link_libraries(modloader -L../build -lcsnippets ${modules_LIBRARIES})
+

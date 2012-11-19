@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include "socket.h"
-#include "asprintf.h"
-#include "atomic.h"
+#include <csnippets/socket.h>
+#include <csnippets/asprintf.h>
+#include <csnippets/atomic.h>
 
 #ifdef _WIN32
 #define poll WSAPoll
@@ -386,7 +386,7 @@ connection_t *connection_create(void (*on_connect) (connection_t *))
     return ret;
 }
 
-bool socket_connect(connection_t *conn, const char *addr, const char *service)
+int socket_connect(connection_t *conn, const char *addr, const char *service)
 {
     struct addrinfo *address;
     pthread_t thread;
@@ -398,11 +398,11 @@ bool socket_connect(connection_t *conn, const char *addr, const char *service)
 
     address = net_lookup(addr, service, AF_INET, SOCK_STREAM);
     if (!address)
-        return false;
+        return -EHOSTUNREACH;
 
     if ((conn->fd = net_connect(address)) < 0) {
         freeaddrinfo(address);
-        return false;
+        return -ETIMEDOUT;
     }
     freeaddrinfo(address);
 
@@ -415,13 +415,13 @@ bool socket_connect(connection_t *conn, const char *addr, const char *service)
                     (void *)conn)) != 0) {
         fprintf(stderr, "failed to create thread (%d): %s\n",
                     ret, strerror(ret));
-        return false;
+        return ret;
     }
 
-    return true;
+    return 0;
 }
 
-bool socket_listen(socket_t *sock, const char *address, const char *service, long max_conns)
+int socket_listen(socket_t *sock, const char *address, const char *service, long max_conns)
 {
     int reuse_addr = 1;
     pthread_t thread;
@@ -434,12 +434,12 @@ bool socket_listen(socket_t *sock, const char *address, const char *service, lon
 
     addr = net_lookup(address, service, AF_INET, SOCK_STREAM);
     if (!addr)
-        return false;
+        return -EHOSTUNREACH;
 
     if (sock->fd < 0)
         sock->fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
     if (sock->fd < 0)
-        return false;
+        return -ENOTSOCK;
 
     if (!set_nonblock(sock->fd, true))
         goto out;
@@ -459,16 +459,16 @@ bool socket_listen(socket_t *sock, const char *address, const char *service, lon
                     (void *)sock)) != 0) {
         fprintf(stderr, "failed to create thread (%d): %s\n",
                      ret, strerror(ret));
-        return false;
+        return ret;
     }
 
-    return true;
+    return 0;
 out:
     if (addr)
         freeaddrinfo(addr);
     if (sock->fd)
         close(sock->fd);
-    return false;
+    return ret;
 }
 
 bool socket_remove(socket_t *socket, connection_t *conn)

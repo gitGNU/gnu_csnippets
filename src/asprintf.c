@@ -2,7 +2,7 @@
  * See asprintf.h for copyright notice.
  */
 
-#include "asprintf.h"
+#include <csnippets/asprintf.h>
 
 int vasprintf(char **strp, const char *fmt, va_list va)
 {

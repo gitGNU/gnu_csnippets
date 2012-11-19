@@ -22,7 +22,7 @@
 #ifdef __use_epoll
 
 #define MAX_EVENTS 1024
-#include "socket.h"
+#include <csnippets/socket.h>
 
 #include <sys/epoll.h>
 #include <unistd.h>   /* close() */

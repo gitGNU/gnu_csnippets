@@ -13,7 +13,7 @@ MAKEOPT=$(($CORES + 1))
 # arguments to pass to the executable generated
 ARGS=
 # Executable
-EXE=server
+EXE=modloader
 # Directory where the executable is.
 EXE_DIR=
 # the "make" command
@@ -44,6 +44,8 @@ run() {
 _make() {
     echo "Making Library"
     $MAKE $1 -j$MAKEOPT || exit
+    echo "Making module"
+    $MAKE module $1 -j$MAKEOPT || exit
     echo "Making executable"
     $MAKE $EXE $1 -j$MAKEOPT || exit
 }

@@ -112,9 +112,8 @@ int __socket_set_poll_and_get_fd(void *events, int desired_fd)
     if (n < 0)
         return -1;
 
-    for (fd = 0; fd < n; ++fd)
-        if (FD_ISSET(desired_fd, &evs->read_fd_set))
-            return 0;
+    if (FD_ISSET(desired_fd, &evs->read_fd_set))
+        return 0;
     return -1;
 }
 

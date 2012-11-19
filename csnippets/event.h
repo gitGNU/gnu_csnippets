@@ -22,7 +22,7 @@
 #ifndef __event_h
 #define __event_h
 
-#include "task.h"
+#include <csnippets/task.h>
 
 __begin_header
 

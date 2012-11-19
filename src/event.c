@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include "event.h"
+#include <csnippets/event.h>
 
 #include <pthread.h>
 #include <pthread.h>

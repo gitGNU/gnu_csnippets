@@ -1,5 +1,5 @@
-#include "rwlock.h"
-#include "atomic.h"
+#include <csnippets/rwlock.h>
+#include <csnippets/atomic.h>
 
 void rwlock_wrlock(rwlock_t *l)
 {
