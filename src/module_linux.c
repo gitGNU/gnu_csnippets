@@ -183,7 +183,7 @@ int modules_load(const char *dir, struct module_list **modules,
     struct module *mod = NULL;
 
     so_count = scandir(dir, &so_list, filter, NULL);
-    if (so_count <= 0)
+    if (so_count < 0)
         return -1;
 
     xmalloc(mods, sizeof(*mods), return 0);
