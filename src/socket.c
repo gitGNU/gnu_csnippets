@@ -390,7 +390,6 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 {
     struct addrinfo *address;
     pthread_t thread;
-    pthread_attr_t attr;
     int ret;
 
     if (conn->fd > 0)
@@ -410,8 +409,7 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
     if (likely(conn->on_connect))
         conn->on_connect(conn);
 
-    pthread_attr_init(&attr);
-    if ((ret = pthread_create(&thread, &attr, poll_on_client,
+    if ((ret = pthread_create(&thread, NULL, poll_on_client,
                     (void *)conn)) != 0) {
         fprintf(stderr, "failed to create thread (%d): %s\n",
                     ret, strerror(ret));
@@ -425,7 +423,6 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 {
     int reuse_addr = 1;
     pthread_t thread;
-    pthread_attr_t attr;
     int ret;
     struct addrinfo *addr;
 
@@ -454,14 +451,14 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
     sock->accept_connections = true;
     list_head_init(&sock->children);
 
-    pthread_attr_init(&attr);
-    if ((ret = pthread_create(&thread, &attr, poll_on_server,
+    if ((ret = pthread_create(&thread, NULL, poll_on_server,
                     (void *)sock)) != 0) {
         fprintf(stderr, "failed to create thread (%d): %s\n",
                      ret, strerror(ret));
         return ret;
     }
 
+    free(addr);
     return 0;
 out:
     if (addr)
@@ -566,11 +563,14 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 
     count = recv(conn->fd, buffer, size, 0);
     if (count == -1) {
-        if (ERRNO != E_AGAIN && errno != E_BLOCK)
+        if (ERRNO != E_AGAIN && errno != E_BLOCK) {
+            free(buffer);
             return false;
-    } else if (count == 0)
+        }
+    } else if (count == 0) {
+        free(buffer);
         return false;
-
+    }
     buffer[count] = '\0';
 
     if (buff) {
@@ -578,6 +578,7 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
         buff->size = count;
         if (conn && conn->on_read)
             (*conn->on_read) (conn, buff);
+        free(buffer);
     }
 
     return true;
@@ -585,21 +586,20 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 
 void socket_free(socket_t *socket)
 {
-    connection_t *conn;
+    connection_t *conn, *next;
     if (!socket)
        return;
 
-    for (;;) {
-        conn = list_top(&socket->children, connection_t, node);
-        if (!conn)
-            break;
-
-        if (conn->fd)
+    list_for_each_safe(&socket->children, conn, next, node) {
+        if (conn->fd > 0)
             close(conn->fd);
         list_del_from(&socket->children, &conn->node);
         free(conn);
     }
 
+    if (socket->events)
+        __socket_set_deinit(socket->events);
+    pthread_mutex_destroy(&socket->conn_lock);
     free(socket);
 }
 

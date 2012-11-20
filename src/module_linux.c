@@ -124,7 +124,9 @@ int module_load(const char *file, struct module **mod,
     }
 
     xmalloc(module, sizeof(struct module), err = -ENOMEM; goto cleanup);
+    module->handle = handle;
     list_head_init(&module->children);
+
     for (i = 0; i < symbol_count; ++i) {
         xmalloc(symbol, sizeof(*symbol), err = -ENOMEM; goto cleanup);
 

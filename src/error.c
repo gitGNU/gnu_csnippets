@@ -23,6 +23,7 @@ void __noreturn error_nret(const char *str, ...)
 
     __log("%s: %s\n%s: error is not recoverable, terminating now...\n",
             program_invocation_short_name, buff, program_invocation_short_name);
+    free(buff);
     exit(EXIT_FAILURE);
 }
 
@@ -37,6 +38,7 @@ void __noreturn log_errno(const char *str, ...)
 
     __log("%s: %s (%d): %s\n", program_invocation_short_name, buff, errno, strerror(errno));
     __log("%s: error is not recoverable, terminating now...\n", program_invocation_short_name);
+    free(buff);
     exit(EXIT_FAILURE);
 }
 
@@ -54,5 +56,6 @@ void error(int error_type, const char *str, ...)
         __log("%s: %s", program_invocation_short_name, buff);
     else
         __log("%s: %s: %s", program_invocation_short_name, type_strings[error_type], buff);
+    free(buff);
 }
 

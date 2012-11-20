@@ -23,17 +23,13 @@
 
 void modules_cleanup(struct module_list *modules)
 {
-    struct module *module;
-    struct module_symbol *symbol;
+    struct module *module, *next;
     if (unlikely(!modules))
         return;
 
-    for (;;) {
-        module = list_top(&modules->children, struct module, node);
-        if (!module)
-            break;
-        module_cleanup(module);
+    list_for_each_safe(&modules->children, module, next, node) {
         list_del_from(&modules->children, &module->node);
+        module_cleanup(module);
     }
     free(modules);
 }
@@ -41,7 +37,6 @@ void modules_cleanup(struct module_list *modules)
 void module_cleanup(struct module *module)
 {
     struct module_symbol *symbol;
-    struct module *cpy;
     if (unlikely(!module))
         return;
 
@@ -52,9 +47,10 @@ void module_cleanup(struct module *module)
 
         free(symbol->symbol_name);
         list_del_from(&module->children, &symbol->node);
-        free(symbol);      
+        free(symbol); 
     }
 
+    dlclose(module->handle);
     free(module);
 }
 

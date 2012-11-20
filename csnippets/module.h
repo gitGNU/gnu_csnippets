@@ -32,6 +32,7 @@ struct module_symbol {
 };
 
 struct module {
+    void *handle;                   /* internal usage */
     struct list_head children;      /* Symbols list  */
     struct list_node node;          /* Next and previous module, see list.h  */
 };

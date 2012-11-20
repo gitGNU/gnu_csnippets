@@ -41,13 +41,17 @@ run() {
     cd ..
 }
 
+__make() {
+    $MAKE $1 $2 -j$MAKEOPT || exit
+}
+
 _make() {
     echo "Making Library"
-    $MAKE $1 -j$MAKEOPT || exit
+    __make $1
     echo "Making module"
-    $MAKE module $1 -j$MAKEOPT || exit
-    echo "Making executable"
-    $MAKE $EXE $1 -j$MAKEOPT || exit
+    __make module $1
+    echo "Making $EXE"
+    __make $EXE $1
 }
 
 case "$2" in
