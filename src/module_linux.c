@@ -186,6 +186,7 @@ int modules_load(const char *dir, struct module_list **modules,
         return -1;
 
     xmalloc(mods, sizeof(*mods), return 0);
+    list_head_init(&mods->children);
     while (so_count--) {
 #ifdef __debug_modules
         printf("Attempting to load module %s...\n", so_list[so_count]->d_name);
@@ -194,12 +195,10 @@ int modules_load(const char *dir, struct module_list **modules,
                         start_name) != 0)) {
             warning("failed to load module: %s (%d)\n",
                     so_list[so_count]->d_name, ret);
-        }
-        else
+        } else {
             ++mods->num_modules;
-
-        if (mod)
             list_add(&mods->children, &mod->node);
+        }
 
         free(so_list[so_count]);
     }

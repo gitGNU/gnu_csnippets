@@ -33,6 +33,7 @@ void modules_cleanup(struct module_list *modules)
         if (!module)
             break;
         module_cleanup(module);
+        list_del_from(&modules->children, &module->node);
     }
     free(modules);
 }

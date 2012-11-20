@@ -23,23 +23,26 @@
 
 int main(int argc, char **argv)
 {
+    struct module_list *mlist;
     struct module *module;
     struct module_symbol *symbol;
     int ret;
 
-    ret = module_load("libmodule.so", &module, "module_");
+    ret = modules_load(".", &mlist, "module_");
     if (ret)
-        fatal("failed to load module %s.\n", strerror(errno));
+        fatal("failed to load modules %s.\n", strerror(errno));
 
-    list_for_each(&module->children, symbol, node) {
-        void (*mod_fn) (void) = symbol->func_ptr;
-        printf("Calling %s at location %p...\n", symbol->symbol_name,
-                symbol->func_ptr);
-        if (__builtin_expect(!!mod_fn, 0))
-            (*mod_fn) ();
+    list_for_each(&mlist->children, module, node) {
+        list_for_each(&module->children, symbol, node) {
+            void (*mod_fn) (void) = symbol->func_ptr;
+            printf("Calling %s at location %p...\n", symbol->symbol_name,
+                    symbol->func_ptr);
+            if (__builtin_expect(!!mod_fn, 0))
+                (*mod_fn) ();
+        }
     }
 
-    module_cleanup(module);
+    modules_cleanup(mlist);
     return ret;
 }
 
