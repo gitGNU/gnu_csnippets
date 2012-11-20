@@ -136,7 +136,6 @@ int module_load(const char *file, struct module **mod,
         }
 
         symbol->symbol_name = strdup(symbols[i]);
-
         list_add(&module->children, &symbol->node);
     }
 

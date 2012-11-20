@@ -1,4 +1,4 @@
-#include "socket.h"
+#include <csnippets/socket.h>
 
 #include <signal.h>
 #include <unistd.h>

@@ -32,6 +32,19 @@ struct sock_events {
     int epoll_fd;
 };
 
+static int get_active_fd(struct sock_events *evs, int index)
+{
+    uint32_t events;
+
+    events = evs->events[index].events;
+    if (events & EPOLLERR || events & EPOLLHUP || !(events & EPOLLIN)) {
+        close(evs->events[index].data.fd);
+        return -1;
+    }
+
+    return evs->events[index].data.fd;
+}
+
 void *__socket_set_init(int fd)
 {
     struct sock_events *ev = malloc(sizeof(struct sock_events));
@@ -85,23 +98,16 @@ void __socket_set_del(int fd)
 int __socket_set_poll(socket_t *sock, int desired_fd, connection_t **conn)
 {
     struct sock_events *evs = sock->events;
-    int nfds, fd;
+    int n, index;
     connection_t *ret;
-    uint32_t events;
     int active;
 
     if (unlikely(!evs))
         return -1;
     
-    nfds = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
-    for (fd = 0; fd < nfds; ++fd) {
-        events = evs->events[fd].events;
-        if (events & EPOLLERR || events & EPOLLHUP || !(events & EPOLLIN)) {
-            close(evs->events[fd].data.fd);
-            return -1;
-        }
-
-        active = evs->events[fd].data.fd;
+    n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
+    for (index = 0; index < n; ++index) {
+        active = get_active_fd(evs, index);
         if (desired_fd == active)
             return 1;
 
@@ -118,7 +124,7 @@ int __socket_set_poll(socket_t *sock, int desired_fd, connection_t **conn)
 int __socket_set_poll_and_get_fd(void *events, int desired_fd)
 {
     struct sock_events *evs = (struct sock_events *)events;
-    int n, fd;
+    int n, index;
     if (unlikely(!evs))
         return -1;
 
@@ -126,9 +132,11 @@ int __socket_set_poll_and_get_fd(void *events, int desired_fd)
     if (n < 0)
         return -1;
 
-    for (fd = 0; fd < n; ++fd)
-        if (fd == desired_fd)
-            return 0;
+    for (index = 0; index < n; ++index) {
+        if (desired_fd == get_active_fd(evs, index))
+            return 1;
+    }
+
     return -1;
 }
 
