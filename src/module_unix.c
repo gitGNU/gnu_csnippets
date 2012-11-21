@@ -211,15 +211,11 @@ int modules_load(const char *dir, struct module_list **modules,
 
 void module_cleanup(struct module *module)
 {
-    struct module_symbol *symbol;
+    struct module_symbol *symbol, *next;
     if (unlikely(!module))
         return;
 
-    for (;;) {
-        symbol = list_top(&module->children, struct module_symbol, node);
-        if (!symbol)
-            break;
-
+    list_for_each_safe(&module->children, symbol, next, node) {
         free(symbol->symbol_name);
         list_del_from(&module->children, &symbol->node);
         free(symbol);

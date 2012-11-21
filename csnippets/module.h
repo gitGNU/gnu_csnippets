@@ -45,7 +45,7 @@ struct module_list {
 };
 
 /**
- * The following attributes should be used to initialize
+ * The following attributes should be used to initialize/deinitialize(construct/destruct)
  * a module, Example:
  *
  * my_module.c:

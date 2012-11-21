@@ -1,5 +1,6 @@
 /**
- * This file includes and defines important headers.
+ * This file includes important headers and defines common
+ * macros (mostly used as helpers).
  *
  * This file acts as a pre-compiled header.
  */

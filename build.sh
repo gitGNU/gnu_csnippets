@@ -12,10 +12,8 @@ CORES=`grep processor /proc/cpuinfo | wc -l`
 MAKEOPT=$(($CORES + 1))
 # arguments to pass to the executable generated
 ARGS=
-# Executable
-EXE=modloader
-# Directory where the executable is.
-EXE_DIR=
+# The executable target to build.
+TARGET=modloader
 # the "make" command
 MAKE=make
 # the debugger
@@ -28,14 +26,14 @@ if [ ! -d build ]; then
 fi
 
 run() {
-    echo "Running $EXE with $ARGS"
-    if [ -d "$EXE_DIR" ]; then
-        cd $EXE_DIR
+    echo "Running $TARGET with $ARGS"
+    if [ -d "$TARGET_DIR" ]; then
+        cd $TARGET_DIR
     fi
     if [ "$1" = "$DBG" ]; then
-        $1 --args $EXE $ARGS
+        $1 --args $TARGET $ARGS
     else
-        ./$EXE $ARGS
+        ./$TARGET $ARGS
     fi
     # return back to the old directory
     cd ..
@@ -50,8 +48,8 @@ _make() {
     __make $1
     echo "Making module"
     __make module $1
-    echo "Making $EXE"
-    __make $EXE $1
+    echo "Making $TARGET"
+    __make $TARGET $1
 }
 
 case "$2" in
@@ -64,7 +62,6 @@ cmake .. $buildopt
 
 echo "Cleaning up stuff..."
 $MAKE clean
-
 
 case "$1" in
     -g) _make
@@ -80,12 +77,6 @@ case "$1" in
         run
         ;;
     -v) _make V=1
-        ;;
-    -l) cd src && _make
-        ;;
-    -e) cd src && _make
-        cd ../$EXE_DIR && _make
-        cd ..
         ;;
     *) _make
         ;;
