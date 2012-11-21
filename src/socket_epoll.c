@@ -132,10 +132,9 @@ int __socket_set_poll_and_get_fd(void *events, int desired_fd)
     if (n < 0)
         return -1;
 
-    for (index = 0; index < n; ++index) {
+    for (index = 0; index < n; ++index)
         if (desired_fd == get_active_fd(evs, index))
             return 1;
-    }
 
     return -1;
 }

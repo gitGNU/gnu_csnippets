@@ -28,3 +28,14 @@ target_link_libraries(server ${this_library} ${server_LIBRARIES})
 add_executable(modloader EXCLUDE_FROM_ALL ${modules_SOURCES})
 target_link_libraries(modloader ${this_library} ${modules_LIBRARIES})
 
+# Installation paths
+SET(BIN_INSTALL_DIR bin CACHE PATH "Where to install binaries to.")
+SET(LIB_INSTALL_DIR lib CACHE PATH "Where to install libraries to.")
+SET(INCLUDE_INSTALL_DIR include CACHE PATH "Where to install headers to.")
+
+# Installation
+install(DIRECTORY csnippets DESTINATION include)
+INSTALL(TARGETS csnippets
+    RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+    LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+    ARCHIVE DESTINATION ${LIB_INSTALL_DIR})

@@ -54,9 +54,11 @@ if(WIN32)
     set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_windows.c)
 elseif(APPLE)
     set(src_DEFINITIONS ${src_DEFINITIONS} -D_REENTRANT) # enable thread safe code
-else()
-    set(src_LIBRARIES ${src_LIBRARIES} -ldl)
-    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_linux.c)
+endif()
+
+if(NOT WIN32)
+    set(src_LIBRARIES ${src_LIBRARIES} dl)
+    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_unix.c)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")

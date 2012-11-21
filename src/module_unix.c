@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#if defined(__linux) || defined(linux)
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 
 #include <csnippets/module.h>
 #include <csnippets/asprintf.h>
@@ -176,7 +176,6 @@ cleanup:
 int modules_load(const char *dir, struct module_list **modules,
         const char *start_name)
 {
-    int num = 0;
     int so_count = 0;
     int ret = 0;
     struct dirent **so_list;
@@ -210,5 +209,25 @@ int modules_load(const char *dir, struct module_list **modules,
     return 0;
 }
 
-#endif    /* defined __linux || linux */
+void module_cleanup(struct module *module)
+{
+    struct module_symbol *symbol;
+    if (unlikely(!module))
+        return;
+
+    for (;;) {
+        symbol = list_top(&module->children, struct module_symbol, node);
+        if (!symbol)
+            break;
+
+        free(symbol->symbol_name);
+        list_del_from(&module->children, &symbol->node);
+        free(symbol);
+    }
+
+    dlclose(module->handle);
+    free(module);
+}
+
+#endif    /* defined(__unix__) || (defined(__APPLE__) && defined(__MACH__) */
 

@@ -33,24 +33,3 @@ void modules_cleanup(struct module_list *modules)
     }
     free(modules);
 }
-
-void module_cleanup(struct module *module)
-{
-    struct module_symbol *symbol;
-    if (unlikely(!module))
-        return;
-
-    for (;;) {
-        symbol = list_top(&module->children, struct module_symbol, node);
-        if (!symbol)
-            break;
-
-        free(symbol->symbol_name);
-        list_del_from(&module->children, &symbol->node);
-        free(symbol); 
-    }
-
-    dlclose(module->handle);
-    free(module);
-}
-
