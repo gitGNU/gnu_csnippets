@@ -32,8 +32,10 @@ struct centry_t *config_parse(const char *filename)
     char line[2947], **tokens;
 
     fp = fopen(filename, "r");
-    if (!fp)
-        fatal("failed to open configuration file %s\n", filename);
+    if (!fp) {
+        elog("failed to open configuration file %s\n", filename);
+        return NULL;
+    }
 
     while (fgets(line, 2048, fp)) {
         current_line++;
@@ -52,23 +54,22 @@ struct centry_t *config_parse(const char *filename)
                     line[i] = 0;
 
                     struct centry_t *entry;
-                    xmalloc(entry, sizeof(*entry), return NULL);
+                    xmalloc(entry, sizeof(*entry), goto cleanup);
 
                     strncpy(entry->section, strtrim(line), 32);
-
-                    entry->section[32] = '\0';
                     entry->def = NULL;
 
                     if (unlikely(!ret)) {
                         ret = entry;
                         list_head_init(&ret->children);
                     }
+
                     list_add(&ret->children, &entry->node);
                     break;
                 }
             }
             if (unlikely(!open_brace)) {
-                fatal("parser error: out of brace at line %d\n",
+                elog("parser error: out of brace at line %d\n",
                         current_line);
             }
             break;
@@ -85,24 +86,26 @@ struct centry_t *config_parse(const char *filename)
 
                 tokens = strexplode(line, '=', &n_tokens);
                 if (!tokens || n_tokens > 2) {
-                    fatal("parser error: illegal equality at line %d\n",
+                    elog("parser error: illegal equality at line %d\n",
                             current_line);
                 }
  
-                xmalloc(def, sizeof(*def), return NULL);
+                xmalloc(def, sizeof(*def), goto cleanup);
                 if (n_tokens == 2) {
                     strncpy(def->key, strtrim(tokens[0]), 33);
                     def->key[32] = '\0';
 
                     def->value = strdup(strtrim(tokens[1]));
                 } else {
-                    fatal("parser error: value with no key[?] at line %d\n",
+                    elog("parser error: value with no key[?] at line %d\n",
                             current_line);
+                    break;
                 }
                 if (unlikely(!ret->def)) {
                     ret->def = def;
                     list_head_init(&ret->def->def_children);
                 }
+
                 list_add(&ret->def->def_children, &def->node);
             }
             break;
@@ -111,5 +114,28 @@ struct centry_t *config_parse(const char *filename)
 
     fclose(fp);
     return ret;
+cleanup:
+    config_free(ret);
+    fclose(fp);
+    return NULL;
+}
+
+void config_free(struct centry_t *entry)
+{
+    struct centry_t *p, *next;
+    struct cdef_t *def, *next_def;
+    if (unlikely(!entry))
+        return;
+    list_for_each_safe(&entry->children, p, next, node) {
+        list_for_each_safe(&entry->def->def_children, def, next_def,
+                node) {
+            free(def->value);
+            list_del(&def->node);
+            free(def);
+        }
+
+        list_del(&p->node);
+        free(p);
+    }
 }
 

@@ -43,9 +43,8 @@ typedef struct pollfd pollfd;
 #include <stdarg.h>
 #include <sys/time.h>
 #include <time.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+
+#include <csnippets/compat.h>
 
 extern void *__socket_set_init(int);
 extern void __socket_set_deinit(void *);
@@ -423,7 +422,7 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 {
     int reuse_addr = 1;
     pthread_t thread;
-    int ret;
+    int ret = 0;
     struct addrinfo *addr;
 
     if (!sock)
@@ -479,14 +478,12 @@ bool socket_remove(socket_t *socket, connection_t *conn)
     return true;
 }
 
-#define s_send(fd, d, l) \
-    ({ \
-        int err; \
-        do \
-            err = send((fd), (d), (l), 0); \
-        while (err == -1 && errno == EINTR); \
-        err; \
-     })
+#define s_send(fd, d, l) ({ \
+    int err; \
+    do \
+        err = send((fd), (d), (l), 0); \
+    while (err == -1 && errno == E_INTR); \
+    err; })
 
 int socket_write(connection_t *conn, const char *fmt, ...)
 {

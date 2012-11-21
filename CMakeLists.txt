@@ -3,6 +3,11 @@ project(csnippets)
 
 set(VERSION "0.1")
 
+# CMAKE_CURRENT_LIST_DIR cmake 2.6 compatibility
+if(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
+    get_filename_component(CMAKE_CURRENT_LIST_DIR ${CMAKE_CURRENT_LIST_FILE} PATH)
+endif(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
+
 include(src/CMakeLists.txt)
 include(examples/server/CMakeLists.txt)
 include(examples/client/CMakeLists.txt)
@@ -34,7 +39,7 @@ SET(LIB_INSTALL_DIR lib CACHE PATH "Where to install libraries to.")
 SET(INCLUDE_INSTALL_DIR include CACHE PATH "Where to install headers to.")
 
 # Installation
-install(DIRECTORY csnippets DESTINATION include)
+INSTALL(DIRECTORY csnippets DESTINATION ${INCLUDE_INSTALL_DIR})
 INSTALL(TARGETS csnippets
     RUNTIME DESTINATION ${BIN_INSTALL_DIR}
     LIBRARY DESTINATION ${LIB_INSTALL_DIR}

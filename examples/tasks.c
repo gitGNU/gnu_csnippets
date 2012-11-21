@@ -14,24 +14,11 @@ static void config_parse_event(void *filename)
     if (!c)
         fatal("failed to load config!");
 
-    for (;;) {
-        p = list_top(&c->children, struct centry_t, node);
-        if (!p)
-            break;
-
+    list_for_each(&c->children, p, node)
         print("Section %s\n", p->section);
-        for (;;) {
-            def = list_top(&c->def->def_children, struct cdef_t, node);
-            if (!def)
-                break;
-
+        list_for_each(&c->def->def_children, def, node)
             print("Key [%s] -> Value [%s]\n", def->key, def->value);
-            list_del(&def->node);
-            free(def);
-        }
-        list_del(&p->node);
-        free(p);
-    }
+    config_free(c);
 }
 
 void test(void *p)

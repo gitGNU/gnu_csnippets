@@ -19,32 +19,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __config_h
-#define __config_h
+#ifndef __compat_h
+#define __compat_h
 
-#include "list.h"
+/**
+ * Compatibility with other platforms, mostly POSIX sockets -> Win32
+ */
+#ifdef _WIN32
+#ifndef __use_select
+    #define __use_select
+#endif
+#ifdef __use_epoll
+    #undef __use_epoll
+#endif
+#ifdef __use_kqueue
+    #undef __use_kqueue
+#endif
+#define ERRNO WSAGetLastError()
+#define set_last_error(e) SetLastError((e))
+#define E_BLOCK           WSAEWOULDBLOCK
+#define E_AGAIN           EAGAIN
+#define E_ISCONN          WSAEISCONN
+#define E_ALREADY         WSAEALREADY
+#define E_INPROGRESS      WSAEINPROGRESS
+#define E_INTR            WSAEINTR
+#else
+#ifdef __use_kqueue
+    #error "kqueue isn't implemented yet."
+#endif
+#if !defined __use_epoll && !defined __use_select
+    #define __use_epoll
+#endif
+#define ERRNO errno
+#define set_last_error(e) errno = (e)
+#define E_BLOCK           EWOULDBLOCK
+#define E_AGAIN           EAGAIN
+#define E_ISCONN          EISCONN
+#define E_ALREADY         EALREADY
+#define E_INPROGRESS      EINPROGRESS
+#define E_INTR            EINTR
+#endif
 
-__begin_header
-
-struct cdef_t {
-    char key[33];
-    char *value;
-
-    struct list_node node;
-    struct list_head def_children;
-};
-
-struct centry_t {
-    char section[32];
-    struct cdef_t *def;
-
-    struct list_head children;
-    struct list_node node;
-};
-
-extern struct centry_t *config_parse(const char *filename);
-extern void config_free(struct centry_t *entry);
-
-__end_header
-#endif   /* __config_h */
+#endif   /* __compat_h */
 

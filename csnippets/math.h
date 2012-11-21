@@ -19,32 +19,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __config_h
-#define __config_h
+#ifndef __math_h
+#define __math_h
 
-#include "list.h"
+/* Common math functions.  */
+#ifndef min
+#define min(a, b)                         \
+    __extension__ ({                      \
+        __typeof__(a) _a = (a);           \
+        __typeof__(b) _b = (b);           \
+        _a < _b ? _a : _b;                \
+    })
+#endif
+#ifndef max
+#define max(a, b)                         \
+    __extension__ ({                      \
+        __typeof__(a) _a = (a);           \
+        __typeof__(b) _b = (b);           \
+        _a > _b ? _a : _b;                \
+    })
+#endif
 
-__begin_header
-
-struct cdef_t {
-    char key[33];
-    char *value;
-
-    struct list_node node;
-    struct list_head def_children;
-};
-
-struct centry_t {
-    char section[32];
-    struct cdef_t *def;
-
-    struct list_head children;
-    struct list_node node;
-};
-
-extern struct centry_t *config_parse(const char *filename);
-extern void config_free(struct centry_t *entry);
-
-__end_header
-#endif   /* __config_h */
+#endif  /* __math_h */
 

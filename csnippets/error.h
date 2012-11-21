@@ -12,11 +12,11 @@
 
 #define LOG_FILE "stderr.log"    /* log file to print to.  */
 /* shortcuts. */
-#define log(str, args...)       error(LOG_NOTICE, str, ##args)
-#define die fatal
+#define elog(str, args...)      error(LOG_NOTICE, str, ##args)
+#define die                     fatal
 #define fatal(str, args...)     error_nret(str, ##args)
 #define warning(str, args...)   error(LOG_WARNING, str, ##args)
-#define print(str, args...)     error(LOG_NULL, str, ##args)
+#define eprint(str, args...)    error(LOG_NULL, str, ##args)
 
 /** Initialize log file */
 #define log_init()              freopen(LOG_FILE, "w", stderr);

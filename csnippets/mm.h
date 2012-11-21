@@ -19,32 +19,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __config_h
-#define __config_h
+#ifndef __memory_management_h
+#define __memory_management_h
 
-#include "list.h"
+/* Memory management functions, previously named as 
+ * "Auxiliars" or briefly "helpers".  */
 
-__begin_header
+#define xfree(p) do { if (p) free(p); p = NULL; } while (0)
+#define __alloc_failure(s) do { warning("failed to allocate %zd bytes\n", s); } while(0)
+#define xmalloc(p, s, action) do {  \
+    p = calloc(1, s); \
+    if (unlikely(!p)) { \
+        __alloc_failure(s); \
+        action; \
+    } \
+} while (0)
+#define xcalloc(p, l, s, action) do { \
+    p = calloc(l, s); \
+    if (unlikely(!p)) { \
+        __alloc_failure((s) * (l)); \
+        action; \
+    } \
+} while (0)
+#define xrealloc(new_ptr, old_ptr, count, action) do { \
+    new_ptr = realloc((old_ptr), count);  \
+    if (unlikely(!new_ptr)) {\
+        __alloc_failure((count)); \
+        action; \
+    } \
+} while (0)
 
-struct cdef_t {
-    char key[33];
-    char *value;
-
-    struct list_node node;
-    struct list_head def_children;
-};
-
-struct centry_t {
-    char section[32];
-    struct cdef_t *def;
-
-    struct list_head children;
-    struct list_node node;
-};
-
-extern struct centry_t *config_parse(const char *filename);
-extern void config_free(struct centry_t *entry);
-
-__end_header
-#endif   /* __config_h */
+#endif  /*  __memory_management_h */
 

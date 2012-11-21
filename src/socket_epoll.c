@@ -104,7 +104,7 @@ int __socket_set_poll(socket_t *sock, int desired_fd, connection_t **conn)
 
     if (unlikely(!evs))
         return -1;
-    
+
     n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
     for (index = 0; index < n; ++index) {
         active = get_active_fd(evs, index);
