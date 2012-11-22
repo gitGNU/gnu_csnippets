@@ -35,10 +35,11 @@ struct config *config_parse(const char *filename)
 {
     FILE *fp;
     int current_line = 0,
-        open_brace   = 0;
+        open_brace   = 0,
+        n_tokens;
     int len, i;
     struct config *config = NULL;
-    char line[2947], **tokens;
+    char line[1024], **tokens;
 
     fp = fopen(filename, "r");
     if (!fp) {
@@ -46,7 +47,7 @@ struct config *config_parse(const char *filename)
         return NULL;
     }
 
-    while (fgets(line, 2048, fp)) {
+    while (fgets(line, sizeof line, fp)) {
         current_line++;
 
         char *ptr = strchr(line, '#');
@@ -91,7 +92,6 @@ struct config *config_parse(const char *filename)
                 }
 
             if (open_brace) {
-                int n_tokens = 0;
                 struct def *def;
 
                 tokens = strexplode(line, '=', &n_tokens);
