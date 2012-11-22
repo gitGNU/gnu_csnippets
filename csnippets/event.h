@@ -27,7 +27,7 @@
 __begin_header
 
 typedef struct {
-    int32_t delay;           /* Delay in seconds, the thread will wait before executing this.  */
+    int64_t delay;           /* Delay in seconds, the thread will wait before executing this.  */
     task_t *task;            /* The task pointer, Internal use only.
                                 This is created by the thread.  */
     struct list_node node;   /* Next/Prev event.  */

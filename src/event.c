@@ -35,7 +35,7 @@ static LIST_HEAD(events);
 
 static void *events_thread(void *d)
 {
-    event_t *event = NULL;
+    event_t *event = NULL, *next = NULL;
     struct timespec ts;
     struct timeval tv;
 
@@ -43,38 +43,40 @@ static void *events_thread(void *d)
         pthread_mutex_lock(&mutex);
         if (list_empty(&events)) {
             pthread_cond_wait(&cond, &mutex);
-            if (!running)
+            if (!running) {
+                pthread_mutex_unlock(&mutex);
                 break;
-        } else {
-            event = list_top(&events, event_t, node);
-            list_del(&event->node);
-
-            gettimeofday(&tv, NULL);
-            ts.tv_sec  = tv.tv_sec;
-            ts.tv_nsec = tv.tv_usec * 1000;
-            ts.tv_sec += event->delay;
-
-            pthread_cond_timedwait(&cond, &mutex, &ts);
+            }
         }
-        pthread_mutex_unlock(&mutex);
-
-        if (unlikely(!event))
+        event = list_top(&events, event_t, node);
+        if (!event) {
+            pthread_mutex_unlock(&mutex);
             continue;
+        }
+        list_del(&event->node);
+
+        gettimeofday(&tv, NULL);
+        ts.tv_sec  = tv.tv_sec;
+        ts.tv_nsec = tv.tv_usec * 1000;
+        ts.tv_sec += event->delay;
+
+        pthread_cond_timedwait(&cond, &mutex, &ts);
+        pthread_mutex_unlock(&mutex);
 
         tasks_add(event->task);
         free(event);
     }
 
     /* if we have any remaining events, add them to tasks  */
-    while (!list_empty(&events)) {
-        event = list_top(&events, event_t, node);
-        if (!event)
-            break;
+    list_for_each_safe(&events, event, next, node) { 
+        pthread_mutex_lock(&mutex);
         list_del(&event->node);
+        pthread_mutex_unlock(&mutex);
 
         tasks_add(event->task);
         free(event);
     }
+
     return NULL;
 }
 
@@ -123,15 +125,16 @@ event_t *event_create(int delay, task_routine start, void *p)
         free(event);
         return NULL;
     }
+
     return event;
 }
 
 void events_add(event_t *event)
 {
     bool empty = false;
-
     if (!event)
         return;
+
     pthread_mutex_lock(&mutex);
     if (likely(running)) {
         empty = list_empty(&events);

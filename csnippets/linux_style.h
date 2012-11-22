@@ -2,7 +2,7 @@
  * Various linux stlye macros, when I say linux style,
  * I mean the macro style used in the Linux kernel (__noreturn, __weak, ...)
  *
- * Defines shortcuts for __attribute__ if __GNUC__ (GNU C compiler used.)
+ * Defines shortcuts for some attributes if __GNUC__ (GNU C compiler) used.
  */
 #ifndef __linux_style_h
 #define __linux_style_h
@@ -15,7 +15,7 @@
 #define __warn_unused   __attribute__((warn_unused_result))
 #define __weak          __attribute__((weak))
 #define __printf(nfmt, narg) \
-    __attribute((format(__printf__, nfmt, narg)))
+    __attribute__((format(__printf__, nfmt, narg)))
 #else
 #define __attribute__(x)
 #define __noreturn

@@ -22,28 +22,24 @@
 #ifndef __config_h
 #define __config_h
 
-#include "list.h"
-
 __begin_header
 
-struct cdef_t {
+struct def {
     char key[33];
     char *value;
 
-    struct list_node node;
-    struct list_head def_children;
+    struct def *next;
 };
 
-struct centry_t {
+struct config {
     char section[32];
-    struct cdef_t *def;
 
-    struct list_head children;
-    struct list_node node;
+    struct def *def;
+    struct config *next;
 };
 
-extern struct centry_t *config_parse(const char *filename);
-extern void config_free(struct centry_t *entry);
+extern struct config *config_parse(const char *filename);
+extern void config_free(struct config *entry);
 
 __end_header
 #endif   /* __config_h */
