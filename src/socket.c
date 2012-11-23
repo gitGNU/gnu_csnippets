@@ -44,8 +44,6 @@ typedef struct pollfd pollfd;
 #include <sys/time.h>
 #include <time.h>
 
-#include <csnippets/compat.h>
-
 extern void *sockset_init(int);
 extern void sockset_deinit(void *);
 extern void sockset_add(void *, int);
@@ -220,10 +218,11 @@ out:
 static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *sock_events)
 {
     bool err;
-    struct sk_buff buff;
-
     if (unlikely(!conn))
         return false;
+
+    if (conn->schedule_removal && parent_socket)
+        goto finish;
 
     conn->last_active = time(NULL);
     if (!conn->auto_read) {
@@ -234,16 +233,17 @@ static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *
         return true;
     }
 
-    err = !socket_read(conn, &buff, DEFAULT_READ_SIZE);
-    if (err) {
-        if (parent_socket)
-            socket_remove(parent_socket, conn);
-        else
-            sockset_del(sock_events, conn->fd);
-        return false;
-    }
+    err = !socket_read(conn, NULL, conn->buff.max_read_size);
+    if (err)
+        goto finish;
 
     return true;
+finish:
+    sockset_del(sock_events, conn->fd);
+    if (parent_socket)
+        rm_connection(parent_socket, conn);
+    connection_free(conn);
+    return false;
 }
 
 static void *poll_on_client(void *client)
@@ -308,8 +308,11 @@ static void *poll_on_server(void *_socket)
                     continue;
                 }
 
-                xmalloc(conn, sizeof(*conn), close(their_fd); goto out);
-                conn->auto_read = true;
+                conn = connection_create(NULL);
+                if (!conn) {
+                    close(their_fd);
+                    continue;
+                }
                 conn->fd = their_fd;
 
                 if (!set_nonblock(conn->fd, true)) {
@@ -336,8 +339,7 @@ static void *poll_on_server(void *_socket)
             }
             break;
         case 0:
-            if (conn)
-                __poll_on_client(socket, conn, socket->events);
+            __poll_on_client(socket, conn, socket->events);
             break;
         default:
             warning("An error occured during sockset_poll()!  Terminating the loop now!\n");
@@ -377,11 +379,17 @@ connection_t *connection_create(void (*on_connect) (connection_t *))
     connection_t *ret;
 
     xmalloc(ret, sizeof(*ret), return NULL);
-
     ret->on_connect = on_connect;
     ret->last_active = 0;
     ret->fd = -1;
     ret->remote = NULL;
+    ret->schedule_removal = false;
+    ret->auto_read = true;
+
+    ret->buff.max_read_size = 2048;
+    ret->buff.size = 0;
+    ret->buff.data = NULL;
+
     return ret;
 }
 
@@ -467,17 +475,6 @@ out:
     return ret;
 }
 
-bool socket_remove(socket_t *socket, connection_t *conn)
-{
-    if (unlikely(!socket || !conn))
-        return false;
-
-    sockset_del(socket->events, conn->fd);
-    rm_connection(socket, conn);
-    connection_free(conn);
-    return true;
-}
-
 #define s_send(fd, d, l) ({ \
     int err; \
     do \
@@ -491,7 +488,6 @@ int socket_write(connection_t *conn, const char *fmt, ...)
     int len;
     int err;
     va_list va;
-    struct sk_buff *buff;
 
     if (unlikely(!conn || conn->fd < 0))
         return -EINVAL;
@@ -513,16 +509,15 @@ int socket_write(connection_t *conn, const char *fmt, ...)
         fprintf(stderr,
                 "socket_write(): the data sent may be incomplete!\n");
 
-    if (NULL != (buff = malloc(sizeof(*buff)))) {
-        buff->data = data;
-        buff->size = err;
-        if (conn->on_write)
-            (*conn->on_write) (conn, buff);
-        free(buff);
-    }
+    conn->buff.data = data;
+    conn->buff.size = err;
+
+    if (conn->on_write)
+        (*conn->on_write) (conn, &conn->buff);
 
 out:
-    free(data);
+    if (data)
+        free(data);
     return err;
 }
 
@@ -552,7 +547,7 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
         return false;
 
     if (!size)
-        size = DEFAULT_READ_SIZE;
+        size = conn->buff.max_read_size;
 
     buffer = calloc(size, sizeof(char));
     if (!buffer)
@@ -570,14 +565,15 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
     }
     buffer[count] = '\0';
 
-    if (buff) {
-        buff->data = buffer;
-        buff->size = count;
-        if (conn && conn->on_read)
-            (*conn->on_read) (conn, buff);
-        free(buffer);
-    }
+    conn->buff.data = buffer;
+    conn->buff.size = size;
+    if (buff)
+        *buff = conn->buff;
 
+    if (conn && conn->on_read)
+        (*conn->on_read) (conn, &conn->buff);
+
+    if (buffer) free(buffer);
     return true;
 }
 

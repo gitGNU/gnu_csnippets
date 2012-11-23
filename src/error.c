@@ -27,9 +27,9 @@ static int verbose = 1;
 
 #define prog program_invocation_short_name
 #define __dolog(s, args...) do { \
-    fprintf(stderr, s, ##args); \
+    fprintf(stderr, _(s), ##args); \
     if (verbose > 0) \
-        fprintf(stdout, s, ##args); \
+        fprintf(stdout, _(s), ##args); \
 } while(0)
 
 void __noreturn error_nret(const char *str, ...)
@@ -56,7 +56,7 @@ void dolog(const char *str, ...)
     (void) vasprintf(&buff, str, va);
     va_end(va);
 
-    __dolog("%s: %s", prog, buff);
+    __dolog(_("%s: %s"), prog, buff);
     free(buff);
 }
 

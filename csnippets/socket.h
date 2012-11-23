@@ -35,8 +35,9 @@ typedef struct socket socket_t;
 typedef struct connection connection_t;
 
 struct sk_buff {
-    char *data;
-    size_t size;
+    char *data;             /* The data read of this fd.  */
+    size_t size;            /* length of data.  */
+    size_t max_read_size;   /* Max read size.  */
 };
 
 struct socket {
@@ -62,8 +63,6 @@ struct socket {
     void (*on_accept) (socket_t *self, connection_t *conn);
 };
 
-#define DEFAULT_READ_SIZE 4096   /* This size is set to the buffer on the stack,
-                                    see below.  */
 struct connection {
     int fd;              /* The socket file descriptor */
     char ip[16];         /* The IP of this connection */
@@ -82,6 +81,15 @@ struct connection {
     /* Called when this connection writes something */
     void (*on_write) (connection_t *self, const struct sk_buff *buff);
 
+    bool schedule_removal;   /* This is important only when this connection is part
+                                of the listenig socket.
+                                If this is true, the listening socket thread will remove
+                                this connection as soon as possible.  */
+    struct sk_buff buff;     /* This buffer is changed everytime there's new data to read,
+                                set it's size via buff.max_read_size = xxx;
+                                The default size is 2048 and is set by
+                                connection_create().
+                                This buffer is constantly passed to on_read */
     struct list_node node;   /* The node */
 };
 
@@ -152,32 +160,15 @@ extern int socket_write(connection_t *conn, const char *fmt, ...);
 extern int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size);
 
 /**
- * socket_remove() - close and free a socket connection.
- *
- * @param socket, the listening socket.
- * @param conn, must be a connection of `socket'.
- *
- * returns true on success, false otherwise.
- *
- * This function calls connection_free() after removal from the
- * `socket' connections.
- */
-extern bool socket_remove(socket_t *socket, connection_t *conn);
-
-/**
  * socket_read() - read from a socket
  *
  * @param conn a connected socket
- * @param sk_buff the buffer that would be allocated with the data read.
  * @param size how many characters to read?
  *
  * on successfull read, this function returns true and does the following:
  *   * calls conn->on_read if not NULL.
  *   * sets the data read to `buff'.
  * on failure, this function returns false.
- *   if that conn is part of a listening socket (aka a child connection of
- *   socket_t), consider calling socket_remove() with the listening socket
- *   as a param.
  *
  * This function heap allocates memory for the data read, this means
  * buff->data must be free'd later on to avoid memory leak issues.
