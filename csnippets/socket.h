@@ -81,10 +81,6 @@ struct connection {
     /* Called when this connection writes something */
     void (*on_write) (connection_t *self, const struct sk_buff *buff);
 
-    bool schedule_removal;   /* This is important only when this connection is part
-                                of the listenig socket.
-                                If this is true, the listening socket thread will remove
-                                this connection as soon as possible.  */
     struct sk_buff buff;     /* This buffer is changed everytime there's new data to read,
                                 set it's size via buff.max_read_size = xxx;
                                 The default size is 2048 and is set by
@@ -116,6 +112,10 @@ extern connection_t *connection_create(void (*on_connect) (connection_t *));
 
 /**
  * Close & Free the connection
+ *
+ * Note: Consider calling socket_remove() before calling this function, see below.
+ * Note: That the above note applies only if this connection is part of
+ *       a listening socket, otherwise don't.
  *
  * @param conn a socket created by connection_create()
  */
@@ -174,6 +174,13 @@ extern int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size);
  * buff->data must be free'd later on to avoid memory leak issues.
  */
 extern bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size);
+
+/**
+ * socket_remove() - remove connection from listening socket
+ *
+ * returns true on success, false otherwise
+ */
+extern bool socket_remove(socket_t *socket, connection_t *conn);
 
 #endif    /* _SOCKET_H */
 

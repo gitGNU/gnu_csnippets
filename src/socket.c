@@ -221,9 +221,6 @@ static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *
     if (unlikely(!conn))
         return false;
 
-    if (conn->schedule_removal && parent_socket)
-        goto finish;
-
     conn->last_active = time(NULL);
     if (!conn->auto_read) {
         fprintf(stdout,
@@ -234,16 +231,15 @@ static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *
     }
 
     err = !socket_read(conn, NULL, conn->buff.max_read_size);
-    if (err)
-        goto finish;
+    if (err) {
+        sockset_del(sock_events, conn->fd);
+        if (parent_socket)
+            rm_connection(parent_socket, conn);
+        connection_free(conn);
+        return false;
+    }
 
     return true;
-finish:
-    sockset_del(sock_events, conn->fd);
-    if (parent_socket)
-        rm_connection(parent_socket, conn);
-    connection_free(conn);
-    return false;
 }
 
 static void *poll_on_client(void *client)
@@ -383,7 +379,6 @@ connection_t *connection_create(void (*on_connect) (connection_t *))
     ret->last_active = 0;
     ret->fd = -1;
     ret->remote = NULL;
-    ret->schedule_removal = false;
     ret->auto_read = true;
 
     ret->buff.max_read_size = 2048;
@@ -606,5 +601,13 @@ void connection_free(connection_t *conn)
 
     close(conn->fd);
     free(conn);
+}
+
+bool socket_remove(socket_t *socket, connection_t *conn)
+{
+    if (!socket || !conn)
+        return false;
+    rm_connection(socket, conn);
+    return true;
 }
 

@@ -12,6 +12,8 @@ static socket_t *socket = NULL;  /* global for signal */
 static void on_read(connection_t *s, const struct sk_buff *buff)
 {
     eprintf("(read)[%d][%zd]: %s\n", s->fd, buff->size, buff->data);
+    socket_remove(socket, s);
+    connection_free(s);
 }
 
 static void on_write(connection_t *s, const struct sk_buff *buff)
