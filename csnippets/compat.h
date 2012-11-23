@@ -26,14 +26,14 @@
  * Compatibility with other platforms, mostly POSIX sockets -> Win32
  */
 #ifdef _WIN32
-#ifndef __use_select
-    #define __use_select
+#ifndef USE_SELECT
+    #define USE_SELECT
 #endif
-#ifdef __use_epoll
-    #undef __use_epoll
+#ifdef USE_EPOLL
+    #undef USE_EPOLL
 #endif
-#ifdef __use_kqueue
-    #undef __use_kqueue
+#ifdef USE_KQUEUE
+    #undef USE_KQUEUE
 #endif
 #define ERRNO             WSAGetLastError()
 #define set_last_error(e) WSASetLastError((e))
@@ -44,11 +44,11 @@
 #define E_INPROGRESS      WSAEINPROGRESS
 #define E_INTR            WSAEINTR
 #else
-#ifdef __use_kqueue
+#ifdef USE_KQUEUE
     #error "kqueue isn't implemented yet."
 #endif
-#if !defined __use_epoll && !defined __use_select
-    #define __use_epoll
+#if !defined USE_EPOLL && !defined USE_SELECT
+    #define USE_EPOLL
 #endif
 #define ERRNO             errno
 #define set_last_error(e) errno = (e)
