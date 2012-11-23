@@ -112,7 +112,7 @@ char *str_convert(const char *str, int (*convert_func) (int))
         return NULL;
 
     xmalloc(p, len + 1, return NULL);
-    for (i = 0; i < len; i++)
+    for (i = len; i > 0; i--)
         p[i] = convert_func((int)str[i]);
     p[i + 1]  = '\0';
 

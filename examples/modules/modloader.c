@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     struct module_symbol *symbol;
     int ret;
 
-    ret = modules_load(".", &mlist, "module_");
+    ret = modules_load(".", &mlist, NULL);
     if (ret)
         fatal("failed to load modules %s.\n", strerror(errno));
 

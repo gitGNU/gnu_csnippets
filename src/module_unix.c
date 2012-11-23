@@ -94,7 +94,7 @@ int module_load(const char *file, struct module **mod,
                 continue;
 
             char *func_name = buffer + shdr[symbol_loc].sh_offset + sym[j].st_name;
-            if (!strstr(func_name, start_name))
+            if (start_name && !strstr(func_name, start_name))
                 continue;
 
             xrealloc(symbols, symbols, (symbol_count + 1) * sizeof(char *),
