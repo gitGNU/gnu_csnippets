@@ -1,9 +1,4 @@
-/* This header is borrowed from The C Code Archive Network, See also:
- * https://github.com/rustyrussell/ccan/
- */
-#ifndef _CONTAINER_OF_H
-#define _CONTAINER_OF_H
-
+/* Licensed under CCO, see LICENSE.COO */
 /**
  * check_type - issue a warning or build failure if type is not correct.
  * @expr: the expression whose type we should check (not evaluated).
