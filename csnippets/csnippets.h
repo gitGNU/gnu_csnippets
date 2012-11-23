@@ -7,10 +7,6 @@
 #ifndef __csnippets_h
 #define __csnippets_h
 
-#ifdef HAVE_CONFIG_H
-#include "platform.h"
-#endif
-
 #ifndef __cplusplus
 /**
  * MSVC stuck in C89, shitty compiler (CL to be specific).
@@ -39,7 +35,7 @@ typedef enum _Bool {
 
 #include <csnippets/linux_style.h>
 #include <csnippets/error.h>
-
+#include <csnippets/compat.h>
 #include <csnippets/mm.h>
 
 /*

@@ -23,7 +23,6 @@
 
 #define MAX_EVENTS 1024
 #include <csnippets/socket.h>
-
 #include <sys/epoll.h>
 #include <unistd.h>   /* close() */
 

@@ -8,16 +8,7 @@ if(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
     get_filename_component(CMAKE_CURRENT_LIST_DIR ${CMAKE_CURRENT_LIST_FILE} PATH)
 endif(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
 
-set(this_library "-L../build -lcsnippets")
-
 include(src/CMakeLists.txt)
-
-include(examples/server/CMakeLists.txt)
-include(examples/client/CMakeLists.txt)
-include(examples/modules/CMakeLists.txt)
-include(examples/task/CMakeLists.txt)
-include(examples/stack/CMakeLists.txt)
-
 option(USE_SELECT_HANDLER "Use select handler instead of epoll (enabled by default on windows)" OFF)
 add_definitions(-D"VERSION=\\"${VERSION}\\"")
 if(USE_SELECT_HANDLER)
@@ -26,6 +17,13 @@ endif()
 
 add_library(csnippets ${src_SOURCES})
 target_link_libraries(csnippets ${src_LIBRARIES})
+
+set(this_library "-L. -Wl,--no-as-needed -lcsnippets")
+include(examples/server/CMakeLists.txt)
+include(examples/client/CMakeLists.txt)
+include(examples/modules/CMakeLists.txt)
+include(examples/task/CMakeLists.txt)
+include(examples/stack/CMakeLists.txt)
 
 # Installation paths
 SET(BIN_INSTALL_DIR bin CACHE PATH "Where to install binaries to.")

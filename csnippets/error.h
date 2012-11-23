@@ -22,33 +22,32 @@
 #ifndef __error_h
 #define __error_h
 
-#define LOG_NULL     ""
 #define LOG_FATAL    "FATAL: "
 #define LOG_WARNING  "WARNING: "
 #define LOG_NOTICE   "NOTICE: "
 
 #define LOG_FILE "stderr.log"    /* log file to print to (stderr).  */
 /* shortcuts. */
-#define elog(str, args...)      dolog(LOG_NOTICE str, ##args)
-#define die                     fatal
-#define fatal(str, args...)     error_nret(str, ##args)
-#define warning(str, args...)   dolog(LOG_WARNING str, ##args)
-#define eprintf(str, args...)    dolog(LOG_NULL str, ##args)
+#define elog(str, args...)          dolog(LOG_NOTICE str, ##args)
+#define die                         fatal
+#define fatal(str, args...)         error_nret(str, ##args)
+#define warning(str, args...)       dolog(LOG_WARNING str, ##args)
+#define eprintf(str, args...)       dolog(str, ##args)
 
 /* Initialize log file */
-#define log_init()              (void) freopen(LOG_FILE, "w", stderr);
+#define log_init()                  (void) freopen(LOG_FILE, "w", stderr);
 
-/* error_nret() - Log a formatted string to stderr and stdout.
+/* error_nret() - Log a formatted string.
  *
  * NOTE: This function doesn't return, that means the program will
  * exit after.
  */
-extern void __noreturn error_nret(const char *str, ...);
+extern void __noreturn __printf(1, 2) error_nret(const char *str, ...);
 /* dolog() - Log a formatted string.
  *
  * This function doesn't exit.
  */
-extern void dolog(const char *str, ...);
+extern void __printf(1, 2) dolog(const char *str, ...);
 /* set_verbose_level() Set verbose level
  *
  * 0 - be quiet.

@@ -13,7 +13,7 @@ MAKEOPT=$(($CORES + 1))
 # arguments to pass to the executable generated
 ARGS=
 # The executable target to build.
-TARGET=tasks
+TARGET=server
 # the "make" command
 MAKE=make
 # the debugger

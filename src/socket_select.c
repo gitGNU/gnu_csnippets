@@ -21,14 +21,13 @@
  */
 #if defined __use_select
 
-#include "socket.h"
-
+#include <csnippets/socket.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
 
 struct sock_events {
-    fd_set active_fd_set, read_fd_set;
+    fd_set active_fd_set;
     size_t maxfd;
 };
 
@@ -74,23 +73,24 @@ int sockset_poll(socket_t *sock, int desired_fd, connection_t **conn)
     int fd = 0;
     struct sock_events *evs = sock->events;
     connection_t *ret;
+    fd_set rset;
 
     if (unlikely(!evs))
         return -1;
 
-    evs->read_fd_set = evs->active_fd_set;
-    n = select(evs->maxfd + 1, &evs->read_fd_set, NULL, NULL, NULL);
+    rset = evs->active_fd_set;
+    n = select(evs->maxfd + 1, &rset, NULL, NULL, NULL);
     if (n < 0)
         return -1;
 
-    if (FD_ISSET(desired_fd, &evs->read_fd_set)) {
+    if (FD_ISSET(desired_fd, &rset)) {
         return 1;
     } else {
         list_for_each(&sock->children, ret, node) {
             if (++fd > evs->maxfd)
                 break;
 
-            if (FD_ISSET(ret->fd, &evs->read_fd_set)) {
+            if (FD_ISSET(ret->fd, &rset)) {
                 *conn = ret;
                 return 0;
             }
@@ -104,15 +104,16 @@ int sockset_poll_and_get_fd(void *events, int desired_fd)
 {
     struct sock_events *evs = (struct sock_events *)events;
     int n, fd;
+    fd_set rset;
     if (unlikely(!evs))
         return -1;
 
-    evs->read_fd_set = evs->active_fd_set;
-    n = select(desired_fd + 1, &evs->read_fd_set, NULL, NULL, NULL);
+    rset = evs->active_fd_set;
+    n = select(desired_fd + 1, &rset, NULL, NULL, NULL);
     if (n < 0)
         return -1;
 
-    if (FD_ISSET(desired_fd, &evs->read_fd_set))
+    if (FD_ISSET(desired_fd, &rset))
         return 0;
     return -1;
 }
