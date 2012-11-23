@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifdef __use_epoll
+#ifdef USE_EPOLL
 
 #define MAX_EVENTS 1024
 #include <csnippets/socket.h>

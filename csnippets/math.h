@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __math_h
-#define __math_h
+#ifndef _MATH_H
+#define _MATH_H
 
 /* Common math functions.  */
 #ifndef min
@@ -40,5 +40,5 @@
     })
 #endif
 
-#endif  /* __math_h */
+#endif  /* _MATH_H */
 

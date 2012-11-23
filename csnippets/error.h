@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __error_h
-#define __error_h
+#ifndef _ERROR_H
+#define _ERROR_H
 
 #define LOG_FATAL    "FATAL: "
 #define LOG_WARNING  "WARNING: "
@@ -55,5 +55,5 @@ extern void __printf(1, 2) dolog(const char *str, ...);
  */
 extern void set_verbose_level(int level);
 
-#endif  /* __error_h */
+#endif  /* _ERROR_H */
 

@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __module_h
-#define __module_h
+#ifndef _MODULE_H
+#define _MODULE_H
 
 #include "list.h"
 
@@ -151,5 +151,5 @@ extern void modules_cleanup(struct module_list *modules);
  */
 extern void module_cleanup(struct module *module);
 
-#endif  /* __module_h */
+#endif  /* _MODULE_H */
 

@@ -23,8 +23,8 @@
  *  * UDP support.
  *  * SSL support.
  */
-#ifndef __socket_h
-#define __socket_h
+#ifndef _SOCKET_H
+#define _SOCKET_H
 
 #include "list.h"
 
@@ -184,5 +184,5 @@ extern bool socket_remove(socket_t *socket, connection_t *conn);
  */
 extern bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size);
 
-#endif    /* __socket_h */
+#endif    /* _SOCKET_H */
 

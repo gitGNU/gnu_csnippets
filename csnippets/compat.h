@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __compat_h
-#define __compat_h
+#ifndef _COMPAT_H
+#define _COMPAT_H
 
 /**
  * Compatibility with other platforms, mostly POSIX sockets -> Win32
@@ -60,5 +60,5 @@
 #define E_INTR            EINTR
 #endif
 
-#endif   /* __compat_h */
+#endif   /* _COMPAT_H */
 

@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __str_misc_h
-#define __str_misc_h
+#ifndef _STR_MISC_H
+#define _STR_MISC_H
 
 extern char *strtrim(char *str);
 extern char **strexplode(char *string, char seperator, int *size);
@@ -32,5 +32,5 @@ extern bool str_cmp(const char *str, int (*cmp_func) (int));
  */
 extern char *str_convert(const char *str, int (*convert_func) (int));
 
-#endif /*  __str_misc_h */
+#endif /*  _STR_MISC_H */
 

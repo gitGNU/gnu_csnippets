@@ -1,11 +1,11 @@
 /* This code is borrowed from ccan (https://github.com/rustyrussell/ccan)
  * Licensed BSD-MIT - see their LICENSE file for details */
-#ifndef __list_h
-#define __list_h
+#ifndef _LIST_H
+#define _LIST_H
 
 #include "container_of.h"
 
-__begin_header
+_BEGIN_DECLS
 
 /**
  * struct list_node - an entry in a doubly-linked list
@@ -467,7 +467,7 @@ static inline struct list_node *list_node_from_off_(void *ptr, size_t off)
 	(container_off_var(var, member) +		\
 	 check_type(var->member, struct list_node))
 
-__end_header
+_END_DECLS
 
-#endif /* __list_h */
+#endif /* _LIST_H */
 

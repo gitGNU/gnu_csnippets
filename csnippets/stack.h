@@ -26,8 +26,8 @@
  * Note that it uses the xmalloc, xrealloc, ... macros therefore
  * a replacement or an implementation is needed for this to compile.
  */
-#ifndef __stack_h
-#define __stack_h
+#ifndef _STACK_H
+#define _STACK_H
 
 /**
  * This stack does not actually act as stacks in C, it was made
@@ -216,5 +216,5 @@ static inline bool stack_remove(struct stack *s, void *ptr, bool (*compare_funct
     return r;
 }
 
-#endif  /* __stack_h */
+#endif  /* _STACK_H */
 

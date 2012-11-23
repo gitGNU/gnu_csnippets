@@ -19,10 +19,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __config_h
-#define __config_h
+#ifndef _CONFIG_H
+#define _CONFIG_H
 
-__begin_header
+_BEGIN_DECLS
 
 struct def {
     char key[33];
@@ -41,6 +41,6 @@ struct config {
 extern struct config *config_parse(const char *filename);
 extern void config_free(struct config *entry);
 
-__end_header
-#endif   /* __config_h */
+_END_DECLS
+#endif   /* _CONFIG_H */
 

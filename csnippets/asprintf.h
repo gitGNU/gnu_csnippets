@@ -3,12 +3,12 @@
  * https://github.com/rustyrussell/ccan/
  */
 
-#ifndef __asprintf_h
-#define __asprintf_h
+#ifndef _ASPRINTF_H
+#define _ASPRINTF_H
 
 #include <stdarg.h>
 
-__begin_header
+_BEGIN_DECLS
 
 /**
  * asprintf() - allocates *strp and returns the
@@ -22,7 +22,7 @@ extern int __printf(2, 3) asprintf(char **strp, const char *fmt, ...);
  */
 extern int vasprintf(char **strp, const char *fmt, va_list va);
 
-__end_header
+_END_DECLS
 
-#endif  /* __asprintf_h */
+#endif  /* _ASPRINTF_H */
 

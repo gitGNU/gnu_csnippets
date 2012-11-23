@@ -4,8 +4,8 @@
  *
  * Defines shortcuts for some attributes if __GNUC__ (GNU C compiler) used.
  */
-#ifndef __linux_style_h
-#define __linux_style_h
+#ifndef _LINUX_STYLE_H
+#define _LINUX_STYLE_H
 
 #ifdef __GNUC__
 #define __noreturn      __attribute__((noreturn))
@@ -27,5 +27,5 @@
 #define __printf(nfmt, narg)
 #endif
 
-#endif    /* __linux_style_h */
+#endif    /* _LINUX_STYLE_H */
 

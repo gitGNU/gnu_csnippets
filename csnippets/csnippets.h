@@ -4,8 +4,8 @@
  *
  * This file acts as a pre-compiled header.
  */
-#ifndef __csnippets_h
-#define __csnippets_h
+#ifndef _CSNIPPETS_H
+#define _CSNIPPETS_H
 
 #ifndef __cplusplus
 /**
@@ -47,12 +47,12 @@ typedef enum _Bool {
 
 /* C++ compatiblity.  */
 #ifdef __cplusplus
-#define __begin_header extern "C" {
-#define __end_header   }
+#define _BEGIN_DECLS extern "C" {
+#define _END_DECLS   }
 #else
-#define __begin_header
-#define __end_header
+#define _BEGIN_DECLS
+#define _END_DECLS
 #endif
 
-#endif  /* __csnippets_h */
+#endif  /* _CSNIPPETS_H */
 

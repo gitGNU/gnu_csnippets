@@ -12,7 +12,7 @@ include(src/CMakeLists.txt)
 option(USE_SELECT_HANDLER "Use select handler instead of epoll (enabled by default on windows)" OFF)
 add_definitions(-D"VERSION=\\"${VERSION}\\"")
 if(USE_SELECT_HANDLER)
-    add_definitions(-D__use_select)
+    add_definitions(-DUSE_SELECT)
 endif()
 
 add_library(csnippets ${src_SOURCES})

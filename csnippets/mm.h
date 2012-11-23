@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __memory_management_h
-#define __memory_management_h
+#ifndef _MEMORY_MANAGEMENT_H
+#define _MEMORY_MANAGEMENT_H
 
 /* Memory management functions, previously named as 
  * "Auxiliars" or briefly "helpers".  */
@@ -49,5 +49,5 @@
     } \
 } while (0)
 
-#endif  /*  __memory_management_h */
+#endif  /*  _MEMORY_MANAGEMENT_H */
 

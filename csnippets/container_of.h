@@ -1,8 +1,8 @@
 /* This header is borrowed from The C Code Archive Network, See also:
  * https://github.com/rustyrussell/ccan/
  */
-#ifndef __container_of_h
-#define __container_of_h
+#ifndef _CONTAINER_OF_H
+#define _CONTAINER_OF_H
 
 /**
  * check_type - issue a warning or build failure if type is not correct.
@@ -139,5 +139,5 @@
 #define container_off_var(var, member)		\
 	container_off(typeof(*var), member)
 
-#endif /* __container_of_h */
+#endif /* _CONTAINER_OF_H */
 

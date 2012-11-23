@@ -19,12 +19,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __event_h
-#define __event_h
+#ifndef _EVENT_H
+#define _EVENT_H
 
 #include <csnippets/task.h>
 
-__begin_header
+_BEGIN_DECLS
 
 typedef struct {
     int64_t delay;           /* Delay in seconds, the thread will wait before executing this.  */
@@ -60,6 +60,6 @@ extern void events_add(event_t *event);
  */
 extern event_t *event_create(int delay, task_routine start, void *p);
 
-__end_header
-#endif  /* __event_h */
+_END_DECLS
+#endif  /* _EVENT_H */
 

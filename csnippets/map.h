@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __map_h
-#define __map_h
+#ifndef _MAP_H
+#define _MAP_H
 
-__begin_header
+_BEGIN_DECLS
 
 typedef unsigned long (*hash_function) (const char *);
 typedef bool (*hash_compare) (const void *v1, const void *v2);
@@ -97,6 +97,6 @@ extern struct pair *map_put(const struct map *map, const char *key, void *value)
  */
 extern int map_get_count(const struct map* map);
 
-__end_header
-#endif   /* __map_h */
+_END_DECLS
+#endif   /* _MAP_H */
 

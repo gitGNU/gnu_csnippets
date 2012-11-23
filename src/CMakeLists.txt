@@ -58,7 +58,7 @@ endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    set(src_DEFINITIONS "${src_DEFINITIONS} -D__debug_socket -D__debug_events -D__debug_tasks -D__debug_modules")
+    set(src_DEFINITIONS "${src_DEFINITIONS} -D_DEBUG_SOCKET -D_DEBUG_EVENTS -D_DEBUG_TASKS -D_DEBUG_MODULES")
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--no-as-needed")
     message(STATUS "Debug information: ON")
 else()

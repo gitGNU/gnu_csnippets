@@ -19,12 +19,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __task_h
-#define __task_h
+#ifndef _TASK_H
+#define _TASK_H
 
 #include "list.h"
 
-__begin_header
+_BEGIN_DECLS
 
 /** The start routine of a task.
  *  This will be called via the thread created by tasks_init().
@@ -75,6 +75,6 @@ extern void tasks_add(task_t *task);
  */
 extern task_t *task_create(task_routine routine, void *param);
 
-__end_header
-#endif  /* __task_h */
+_END_DECLS
+#endif  /* _TASK_H */
 

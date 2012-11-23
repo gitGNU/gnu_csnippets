@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#if defined __use_select
+#if defined USE_SELECT
 
 #include <csnippets/socket.h>
 #ifdef _WIN32

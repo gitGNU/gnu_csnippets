@@ -1,5 +1,5 @@
-#ifndef __atomic_h
-#define __atomic_h
+#ifndef _ATOMIC_H
+#define _ATOMIC_H
 
 #define atomic_xadd(P, V)      __sync_fetch_and_add((P), (V))
 #define cmpxchg(P, O, N)       __sync_val_compare_and_swap((P), (O), (N))
@@ -12,5 +12,5 @@
 /* Pause instruction to prevent excess processor bus usage */
 #define cpu_relax() asm volatile("pause\n":::"memory")
 
-#endif   /* __atomic_h */
+#endif   /* _ATOMIC_H */
 
