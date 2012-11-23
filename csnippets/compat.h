@@ -35,8 +35,8 @@
 #ifdef __use_kqueue
     #undef __use_kqueue
 #endif
-#define ERRNO WSAGetLastError()
-#define set_last_error(e) SetLastError((e))
+#define ERRNO             WSAGetLastError()
+#define set_last_error(e) WSASetLastError((e))
 #define E_BLOCK           WSAEWOULDBLOCK
 #define E_AGAIN           EAGAIN
 #define E_ISCONN          WSAEISCONN
@@ -50,7 +50,7 @@
 #if !defined __use_epoll && !defined __use_select
     #define __use_epoll
 #endif
-#define ERRNO errno
+#define ERRNO             errno
 #define set_last_error(e) errno = (e)
 #define E_BLOCK           EWOULDBLOCK
 #define E_AGAIN           EAGAIN

@@ -79,9 +79,6 @@ int module_load(const char *file, struct module **mod,
         if (shdr[i].sh_type == SHT_STRTAB &&
                 strcmp(buffer + shdr[hdr->e_shstrndx].sh_offset + shdr[i].sh_name,
                     ".dynstr") == 0) {
-#ifdef __debug_modules
-            printf("found symbol %d\n", i);
-#endif
             symbol_loc = i;
             break;
         }
@@ -99,9 +96,7 @@ int module_load(const char *file, struct module **mod,
             char *func_name = buffer + shdr[symbol_loc].sh_offset + sym[j].st_name;
             if (!strstr(func_name, start_name))
                 continue;
-#ifdef __debug_modules
-            printf("found %s.\n", func_name);
-#endif
+
             xrealloc(symbols, symbols, (symbol_count + 1) * sizeof(char *),
                     err = -ENOMEM; goto cleanup);
             xmalloc(symbols[symbol_count], strlen(func_name) + 1,
@@ -143,9 +138,6 @@ int module_load(const char *file, struct module **mod,
 
 cleanup:
     if (err && symbol && module) {
-#ifdef __debug_module
-        printf("Cleaning up symbols...\n");
-#endif
         for (;;) {
             symbol = list_top(&module->children, struct module_symbol, node);
             if (!symbol)
@@ -189,9 +181,6 @@ int modules_load(const char *dir, struct module_list **modules,
     xmalloc(mods, sizeof(*mods), return 0);
     list_head_init(&mods->children);
     while (so_count--) {
-#ifdef __debug_modules
-        printf("Attempting to load module %s...\n", so_list[so_count]->d_name);
-#endif
         if ((ret = module_load(so_list[so_count]->d_name, &mod,
                         start_name) != 0)) {
             warning("failed to load module: %s (%d)\n",

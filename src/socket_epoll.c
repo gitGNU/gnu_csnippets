@@ -45,7 +45,7 @@ static int get_active_fd(struct sock_events *evs, int index)
     return evs->events[index].data.fd;
 }
 
-void *__socket_set_init(int fd)
+void *sockset_init(int fd)
 {
     struct sock_events *ev = malloc(sizeof(struct sock_events));
     if (!ev)
@@ -66,7 +66,7 @@ void *__socket_set_init(int fd)
     return ev;
 }
 
-void __socket_set_deinit(void *p)
+void sockset_deinit(void *p)
 {
     struct sock_events *evs = (struct sock_events *)p;
     if (unlikely(!evs))
@@ -75,7 +75,7 @@ void __socket_set_deinit(void *p)
     free(evs);
 }
 
-void __socket_set_add(void *p, int fd)
+void sockset_add(void *p, int fd)
 {
     struct sock_events *evs = (struct sock_events *)p;
     if (unlikely(!evs))
@@ -90,12 +90,12 @@ void __socket_set_add(void *p, int fd)
         perror("epoll_ctl failed");
 }
 
-void __socket_set_del(int fd)
+void sockset_del(int fd)
 {
     /* nothing... */
 }
 
-int __socket_set_poll(socket_t *sock, int desired_fd, connection_t **conn)
+int sockset_poll(socket_t *sock, int desired_fd, connection_t **conn)
 {
     struct sock_events *evs = sock->events;
     int n, index;
@@ -121,7 +121,7 @@ int __socket_set_poll(socket_t *sock, int desired_fd, connection_t **conn)
     return -1;
 }
 
-int __socket_set_poll_and_get_fd(void *events, int desired_fd)
+int sockset_poll_and_get_fd(void *events, int desired_fd)
 {
     struct sock_events *evs = (struct sock_events *)events;
     int n, index;

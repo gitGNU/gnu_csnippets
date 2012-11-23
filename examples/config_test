@@ -4,6 +4,11 @@ test {
     anotherthing = "world"
 }
 
+anothertest {
+    kef = "fek"
+    flap = "meaf"
+}
+
 ## tests that would fail:
 ## whatever {
 ##     value_without_a_key

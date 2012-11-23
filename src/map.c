@@ -57,13 +57,15 @@ static inline bool hash_cmp(const char *v1, const char *v2)
     return !strcmp(v1, v2);
 }
 
-void map_new(struct map* map)
+bool map_new(struct map* map)
 {
-    xcalloc(map->buckets, map->count, sizeof(struct bucket), return);
+    xcalloc(map->buckets, map->count, sizeof(struct bucket), return false);
     if (!map->hash_function)
         map->hash_function = (hash_function) hash;
     if (!map->hash_comp)
         map->hash_comp = (hash_compare) hash_cmp;
+
+    return true;
 }
 
 void map_free(struct map *map)

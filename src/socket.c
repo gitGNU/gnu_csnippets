@@ -46,12 +46,12 @@ typedef struct pollfd pollfd;
 
 #include <csnippets/compat.h>
 
-extern void *__socket_set_init(int);
-extern void __socket_set_deinit(void *);
-extern void __socket_set_add(void *, int);
-extern void __socket_set_del(void *, int);
-extern int  __socket_set_poll(socket_t *, int, connection_t **);
-extern int __socket_set_poll_and_get_fd(void *, int);
+extern void *sockset_init(int);
+extern void sockset_deinit(void *);
+extern void sockset_add(void *, int);
+extern void sockset_del(void *, int);
+extern int  sockset_poll(socket_t *, int, connection_t **);
+extern int sockset_poll_and_get_fd(void *, int);
 
 #ifdef _WIN32
 static bool is_initialized = false;
@@ -239,7 +239,7 @@ static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *
         if (parent_socket)
             socket_remove(parent_socket, conn);
         else
-            __socket_set_del(sock_events, conn->fd);
+            sockset_del(sock_events, conn->fd);
         return false;
     }
 
@@ -251,15 +251,15 @@ static void *poll_on_client(void *client)
     connection_t *conn = (connection_t *)client;
     void *sock_events;
 
-    sock_events = __socket_set_init(conn->fd);
+    sock_events = sockset_init(conn->fd);
     if (!sock_events)
         return NULL;
 
-    __socket_set_add(sock_events, conn->fd);
+    sockset_add(sock_events, conn->fd);
     for (;;) {
-        int fd = __socket_set_poll_and_get_fd(sock_events, conn->fd);
+        int fd = sockset_poll_and_get_fd(sock_events, conn->fd);
         if (fd < 0) {
-            __socket_set_deinit(sock_events);
+            sockset_deinit(sock_events);
             break;
         }
 
@@ -276,14 +276,14 @@ static void *poll_on_server(void *_socket)
     int ret, fd;
     socklen_t len = sizeof(struct sockaddr_in);
 
-    socket->events = __socket_set_init(socket->fd);
+    socket->events = sockset_init(socket->fd);
     if (!socket->events)
         return NULL;
 
-    __socket_set_add(socket->events, socket->fd);
+    sockset_add(socket->events, socket->fd);
     for (;;) {
         connection_t *conn = NULL;
-        ret = __socket_set_poll(socket, socket->fd, &conn);
+        ret = sockset_poll(socket, socket->fd, &conn);
         switch (ret) {
         case 1:
             /* Loop until we have finished every single connection waiting */
@@ -332,7 +332,7 @@ static void *poll_on_server(void *_socket)
                     socket->conn = conn;
 
                 add_connection(socket, conn);
-                __socket_set_add(socket->events, their_fd);
+                sockset_add(socket->events, their_fd);
             }
             break;
         case 0:
@@ -340,7 +340,7 @@ static void *poll_on_server(void *_socket)
                 __poll_on_client(socket, conn, socket->events);
             break;
         default:
-            warning("An error occured during __socket_set_poll()!  Terminating the loop now!\n");
+            warning("An error occured during sockset_poll()!  Terminating the loop now!\n");
             goto out;
         }
     }
@@ -472,7 +472,7 @@ bool socket_remove(socket_t *socket, connection_t *conn)
     if (unlikely(!socket || !conn))
         return false;
 
-    __socket_set_del(socket->events, conn->fd);
+    sockset_del(socket->events, conn->fd);
     rm_connection(socket, conn);
     connection_free(conn);
     return true;
@@ -595,7 +595,7 @@ void socket_free(socket_t *socket)
     }
 
     if (socket->events)
-        __socket_set_deinit(socket->events);
+        sockset_deinit(socket->events);
     pthread_mutex_destroy(&socket->conn_lock);
     free(socket);
 }

@@ -1,45 +1,60 @@
+/*
+ * Copyright (c) 2012 Allan Ference  <f.fallen45@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 #ifndef __error_h
 #define __error_h
 
-#define LOG_NULL     -1
-/*
- * WARNING: Do not change these numbers as they're used as `index'
- * for `type_strings' see error.c fore more information.
- */
-#define LOG_FATAL     0
-#define LOG_WARNING   1
-#define LOG_NOTICE    2
+#define LOG_NULL     ""
+#define LOG_FATAL    "FATAL: "
+#define LOG_WARNING  "WARNING: "
+#define LOG_NOTICE   "NOTICE: "
 
-#define LOG_FILE "stderr.log"    /* log file to print to.  */
+#define LOG_FILE "stderr.log"    /* log file to print to (stderr).  */
 /* shortcuts. */
-#define elog(str, args...)      error(LOG_NOTICE, str, ##args)
+#define elog(str, args...)      dolog(LOG_NOTICE str, ##args)
 #define die                     fatal
 #define fatal(str, args...)     error_nret(str, ##args)
-#define warning(str, args...)   error(LOG_WARNING, str, ##args)
-#define eprint(str, args...)    error(LOG_NULL, str, ##args)
+#define warning(str, args...)   dolog(LOG_WARNING str, ##args)
+#define eprintf(str, args...)    dolog(LOG_NULL str, ##args)
 
-/** Initialize log file */
-#define log_init()              freopen(LOG_FILE, "w", stderr);
+/* Initialize log file */
+#define log_init()              (void) freopen(LOG_FILE, "w", stderr);
 
-/**
- * Log a formatted/non-formatted string to stderr and stdout.
+/* error_nret() - Log a formatted string to stderr and stdout.
  *
  * NOTE: This function doesn't return, that means the program will
  * exit after.
  */
 extern void __noreturn error_nret(const char *str, ...);
-/**
- * Log errno and the string (strerror).
- *
- * This function doesn't return (exits after).
- */
-extern void __noreturn log_errno(const char *str, ...);
-/**
- * Log a string.
+/* dolog() - Log a formatted string.
  *
  * This function doesn't exit.
  */
-extern void error(int log_type, const char *str, ...);
+extern void dolog(const char *str, ...);
+/* set_verbose_level() Set verbose level
+ *
+ * 0 - be quiet.
+ * 1 - be annoying.  (This is the default)
+ */
+extern void set_verbose_level(int level);
 
 #endif  /* __error_h */
 

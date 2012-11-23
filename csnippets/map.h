@@ -60,8 +60,10 @@ struct map {
 /**
  * Allocate map members, buckets, etc.  Set the default hash
  * function if it's not already set, and so on with hash_comp.
+ *
+ * returns true on success, false otherwise.
  */
-extern void map_new(struct map *map);
+extern bool map_new(struct map *map);
 /**
  * Free stuff in `map'.  buckets and so on.
  */
@@ -74,8 +76,7 @@ extern void map_free(struct map *map);
  * compare with wildcards but then we would return the actual 'key'.
  */
 extern struct pair *map_get(const struct map *map, const char *key);
-/**
- * Check if the map has key `key'. */
+/* Check if the map has key `key'. */
 extern bool map_has(const struct map *map, const char *key);
 /**
  * Remove `key' from the map.

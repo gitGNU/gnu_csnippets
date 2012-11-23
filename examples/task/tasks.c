@@ -35,9 +35,9 @@ static void config_parse_event(void *filename)
         fatal("failed to load config!");
 
     for (p = c; p; p = p->next) {
-        eprint("Section %s\n", p->section);
+        eprintf("Section %s\n", p->section);
         for (def = c->def; def; def = def->next)
-            eprint("Key [%s] -> Value [%s]\n", def->key, def->value);
+            eprintf("Key [%s] -> Value [%s]\n", def->key, def->value);
     }
 
     config_free(c);
@@ -45,7 +45,7 @@ static void config_parse_event(void *filename)
 
 void test(void *p)
 {
-    eprint("test()\n");
+    eprintf("test()\n");
 }
 
 int main(int argc, char **argv)
@@ -55,30 +55,30 @@ int main(int argc, char **argv)
     tasks_init();
     events_init();
 
-    eprint("Giving some time for the threads to run...\n");
+    eprintf("Giving some time for the threads to run...\n");
     sleep(2);    /* wait for both threads to run */
 
-    eprint("Adding task to test()\n");
+    eprintf("Adding task to test()\n");
     tasks_add(task_create(test, NULL));
 
-    eprint("Creating an event for reading configuration.\n");
+    eprintf("Creating an event for reading configuration.\n");
     events_add(event_create(2, config_parse_event,
                 argc > 1 ? (void *)argv[1] : (void *)"config_test"));
 
-    eprint("Adding an event (with the test() function as the routine)\n");
+    eprintf("Adding an event (with the test() function as the routine)\n");
     events_add(event_create(2, test, NULL));
 
-    eprint("Waiting a bit for the tasks to execute...\n");
+    eprintf("Waiting a bit for the tasks to execute...\n");
     sleep(5);
 
-    eprint("Adding another event (with the test() function as the routine)\n");
+    eprintf("Adding another event (with the test() function as the routine)\n");
     events_add(event_create(3, test, NULL));
 
-    eprint("Stopping both threads\n");
+    eprintf("Stopping both threads\n");
     events_stop();
     tasks_stop();
 
-    eprint("Done\n");
+    eprintf("Done\n");
     return 0;
 }
 

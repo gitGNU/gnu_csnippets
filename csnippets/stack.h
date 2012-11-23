@@ -19,9 +19,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+/**
+ * This module does not depend on any other modules, therefore
+ * it can be placed on top of any project and used safely.
+ *
+ * Note that it uses the xmalloc, xrealloc, ... macros therefore
+ * a replacement or an implementation is needed for this to compile.
+ */
 #ifndef __stack_h
 #define __stack_h
 
+/**
+ * This stack does not actually act as stacks in C, it was made
+ * to be used on "stack" and not heap allocated but of course can be
+ * heap-allocated.
+ *
+ * 'ptr' is dynamicly allocated of course depending on the size
+ * needed, see stack_push().
+ */
 struct stack {
     void **ptr;     /* the internel array */
     size_t size;
@@ -33,6 +48,14 @@ struct stack {
 /**
  * Initialize stack `s'.  Allocates memory of size `size` if > 0
  * otherwise uses INITIAL_SIZE
+ *
+ * This does NOT allocate memory for the stack itself, it's intended to
+ * be used like this:
+ *
+ *    struct stack stack;
+ *    if (!stack_init(&stack, 0))
+ *        ...
+ *  But as note, it's not a *MUST* to use it on stack only.
  *
  * \sa stack_free().
  */
@@ -69,8 +92,6 @@ static inline void stack_free(struct stack *s, void (*destructor) (void *))
     }
 
     free(s->ptr);
-    /** XXX it may be a bad idea to do this, but just incase
-     * the user wants to use the array on something else. */
     s->size = 0;
     s->ptr = NULL;
 }

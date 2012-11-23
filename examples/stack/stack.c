@@ -1,6 +1,4 @@
-#include "stack.h"
-
-char *prog;
+#include <csnippets/stack.h>
 
 static bool stack_compare_string(const char *s1, const char *s2)
 {
@@ -9,7 +7,6 @@ static bool stack_compare_string(const char *s1, const char *s2)
 
 int main(int argc, char **argv)
 {
-    prog = argv[0];
     log_init();
 
     struct stack on_stack;
