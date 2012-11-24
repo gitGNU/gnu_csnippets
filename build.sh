@@ -20,6 +20,8 @@ MAKE=make
 DBG=gdb
 # build options
 buildopt=
+# whether we should clean before building
+clean_before_build=no
 
 if [ ! -d build ]; then
     mkdir build
@@ -60,8 +62,10 @@ esac
 cd build
 cmake .. $buildopt
 
-echo "Cleaning up stuff..."
-$MAKE clean
+if [ "$clean_before_build" = "yes" ]; then
+    echo "Cleaning up stuff..."
+    $MAKE clean
+fi
 
 case "$1" in
     -g) _make
