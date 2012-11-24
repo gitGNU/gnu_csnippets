@@ -114,7 +114,7 @@ char *str_convert(const char *str, int (*convert_func) (int))
     xmalloc(p, len + 1, return NULL);
     for (i = len; i > 0; i--)
         p[i] = convert_func((int)str[i]);
-    p[i + 1]  = '\0';
+    p[len + 1]  = '\0';
 
     return p;
 }
