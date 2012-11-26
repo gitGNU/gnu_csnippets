@@ -56,11 +56,12 @@ _make() {
 
 case "$2" in
     -s) buildopt=-DUSE_SELECT_HANDLER=ON ;;
+    -c) clean_before_build=yes ;;
      *) buildopt=-DUSE_SELECT_HANDLER=OFF ;;
 esac
 
 cd build
-cmake .. $buildopt
+cmake .. $buildopt || exit
 
 if [ "$clean_before_build" = "yes" ]; then
     echo "Cleaning up stuff..."

@@ -33,8 +33,8 @@
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <netdb.h>
+#include <unistd.h>
 #include <errno.h>
 #include <poll.h>
 #include <fcntl.h>
@@ -44,23 +44,61 @@ typedef struct pollfd pollfd;
 #include <sys/time.h>
 #include <time.h>
 
-extern void *sockset_init(int);
-extern void sockset_deinit(void *);
-extern void sockset_add(void *, int);
-extern void sockset_del(void *, int);
-extern int  sockset_poll(socket_t *, int, connection_t **);
-extern int sockset_poll_and_get_fd(void *, int);
-
 #ifdef _WIN32
 static bool is_initialized = false;
+#define SOCK_INIT() do { \
+    WSADATA wsa; \
+    if (!is_initialized) { \
+        if (0 != WSAStartup(MAKEWORD(2, 2), &wsa)) { \
+            WSACleanup(); \
+            warning("WSAStartup() failed\n"); \
+            return NULL; \
+        } \
+        is_initialized = true; \
+    } \
+} while (0)
+static __attribute__((destructor)) __unused void __cleanup(void)
+{
+#ifdef _DEBUG_SOCKET
+    eprintf("socket.c: destructing\n");
 #endif
+    is_initialized = false;
+    WSACleanup();
+}
+#else
+#define SOCK_INIT()
+#endif
+
+#if (E_AGAIN == E_BLOCK)
+static __inline __const  bool IsBlocking(void)
+{
+    return ERRNO == E_BLOCK;
+}
+#else
+static __inline __const bool IsBlocking(void)
+{
+    return ERRNO == E_BLOCK || ERRNO == E_AGAIN;
+}
+#endif
+#define IsAvail(sops, func) ((sops)->func != NULL ? true : false)
+#define callop(sops, func, ...) (sops)->func (__VA_ARGS__)
+
+/* Boring, polling specific functions  */
+extern struct sock_events * sockset_init(void);
+extern void                 sockset_deinit(struct sock_events *);
+extern void                 sockset_add(struct sock_events *, int, int);
+extern void                 sockset_del(struct sock_events *, int);
+extern int                  sockset_poll(struct sock_events *);
+extern int                  sockset_active(struct sock_events *, int);
+extern uint32_t             sockset_revent(struct sock_events *, int);
 
 static void add_connection(socket_t *socket, connection_t *conn)
 {
     pthread_mutex_lock(&socket->conn_lock);
 
-    list_add(&socket->children, &conn->node);
+    list_add_tail(&socket->children, &conn->node);
     atomic_ref(&socket->num_connections);
+    sockset_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
 
     pthread_mutex_unlock(&socket->conn_lock);
 }
@@ -71,6 +109,7 @@ static void rm_connection(socket_t *socket, connection_t *conn)
 
     list_del_from(&socket->children, &conn->node);
     atomic_deref(&socket->num_connections);
+    sockset_del(socket->events, conn->fd);
 
     pthread_mutex_unlock(&socket->conn_lock);
 }
@@ -95,22 +134,19 @@ static struct addrinfo *net_lookup(const char *hostname,
     return res;
 }
 
-static bool set_nonblock(int fd, bool nonblock)
+static bool set_nonblock(int fd)
 {
-#ifndef _WIN32
     long flags;
+#ifndef _WIN32
     flags = fcntl(fd, F_GETFL);
     if (flags == -1)
         return false;
 
-    if (nonblock)
-        flags |= O_NONBLOCK;
-    else
-        flags &= ~(long)O_NONBLOCK;
-
-    return (fcntl(fd, F_SETFL, flags) == 0);
+    flags |= O_NONBLOCK;
+    return fcntl(fd, F_SETFL, flags) == 0;
 #else
-    return ioctlsocket(fd, FIONBIO, (long *)&nonblock) == 0;
+    flags = 1;
+    return ioctlsocket(fd, FIONBIO, (u_long *)flags) == 0;
 #endif
 }
 
@@ -170,13 +206,14 @@ static int net_connect(const struct addrinfo *addrinfo)
     }
 
     for (i = 0; i < num; i++) {
-        if (!set_nonblock(pfd[i].fd, true)) {
+        if (!set_nonblock(pfd[i].fd)) {
             remove_fd(pfd, addr, slen, &num, i--);
             continue;
         }
         /* Connect *can* be instant. */
         if (connect(pfd[i].fd, addr[i]->ai_addr, slen[i]) == 0)
             goto got_one;
+
         if (ERRNO != E_INPROGRESS) {
             /* Remove dead one. */
             remove_fd(pfd, addr, slen, &num, i--);
@@ -202,9 +239,7 @@ static int net_connect(const struct addrinfo *addrinfo)
     }
 
 got_one:
-    /* We don't want to hand them a non-blocking socket! */
-    if (set_nonblock(pfd[i].fd, false))
-        sockfd = pfd[i].fd;
+    sockfd = pfd[i].fd;
 
 out:
     saved_errno = ERRNO;
@@ -215,28 +250,40 @@ out:
     return sockfd;
 }
 
-static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *sock_events)
+static bool __poll_on_client(socket_t *sock, connection_t *conn, void *events,
+        uint32_t flags)
 {
-    bool err;
     if (unlikely(!conn))
         return false;
 
     conn->last_active = time(NULL);
-    if (!conn->auto_read) {
-        fprintf(stdout,
-                "warning: there seems to be data needs to be read on conn %d(%s) but auto reading"
-                " is disabled!\n",
-                conn->fd, conn->ip);
+    if (flags & EVENT_WRITE && conn->wbuff.size > 0) {
+        int len = -1;
+        do
+            len = send(conn->fd, conn->wbuff.data, conn->wbuff.size, 0);
+        while (len == -1 && errno == EINTR);
+        if (len < 0 || len != conn->wbuff.size)
+            __unreachable();
+
+        if (IsAvail(&conn->ops, write))
+            callop(&conn->ops, write, conn, &conn->wbuff);
+
+        free(conn->wbuff.data);
+        conn->wbuff.data = NULL;
+        conn->wbuff.size = 0;
         return true;
     }
 
-    err = !socket_read(conn, NULL, conn->buff.max_read_size);
-    if (err) {
-        sockset_del(sock_events, conn->fd);
-        if (parent_socket)
-            rm_connection(parent_socket, conn);
-        connection_free(conn);
-        return false;
+    if (flags & EVENT_READ) {
+        bool err = !socket_read(conn, NULL, conn->max_read_size);
+        if (err) {
+            if (IsBlocking())
+                return true;
+#ifdef _DEBUG_SOCKET
+            eprintf("A wild error occured during read()\n");
+#endif
+            return false;
+        }
     }
 
     return true;
@@ -245,123 +292,115 @@ static bool __poll_on_client(socket_t *parent_socket, connection_t *conn, void *
 static void *poll_on_client(void *client)
 {
     connection_t *conn = (connection_t *)client;
-    void *sock_events;
+    void *events;
+    int i;
 
-    sock_events = sockset_init(conn->fd);
-    if (!sock_events)
+    events = sockset_init();
+    if (!events)
         return NULL;
 
-    sockset_add(sock_events, conn->fd);
-    for (;;) {
-        int fd = sockset_poll_and_get_fd(sock_events, conn->fd);
-        if (fd < 0) {
-            sockset_deinit(sock_events);
-            break;
-        }
-
-        if (!__poll_on_client(NULL, conn, sock_events))
-            break;
+    sockset_add(events, conn->fd, EVENT_READ | EVENT_WRITE);
+    while (1) {
+        int ret = sockset_poll(events);
+        for (i = 0; i < ret; i++)
+            if (sockset_active(events, i) == conn->fd &&
+                    !__poll_on_client(NULL, conn, events, sockset_revent(events, i)))
+                break;
     }
 
-    return NULL;
+    sockset_deinit(events);
+    pthread_exit(NULL);
 }
 
 static void *poll_on_server(void *_socket)
 {
     socket_t *socket = (socket_t *)_socket;
-    int ret, fd;
-    socklen_t len = sizeof(struct sockaddr_in);
+    struct sockaddr in_addr;
+    socklen_t in_len = sizeof(in_addr);
+    int in_fd;
+    char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+    uint32_t bits;
+    int ret, i, cfd;
 
-    socket->events = sockset_init(socket->fd);
+    socket->events = sockset_init();
     if (!socket->events)
         return NULL;
 
-    sockset_add(socket->events, socket->fd);
-    for (;;) {
+    sockset_add(socket->events, socket->fd, EVENT_READ);
+    while (1) {
         connection_t *conn = NULL;
-        ret = sockset_poll(socket, socket->fd, &conn);
-        switch (ret) {
-        case 1:
-            /* Loop until we have finished every single connection waiting */
-            for (;;) {
-                struct sockaddr_in their_addr;
-                int their_fd;
-
-                their_fd = accept(socket->fd, (struct sockaddr *)&their_addr, &len);
-                if (their_fd == -1) {
-                    if (ERRNO == E_AGAIN || ERRNO == E_BLOCK) {
-                        /* We have processed all of the incoming connections */
-                        break;
-                    } else {
-                        perror("accept");
-                        goto out; 
+        int ret = sockset_poll(socket->events);
+        for (i = 0; i < ret; i++) {
+            cfd = sockset_active(socket->events, i);
+            bits = sockset_revent(socket->events, i);
+            if (cfd != socket->fd) {
+                list_for_each(&socket->children, conn, node) {
+                    if (conn->fd == cfd  && !__poll_on_client(socket, conn, socket->events, bits)) {
+                        rm_connection(socket, conn);
+                        connection_free(conn);
                     }
+                }
+                continue;
+            }
+            
+            if (!(bits & EVENT_READ))
+                pthread_exit(NULL);
+
+            while (1) {
+                in_fd = accept(socket->fd, &in_addr, &in_len);
+                if (in_fd == -1) {
+                    if (IsBlocking())
+                        break;
+#ifdef _DEBUG_SOCKET
+                    else
+                        eprintf("an error occured during accept(): %d(%s)\n", errno, strerror(errno));
+#endif
                     continue;
                 }
 
-                if (!socket->accept_connections) {
-                    close(their_fd);
-                    continue;
-                }
-
-                conn = connection_create(NULL);
+                conn = connection_create(in_fd);
                 if (!conn) {
-                    close(their_fd);
+                    close(in_fd);
                     continue;
                 }
-                conn->fd = their_fd;
 
-                if (!set_nonblock(conn->fd, true)) {
+                if (!set_nonblock(conn->fd) || !socket_set_read_size(conn, 2048)) {
                     close(conn->fd);
                     free(conn);
                     continue;
                 }
 
-                strncpy(conn->ip, inet_ntoa(their_addr.sin_addr), 16);
                 conn->last_active = time(NULL);
-                /*  TODO: set conn->remote here */
-
-                if (likely(socket->on_accept)) {
-                    socket->on_accept(socket, conn);
-                    if (likely(conn->on_connect))
-                         conn->on_connect(conn);
+                if (getnameinfo(&in_addr, in_len,
+                            hbuf, sizeof hbuf,
+                            sbuf, sizeof sbuf,
+                            NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+                    strncpy(conn->ip, hbuf, sizeof conn->ip);
+                    strncpy(conn->port, sbuf, sizeof conn->port);
                 }
 
-                if (unlikely(!socket->conn))
+                if (likely(socket->on_accept)) {
+                    (*socket->on_accept) (socket, conn);
+                    if (IsAvail(&conn->ops, connect))
+                        callop(&conn->ops, connect, conn);
+                }
+
+                if (unlikely(!socket->conn))   /* We don't always expect socket->conn to be null... */
                     socket->conn = conn;
 
                 add_connection(socket, conn);
-                sockset_add(socket->events, their_fd);
             }
-            break;
-        case 0:
-            __poll_on_client(socket, conn, socket->events);
-            break;
-        default:
-            warning("An error occured during sockset_poll()!  Terminating the loop now!\n");
-            goto out;
+
         }
     }
 
-out:
-    socket_free(socket);
-    pthread_exit(NULL);
+    __unreachable();
 }
 
 socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *))
 {
     socket_t *ret;
-#ifdef _WIN32
-    WSADATA wsa;
-    if (!is_initialized) {
-        if (0 != WSAStartup(MAKEWORD(2,2), &wsa)) {
-            WSACleanup();
-            fprintf(stderr, "WSAStartup() failed\n");
-            abort();
-        }
-        is_initialized = true;
-    }
-#endif
+    SOCK_INIT();
     xmalloc(ret, sizeof(socket_t), return NULL);
 
     ret->on_accept = on_accept;
@@ -370,21 +409,20 @@ socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *))
     return ret;
 }
 
-connection_t *connection_create(void (*on_connect) (connection_t *))
+connection_t *connection_create(int fd)
 {
     connection_t *ret;
 
+    SOCK_INIT();
     xmalloc(ret, sizeof(*ret), return NULL);
-    ret->on_connect = on_connect;
-    ret->last_active = 0;
-    ret->fd = -1;
+    ret->fd = fd;
     ret->remote = NULL;
-    ret->auto_read = true;
 
-    ret->buff.max_read_size = 2048;
-    ret->buff.size = 0;
-    ret->buff.data = NULL;
+    ret->rbuff.size = 0;
+    ret->rbuff.data = NULL;
 
+    ret->wbuff.size = 0;
+    ret->wbuff.data = NULL;
     return ret;
 }
 
@@ -392,40 +430,35 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 {
     struct addrinfo *address;
     pthread_t thread;
-    int ret;
-
-    if (conn->fd > 0)
-        close(conn->fd);
+    int ret = -errno;
 
     address = net_lookup(addr, service, AF_INET, SOCK_STREAM);
-    if (!address)
-        return -EHOSTUNREACH;
+    if (!address)    
+        return -errno;
 
-    if ((conn->fd = net_connect(address)) < 0) {
-        freeaddrinfo(address);
-        return -ETIMEDOUT;
-    }
-    freeaddrinfo(address);
+    if ((conn->fd = net_connect(address)) < 0)
+        goto finish;
+
+    if (!socket_set_read_size(conn, 2048)) 
+        goto finish;
 
     conn->remote = (char *)addr;
-    if (likely(conn->on_connect))
-        conn->on_connect(conn);
+    if (IsAvail(&conn->ops, connect))
+        callop(&conn->ops, connect, conn);
 
-    if ((ret = pthread_create(&thread, NULL, poll_on_client,
-                    (void *)conn)) != 0) {
-        fprintf(stderr, "failed to create thread (%d): %s\n",
-                    ret, strerror(ret));
-        return ret;
-    }
+    if ((ret = pthread_create(&thread, NULL, poll_on_client, (void *)conn)) != 0)
+        eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
 
-    return 0;
+finish:
+    freeaddrinfo(address);
+    return ret;
 }
 
 int socket_listen(socket_t *sock, const char *address, const char *service, long max_conns)
 {
     int reuse_addr = 1;
     pthread_t thread;
-    int ret = 0;
+    int ret = -1;
     struct addrinfo *addr;
 
     if (!sock)
@@ -438,26 +471,18 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
     if (sock->fd < 0)
         sock->fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
     if (sock->fd < 0)
-        return -ENOTSOCK;
-
-    if (!set_nonblock(sock->fd, true))
+        goto out;
+    if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0)
+        goto out;
+    if (bind(sock->fd, addr->ai_addr, addr->ai_addrlen) == -1
+            || listen(sock->fd, max_conns) == -1
+            || !set_nonblock(sock->fd))
         goto out;
 
-    setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-    if (bind(sock->fd, addr->ai_addr, addr->ai_addrlen) == -1)
-        goto out;
-
-    if (listen(sock->fd, max_conns) == -1)
-        goto out;
-
-    sock->accept_connections = true;
     list_head_init(&sock->children);
-
-    if ((ret = pthread_create(&thread, NULL, poll_on_server,
-                    (void *)sock)) != 0) {
-        fprintf(stderr, "failed to create thread (%d): %s\n",
-                     ret, strerror(ret));
-        return ret;
+    if ((ret = pthread_create(&thread, NULL, poll_on_server, (void *)sock)) != 0) {
+        eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
+        goto out;
     }
 
     free(addr);
@@ -470,18 +495,10 @@ out:
     return ret;
 }
 
-#define s_send(fd, d, l) ({ \
-    int err; \
-    do \
-        err = send((fd), (d), (l), 0); \
-    while (err == -1 && errno == E_INTR); \
-    err; })
-
 int socket_write(connection_t *conn, const char *fmt, ...)
 {
     char *data;
-    int len;
-    int err;
+    int len, sent;
     va_list va;
 
     if (unlikely(!conn || conn->fd < 0))
@@ -491,46 +508,91 @@ int socket_write(connection_t *conn, const char *fmt, ...)
     len = vasprintf(&data, fmt, va);
     va_end(va);
 
-    if (!data)
+    if (!data || len < 0)
         return -ENOMEM;
 
-    err = s_send(conn->fd, data, len);
-    if (unlikely(err < 0)) {
-        err = -errno;
-        goto out;
+    sent = send(conn->fd, data, len, 0);
+    if (sent < 0) {
+#ifdef _DEBUG_SOCKET
+        eprintf("send(): returned %d, errno is %d, estring is %s\n", sent,
+                errno, strerror(errno));
+#endif
+        free(data);
+        return -errno;
     }
 
-    if (unlikely(err != len))
-        fprintf(stderr,
-                "socket_write(): the data sent may be incomplete!\n");
+    if (sent != len) {
+        xrealloc(conn->wbuff.data, conn->wbuff.data,
+                    (conn->wbuff.size + (len - sent)) * sizeof(char), free(data); return -1);
+        memcpy(&conn->wbuff.data[conn->wbuff.size], &data[sent], len - sent);
+        conn->wbuff.size += len - sent;
+    } else {
+        struct sk_buff on_stack = {
+            .data = data,
+            .size = len
+        };
+        if (IsAvail(&conn->ops, write))
+            callop(&conn->ops, write, conn, &on_stack);
+        if (data)
+            free(data);
+    }
 
-    conn->buff.data = data;
-    conn->buff.size = err;
-
-    if (conn->on_write)
-        (*conn->on_write) (conn, &conn->buff);
-
-out:
-    if (data)
-        free(data);
-    return err;
+    return sent;
 }
 
-int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size)
+int socket_bwrite(connection_t *conn, const unsigned char *bytes, size_t size)
 {
-    size_t i;
-    int err = 0;
-
+    int sent;
     if (unlikely(!conn))
         return -1;
 
-    for (i = 0; i < size; ++i)
-        err = s_send(conn->fd, (char *)&bytes[i], sizeof(uint8_t));
+    sent = send(conn->fd, (char *)bytes, size, 0);
+    if (sent < 0)
+        return -1;
 
-    if (unlikely(err < 0))
-        return err;
+    if (sent != size) {
+        xrealloc(conn->wbuff.data, conn->wbuff.data,
+                (conn->wbuff.size + (size - sent)) * sizeof(char), return -1);
+        memcpy(&conn->wbuff.data[conn->wbuff.size], &bytes[sent], size - sent);
+        conn->wbuff.size += size - sent;
+    }
 
-    return err;
+    return sent;
+}
+
+bool socket_set_read_size(connection_t *conn, int size)
+{
+    if (unlikely(!conn))
+        return false;
+
+    if (setsockopt(conn->fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) != 0) {
+#ifdef _DEBUG_SOCKET
+        eprintf("socket_set_read_size(%p, %d): failed because setsockopt() returned -1, the errno was: %d,"
+                " the error string is: %s\n",
+                conn, size, errno, strerror(errno));
+#endif
+        return false;
+    }
+
+    conn->max_read_size = size;
+    return true;
+}
+
+bool socket_set_send_size(connection_t *conn, int size)
+{
+    if (unlikely(!conn))
+        return false;
+
+    if (setsockopt(conn->fd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(int)) != 0) {
+#ifdef _DEBUG_SOCKET
+        eprintf("socket_set_send_size(%p, %d): failed because setsockopt() returned -1, the errno was: %d,"
+                " the error string is: %s\n",
+                conn, size, errno, strerror(errno));
+#endif
+        return false;
+    }
+
+    return true;
 }
 
 bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
@@ -538,19 +600,20 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
     char *buffer;
     ssize_t count;
 
-    if (!conn)
+    if (unlikely(!conn))
         return false;
 
     if (!size)
-        size = conn->buff.max_read_size;
+        size = conn->max_read_size;
 
     buffer = calloc(size, sizeof(char));
     if (!buffer)
         return false;
 
+    errno = 0;
     count = recv(conn->fd, buffer, size, 0);
     if (count == -1) {
-        if (ERRNO != E_AGAIN && errno != E_BLOCK) {
+        if (IsBlocking()) {
             free(buffer);
             return false;
         }
@@ -560,13 +623,13 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
     }
     buffer[count] = '\0';
 
-    conn->buff.data = buffer;
-    conn->buff.size = size;
+    conn->rbuff.data = buffer;
+    conn->rbuff.size = count;
     if (buff)
-        *buff = conn->buff;
+        *buff = conn->rbuff;
 
-    if (conn && conn->on_read)
-        (*conn->on_read) (conn, &conn->buff);
+    if (IsAvail(&conn->ops, read))
+        callop(&conn->ops, read, conn, &conn->rbuff);
 
     if (buffer) free(buffer);
     return true;
@@ -596,8 +659,8 @@ void connection_free(connection_t *conn)
     if (unlikely(!conn || conn->fd < 0))
         return;
 
-    if (likely(conn->on_disconnect))
-        conn->on_disconnect(conn);
+    if (IsAvail(&conn->ops, disconnect))
+        callop(&conn->ops, disconnect, conn);
 
     close(conn->fd);
     free(conn);
@@ -607,6 +670,7 @@ bool socket_remove(socket_t *socket, connection_t *conn)
 {
     if (!socket || !conn)
         return false;
+
     rm_connection(socket, conn);
     return true;
 }

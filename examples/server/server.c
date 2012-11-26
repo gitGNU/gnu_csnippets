@@ -12,8 +12,6 @@ static socket_t *socket = NULL;  /* global for signal */
 static void on_read(connection_t *s, const struct sk_buff *buff)
 {
     eprintf("(read)[%d][%zd]: %s\n", s->fd, buff->size, buff->data);
-    socket_remove(socket, s);
-    connection_free(s);
 }
 
 static void on_write(connection_t *s, const struct sk_buff *buff)
@@ -28,16 +26,19 @@ static void on_disconnect(connection_t *s)
 
 static void on_connect(connection_t *s)
 {
-    s->on_write = on_write;
-    s->on_read = on_read;
-    s->on_disconnect = on_disconnect;
-
     socket_write(s, "hi %s\n", s->ip);
 }
 
+static struct sock_operations sops = {
+    .write        = on_write,
+    .read         = on_read,
+    .connect      = on_connect,
+    .disconnect   = on_disconnect
+};
+
 static void on_accept(socket_t *s, connection_t *n)
 {
-    n->on_connect = on_connect;
+    n->ops = sops;
     eprintf("Accepted connection from %s\n", n->ip);
 }
 
@@ -52,7 +53,6 @@ int main(int argc, char **argv)
 {
     int err;
 
-    log_init();
     socket = socket_create(on_accept);
     if (!socket)
         return 1;
@@ -73,6 +73,6 @@ int main(int argc, char **argv)
     }
 
     socket_free(socket);
-    return 1;
+    return 0;
 }
 

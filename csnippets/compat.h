@@ -43,10 +43,7 @@
 #define E_ALREADY         WSAEALREADY
 #define E_INPROGRESS      WSAEINPROGRESS
 #define E_INTR            WSAEINTR
-#else
-#ifdef USE_KQUEUE
-    #error "kqueue isn't implemented yet."
-#endif
+#elif defined __linux
 #if !defined USE_EPOLL && !defined USE_SELECT
     #define USE_EPOLL
 #endif
@@ -58,6 +55,10 @@
 #define E_ALREADY         EALREADY
 #define E_INPROGRESS      EINPROGRESS
 #define E_INTR            EINTR
+#else
+#ifdef USE_KQUEUE
+    #error "kqueue isn't implemented yet."
+#endif
 #endif
 
 #endif   /* _COMPAT_H */

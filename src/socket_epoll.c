@@ -20,6 +20,9 @@
  * THE SOFTWARE.
  */
 #ifdef USE_EPOLL
+#ifndef __linux
+#error "Epoll requires Linux"
+#endif
 
 #define MAX_EVENTS 1024
 #include <csnippets/socket.h>
@@ -31,111 +34,97 @@ struct sock_events {
     int epoll_fd;
 };
 
-static int get_active_fd(struct sock_events *evs, int index)
+uint32_t sockset_revent(struct sock_events *ev, int index)
 {
-    uint32_t events;
+    uint32_t events = ev->events[index].events;
+    uint32_t r = 0;
 
-    events = evs->events[index].events;
-    if (events & EPOLLERR || events & EPOLLHUP || !(events & EPOLLIN)) {
-        close(evs->events[index].data.fd);
-        return -1;
-    }
-
-    return evs->events[index].data.fd;
+    if (events & EPOLLIN)
+        r |= EVENT_READ;
+    else if (events & EPOLLOUT)
+        r |= EVENT_WRITE;
+    return r;
 }
 
-void *sockset_init(int fd)
+__inline __const int sockset_active(struct sock_events *evs, int index)
 {
-    struct sock_events *ev = malloc(sizeof(struct sock_events));
-    if (!ev)
-        return NULL;
+    return evs->events[index].data.fd;;
+}
 
-    ev->epoll_fd = epoll_create1(0);
-    if (ev->epoll_fd == -1) {
+void sockset_add(struct sock_events *evs, int fd, int bit)
+{
+    struct epoll_event ev;
+    if (unlikely(!evs))
+        return;
+
+    if (bit & EVENT_READ)
+        ev.events |= EPOLLIN;
+    if (bit & EVENT_WRITE)
+        ev.events |= EPOLLOUT;
+
+    ev.data.fd = fd;
+    if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_ADD, fd, &ev) < 0)
+        eprintf("sockset_add(): epoll_ctl(%d) returned an error %d(%s)\n",
+                fd, errno, strerror(errno));
+}
+
+struct sock_events *sockset_init(void)
+{
+    struct sock_events *ev;
+
+    xmalloc(ev, sizeof(struct sock_events), return NULL);
+    if ((ev->epoll_fd = epoll_create1(0)) < 0) {
         perror("epoll_create1");
-        abort();
+        free(ev);
+        return NULL;
     }
 
-    ev->events = calloc(MAX_EVENTS, sizeof(struct epoll_event));
-    if (!ev->events) {
-        perror("calloc");
-        abort();
-    }
-
+    xcalloc(ev->events, MAX_EVENTS, sizeof(struct epoll_event),
+            free(ev); return NULL);
     return ev;
 }
 
-void sockset_deinit(void *p)
+void sockset_deinit(struct sock_events *evs)
 {
-    struct sock_events *evs = (struct sock_events *)p;
     if (unlikely(!evs))
         return;
+
     free(evs->events);
     free(evs);
 }
 
-void sockset_add(void *p, int fd)
+void sockset_del(struct sock_events *evs, int fd)
 {
-    struct sock_events *evs = (struct sock_events *)p;
     if (unlikely(!evs))
         return;
 
-    struct epoll_event ev = {
-        .data.fd = fd,
-        .events = EPOLLIN | EPOLLET
-    };
-
-    if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1)
-        perror("epoll_ctl failed");
+    if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
+        eprintf("sockset_del(): epoll_ctl(%d) returned an error %d(%s)\n",
+                fd, errno, strerror(errno));
 }
 
-void sockset_del(int fd)
+int sockset_poll(struct sock_events *evs)
 {
-    /* nothing... */
-}
-
-int sockset_poll(socket_t *sock, int desired_fd, connection_t **conn)
-{
-    struct sock_events *evs = sock->events;
-    int n, index;
-    connection_t *ret;
-    int active;
-
+    int n;
     if (unlikely(!evs))
         return -1;
 
-    n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
-    for (index = 0; index < n; ++index) {
-        active = get_active_fd(evs, index);
-        if (desired_fd == active)
-            return 1;
-
-        list_for_each(&sock->children, ret, node)
-            if (ret->fd == active) {
-                *conn = ret;
-                return 0;
-            }
-    }
-
-    return -1;
+    do
+        n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
+    while (n == -1 && errno == EINTR);
+    return n;
 }
 
-int sockset_poll_and_get_fd(void *events, int desired_fd)
+int sockset_poll_and_get_fd(struct sock_events *evs, int desired_fd)
 {
-    struct sock_events *evs = (struct sock_events *)events;
     int n, index;
+    uint32_t flags;
     if (unlikely(!evs))
         return -1;
-
-    n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
-    if (n < 0)
-        return -1;
-
-    for (index = 0; index < n; ++index)
-        if (desired_fd == get_active_fd(evs, index))
-            return 1;
-
-    return -1;
+    do
+        n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
+    while (n == -1 && errno == EINTR);
+    return n;
 }
 
 #endif

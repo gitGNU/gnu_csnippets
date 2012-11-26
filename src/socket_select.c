@@ -31,7 +31,7 @@ struct sock_events {
     size_t maxfd;
 };
 
-void *sockset_init(int fd)
+struct sock_events *sockset_init(int fd)
 {
     struct sock_events *ev = malloc(sizeof(struct sock_events));
     if (!ev)
@@ -44,12 +44,12 @@ void *sockset_init(int fd)
     return ev;
 }
 
-void sockset_deinit(void *p)
+void sockset_deinit(struct sock_events *p)
 {
     free(p);
 }
 
-void sockset_add(void *p, int fd)
+void sockset_add(struct sock_events *p, int fd)
 {
     struct sock_events *evs = (struct sock_events *)p;
     if (unlikely(!evs))
@@ -59,11 +59,12 @@ void sockset_add(void *p, int fd)
         evs->maxfd = fd;
 }
 
-void sockset_del(void *p, int fd)
+void sockset_del(struct sock_events *p, int fd)
 {
     struct sock_events *evs = (struct sock_events *)p;
     if (unlikely(!evs))
         return;
+
     FD_CLR(fd, &evs->active_fd_set);
 }
 
@@ -73,7 +74,7 @@ int sockset_poll(socket_t *sock, int desired_fd, connection_t **conn)
     int fd = 0;
     struct sock_events *evs = sock->events;
     connection_t *ret;
-    fd_set rset;
+    fd_set rset, wset;
 
     if (unlikely(!evs))
         return -1;
@@ -100,7 +101,7 @@ int sockset_poll(socket_t *sock, int desired_fd, connection_t **conn)
     return -1;
 }
 
-int sockset_poll_and_get_fd(void *events, int desired_fd)
+int sockset_poll_and_get_fd(struct sock_events *events, int desired_fd)
 {
     struct sock_events *evs = (struct sock_events *)events;
     int n, fd;

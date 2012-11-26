@@ -8,6 +8,8 @@ if(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
     get_filename_component(CMAKE_CURRENT_LIST_DIR ${CMAKE_CURRENT_LIST_FILE} PATH)
 endif(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 include(src/CMakeLists.txt)
 option(USE_SELECT_HANDLER "Use select handler instead of epoll (enabled by default on windows)" OFF)
 add_definitions(-D"VERSION=\\"${VERSION}\\"")
@@ -16,9 +18,11 @@ if(USE_SELECT_HANDLER)
 endif()
 
 add_library(csnippets ${src_SOURCES})
+add_definitions(${src_DEFINITIONS})
 target_link_libraries(csnippets ${src_LIBRARIES})
+include_directories(csnippets ${src_INCLUDE_DIRS})
 
-set(this_library "-L. -Wl,--no-as-needed -lcsnippets")
+set(this_library "-L. -Wl,--no-as-needed -lcsnippets ${src_LIBRARIES}")
 include(examples/server/CMakeLists.txt)
 include(examples/client/CMakeLists.txt)
 include(examples/modules/CMakeLists.txt)

@@ -37,22 +37,49 @@ typedef struct connection connection_t;
 struct sk_buff {
     char *data;             /* The data read of this fd.  */
     size_t size;            /* length of data.  */
-    size_t max_read_size;   /* Max read size.  */
+};
+
+struct sock_events;
+/**
+ * \code
+ *     struct sock_operationrs sops = {
+ *          .connect = my_connect,
+ *          .disconnect = my_disconnect,
+ *          ...
+ *     };
+ * \endcode
+ *
+ *     when initialising the connected socket:
+ * \code
+ *     mconn->ops = sops;
+ * \endcode
+ */
+struct sock_operations {
+    /* Called when we've have connected.  This is the root of the connection.  
+     * It should be used to setup other callbacks!  */
+    void (*connect) (connection_t *self);
+
+    /* Called when we've disconnected.   */
+    void (*disconnect) (connection_t *self);
+
+    /* Called when anything is read.  */
+    void (*read) (connection_t *self, const struct sk_buff *buff);
+
+    /* Called when this connection writes something (on successfull write operations only) */
+    void (*write) (connection_t *self, const struct sk_buff *buff);
 };
 
 struct socket {
-    int fd;
+    int fd;                         /* Socket file descriptor.  */
 
     struct list_head children;      /* The list of conn */
     connection_t *conn;             /* The head connection */
     unsigned int num_connections;   /* Current active connections */
-
-    bool accept_connections;        /* If set to false, every incoming connection will be closed,
-                                       old ones, will still be there.  */
     pthread_mutex_t conn_lock;      /* The connection lock, for adding new connections,
                                        removing dead ones, incrementing number of active connections */
 
-    void *events;                   /* Internal usage  */
+    struct sock_events *events;     /* Internal usage  */
+
     /**
      * on_accept() this callback is called whenever a new connection
      * is accepted.  self is this socket, conn is obviously the 
@@ -65,32 +92,27 @@ struct socket {
 
 struct connection {
     int fd;              /* The socket file descriptor */
-    char ip[16];         /* The IP of this connection */
+    char ip[1025];       /* The IP of this connection */
+    char port[32];       /* The port we're connected to */
     char *remote;        /* Who did we connect to?  Or who did we come from?  */
     time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */
-    bool auto_read;      /* If enabled, this connection will be auto read otherwise,
-                            the user must call socket_read() manually.  */
 
-    /* Called when we've have connected.  This is the root of the connection.  
-     * It should be used to setup other callbacks!  */
-    void (*on_connect) (connection_t *self);
-    /* Called when we've disconnected.   */
-    void (*on_disconnect) (connection_t *self);
-    /* Called when anything is read.  */
-    void (*on_read) (connection_t *self, const struct sk_buff *buff);
-    /* Called when this connection writes something */
-    void (*on_write) (connection_t *self, const struct sk_buff *buff);
-
-    struct sk_buff buff;     /* This buffer is changed everytime there's new data to read,
-                                set it's size via buff.max_read_size = xxx;
-                                The default size is 2048 and is set by
-                                connection_create().
+    size_t max_read_size;    /* This should be set before creating the connection  by calling connection_set_read_size().
+                                The default size is 2048 and is set by connection_create().  */
+    struct sk_buff rbuff;    /* This buffer is changed everytime there's new data to read,
                                 This buffer is constantly passed to on_read */
+    struct sk_buff wbuff;    /* "write buffer" this is changed whenever data has been been sent.
+                                If the data was successfully sent over the connection, on_write() will be
+                                called.  */
+
+    struct sock_operations ops;  /* operations  */
     struct list_node node;   /* The node */
 };
 
-/**
- * Create socket with a NULL connection.
+#define EVENT_READ  0x01   /* There's data to be read on this connection.  */
+#define EVENT_WRITE 0x02   /* We're free to send incomplete data.  */
+
+/** socket_create() - Create and prepare a socket for listening.
  *
  * @return a malloc'd socket or NULL on failure.
  */
@@ -99,16 +121,16 @@ extern socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *));
 /**
  * Free socket and all of it's connections if any.
  *
- * @param socket a socket returned by socket_create().
+ * @socket a socket returned by socket_create().
  */
 extern void socket_free(socket_t *socket);
 
 /**
  * Create a connection
  *
- * @param on_connect, the callback to use for on_connect
+ * @on_connect, the callback to use for on_connect
  */
-extern connection_t *connection_create(void (*on_connect) (connection_t *));
+extern connection_t *connection_create(int fd);
 
 /**
  * Close & Free the connection
@@ -117,24 +139,23 @@ extern connection_t *connection_create(void (*on_connect) (connection_t *));
  * Note: That the above note applies only if this connection is part of
  *       a listening socket, otherwise don't.
  *
- * @param conn a socket created by connection_create()
+ * @conn a socket created by connection_create()
  */
 extern void connection_free(connection_t *conn);
 
 /**
  * socket_connect() - connect to a server.
  *
- * @param conn a malloc'd connection that has atleast the on_connect callback setup.
- * @param addr the address the server is listening on.
- * @param service port or a register service.
+ * @conn a malloc'd connection that has atleast the on_connect callback setup.
+ * @addr the address the server is listening on.
+ * @service port or a register service.
  */
 extern int socket_connect(connection_t *conn, const char *addr,
         const char *service);
-/**
- * Listen on socket.
+/** socket_listen() - Listen on this socket.
  *
- * @param address can be NULL if indepdent.
- * @param port port to listen on.
+ * @address can be NULL if independent
+ * @port port to listen on.
  */
 extern int socket_listen(socket_t *socket, const char *address,
         const char *service, long max_conns);
@@ -144,26 +165,42 @@ extern int socket_listen(socket_t *socket, const char *address,
  *
  * @param conn a connection created by socket_connect() or from the listening socket.
  * @param data the data to send
- * @return errno
+ * @return errno (negatively!) on failure, 0 on success.
  *
- * Calls conn->on_write if present.
+ * This function stores the data in conn->squeue, and then
+ * calls conn->on_write later on if connection ever becomes available
+ * for writing.
  */
 extern int socket_write(connection_t *conn, const char *fmt, ...);
 
 /**
  * socket_bwrite() - Write byte array on socket connection
  *
- * @param conn the socket connection
- * @param bytes the byte array to send
- * @param size the size of `bytes'.
+ * @conn the socket connection
+ * @bytes the byte array to send
+ * @size the size of `bytes'.
+ *
+ * The behavior is same as socket_write().
  */
 extern int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size);
+
+/** socket_set_read_size() - set maximum read size
+ *
+ * returns true on success, false otherwise
+ */
+extern bool socket_set_read_size(connection_t *conn, int size);
+
+/** socket_set_send_size() - set maximum write/send size
+ *
+ * returns true on success, false otherwise
+ */
+extern bool socket_set_send_size(connection_t *conn, int size);
 
 /**
  * socket_read() - read from a socket
  *
- * @param conn a connected socket
- * @param size how many characters to read?
+ * @conn a connected socket
+ * @size how many characters to read?
  *
  * on successfull read, this function returns true and does the following:
  *   * calls conn->on_read if not NULL.
@@ -180,7 +217,7 @@ extern bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size);
  *
  * returns true on success, false otherwise
  */
-extern bool socket_remove(socket_t *socket, connection_t *conn);
+extern bool __const socket_remove(socket_t *socket, connection_t *conn);
 
 #endif    /* _SOCKET_H */
 

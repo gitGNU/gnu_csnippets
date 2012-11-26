@@ -34,9 +34,6 @@
 #define warning(str, args...)       dolog(LOG_WARNING str, ##args)
 #define eprintf(str, args...)       dolog(str, ##args)
 
-/* Initialize log file */
-#define log_init()                  (void) freopen(LOG_FILE, "w", stderr);
-
 /* error_nret() - Log a formatted string.
  *
  * NOTE: This function doesn't return, that means the program will

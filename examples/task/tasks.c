@@ -46,6 +46,7 @@ static void config_parse_event(void *filename)
 void test(void *p)
 {
     eprintf("test()\n");
+    events_add(event_create(1, test, NULL));
 }
 
 int main(int argc, char **argv)

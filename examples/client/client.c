@@ -9,6 +9,11 @@ static void on_read(connection_t *s, const struct sk_buff *buff)
     printf("[%d]: %s", s->fd, buff->data);
 }
 
+static void on_write(connection_t *s, const struct sk_buff *buff)
+{
+    eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, buff->data);
+}
+
 static void on_disconnect(connection_t *s)
 {
     printf("%s disconnected\n", s->ip);
@@ -17,9 +22,6 @@ static void on_disconnect(connection_t *s)
 
 static void on_connect(connection_t *s)
 {
-    s->on_read = on_read;
-    s->on_disconnect = on_disconnect;
-
     printf("Connected to %s\n", s->remote);
 }
 
@@ -33,13 +35,19 @@ static void __noreturn signal_handle(int sig)
 int main(int argc, char **argv)
 {
     int err;
+    struct sock_operations sops = {
+        .write        = on_write,
+        .read         = on_read,
+        .connect      = on_connect,
+        .disconnect   = on_disconnect
+    };
 
-    log_init();
-    conn = connection_create(&on_connect);
+
+    conn = connection_create(-1);
     if (!conn)
         return 1;
 
-    conn->auto_read = true;
+    conn->ops = sops;
     err = socket_connect(conn, argc > 1 ? argv[1] : "127.0.0.1",
                 argc > 2 ? argv[2] : "1337");
     if (err != 0) {

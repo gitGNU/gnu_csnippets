@@ -28,8 +28,8 @@ endif()
 # gcc compile flags
 set(WARNS_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-variable -Wno-sign-compare")
 set(CMAKE_C_FLAGS                   "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
-set(CMAKE_C_FLAGS_DEBUG             "-O0 -g")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O1 -g -fno-omit-frame-pointer")
+set(CMAKE_C_FLAGS_DEBUG             "-O0 -g3 -ggdb")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O1 -g3 -ggdb -fno-omit-frame-pointer")
 set(CMAKE_C_FLAGS_RELEASE           "-O2")
 set(CMAKE_C_FLAGS_PERFORMANCE       "-Ofast -mmmx -msse -msse2")
 set(CMAKE_C_FLAGS_MINSIZEREL        "-Os")
@@ -40,6 +40,9 @@ message(STATUS "Build commit: ${BUILD_COMMIT}")
 add_definitions(-D"BUILD_COMMIT=\\\"${BUILD_COMMIT}\\\"")
 message(STATUS "Build revision: ${BUILD_REVISION}")
 add_definitions(-D"BUILD_REVISION=\\\"${BUILD_REVISION}\\\"")
+
+find_package(DL REQUIRED)
+find_package(LibIntl)
 
 if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads -D__use_select")
@@ -52,11 +55,9 @@ elseif(APPLE)
 endif()
 
 if(NOT WIN32)
-    set(src_LIBRARIES ${src_LIBRARIES} dl)
     set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_unix.c)
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     set(src_DEFINITIONS "${src_DEFINITIONS} -D_DEBUG_SOCKET -D_DEBUG_EVENTS -D_DEBUG_TASKS -D_DEBUG_MODULES")
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--no-as-needed")
@@ -67,6 +68,10 @@ else()
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--as-needed -Wl,-s") # strip all debug information
 endif()
 
-include_directories(${src_INCLUDE_DIRS})
-add_definitions(${src_DEFINITIONS})
+
+set(src_INCLUDE_DIRS ${src_INCLUDE_DIRS} ${DL_INCLUDE_DIR})
+set(src_LIBRARIES ${src_LIBRARIES} ${LIBINTL_LIBRARIES} -lpthread ${DL_LIBRARIES})
+if(LIBINTL_FOUND)
+    set(src_DEFINITIONS "${src_DEFINITIONS} -DHAVE_LIBINTL_H")
+endif()
 

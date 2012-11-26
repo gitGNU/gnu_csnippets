@@ -32,6 +32,11 @@ static int verbose = 1;
         fprintf(stdout, _(s), ##args); \
 } while(0)
 
+static __attribute__((constructor)) void log_init(void)
+{
+    (void) freopen(LOG_FILE, "w", stderr);
+}
+
 void __noreturn error_nret(const char *str, ...)
 {
     va_list ap;
@@ -41,7 +46,7 @@ void __noreturn error_nret(const char *str, ...)
     vasprintf(&buff, str, ap); 
     va_end(ap);
 
-    __dolog("%s: %s\n%s: error is not recoverable, terminating now...\n", prog,
+    __dolog(_("%s: %s\n%s: error is not recoverable, terminating now...\n"), prog,
             buff, prog);
     free(buff);
     exit(EXIT_FAILURE);

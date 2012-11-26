@@ -118,9 +118,9 @@ event_t *event_create(int delay, task_routine start, void *p)
         return NULL;
 
     xmalloc(event, sizeof(event_t), return NULL);
-
     event->delay = delay;
     event->task = task_create(start, p);
+
     if (!event->task) {
         free(event);
         return NULL;
@@ -139,7 +139,8 @@ void events_add(event_t *event)
     if (likely(running)) {
         empty = list_empty(&events);
         list_add(&events, &event->node);
-    } else
+    }
+    else
         printf("attempting to add an event to a terminated event queue\n");
 
     pthread_mutex_unlock(&mutex);
