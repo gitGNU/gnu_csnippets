@@ -32,7 +32,7 @@ static int verbose = 1;
         fprintf(stdout, _(s), ##args); \
 } while(0)
 
-static __attribute__((constructor)) void log_init(void)
+static void __attribute__((constructor)) log_init(void)
 {
 	(void) freopen(LOG_FILE, "w", stderr);
 }

@@ -20,7 +20,8 @@
 #include <csnippets/map.h>
 #include <csnippets/strmisc.h>
 
-static struct pair *get_pair(const struct map *map, const char *key) {
+static struct pair *get_pair(const struct map *map, const char *key)
+{
 	unsigned int i, n, index;
 	struct pair *pair;
 	struct bucket *bucket;
@@ -96,11 +97,12 @@ void map_free(struct map *map)
 	free(map->buckets);
 }
 
-struct pair *map_get(const struct map *map, const char *key) {
+struct pair *map_get(const struct map *map, const char *key)
+{
 	return get_pair(map, key);
 }
 
-__inline__ bool map_has(const struct map *map, const char *key)
+bool map_has(const struct map *map, const char *key)
 {
 	return !!get_pair(map, key);
 }
