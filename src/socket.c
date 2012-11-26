@@ -26,8 +26,6 @@
 #include <csnippets/atomic.h>
 
 #ifdef _WIN32
-#define poll WSAPoll
-#define pollfd WSAPOLLFD
 #include <winsock2.h>
 #include <ws2tcpip.h>    /* socklen_t */
 #else
@@ -36,10 +34,9 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
-#include <poll.h>
 #include <fcntl.h>
-typedef struct pollfd pollfd;
 #endif
+#include <csnippets/poll.h>
 #include <stdarg.h>
 #include <sys/time.h>
 #include <time.h>
@@ -57,11 +54,8 @@ static bool is_initialized = false;
         is_initialized = true; \
     } \
 } while (0)
-static __attribute__((destructor)) __unused void __cleanup(void)
+static __exit __unused void __cleanup(void)
 {
-#ifdef _DEBUG_SOCKET
-    eprintf("socket.c: destructing\n");
-#endif
     is_initialized = false;
     WSACleanup();
 }
@@ -69,15 +63,15 @@ static __attribute__((destructor)) __unused void __cleanup(void)
 #define SOCK_INIT()
 #endif
 
-#if (E_AGAIN == E_BLOCK)
+#if (EAGAIN == EWOULDBLOCK)
 static __inline __const  bool IsBlocking(void)
 {
-    return ERRNO == E_BLOCK;
+    return errno == EWOULDBLOCK;
 }
 #else
 static __inline __const bool IsBlocking(void)
 {
-    return ERRNO == E_BLOCK || ERRNO == E_AGAIN;
+    return errno == EWOULDBLOCK || errno == EAGAIN;
 }
 #endif
 #define IsAvail(sops, func) ((sops)->func != NULL ? true : false)
@@ -153,7 +147,7 @@ static bool set_nonblock(int fd)
 /* We only handle IPv4 and IPv6 */
 #define MAX_PROTOS 2
 
-static void remove_fd(pollfd *pfd, const struct addrinfo **addr,
+static void remove_fd(struct pollfd *pfd, const struct addrinfo **addr,
         socklen_t *slen, unsigned int *num,
         unsigned int i)
 {
@@ -170,7 +164,7 @@ static int net_connect(const struct addrinfo *addrinfo)
     const struct addrinfo *ipv4 = NULL, *ipv6 = NULL;
     const struct addrinfo *addr[MAX_PROTOS];
     socklen_t slen[MAX_PROTOS];
-    pollfd pfd[MAX_PROTOS];
+    struct pollfd pfd[MAX_PROTOS];
 
     for (; addrinfo; addrinfo = addrinfo->ai_next) {
         switch (addrinfo->ai_family) {
@@ -214,7 +208,7 @@ static int net_connect(const struct addrinfo *addrinfo)
         if (connect(pfd[i].fd, addr[i]->ai_addr, slen[i]) == 0)
             goto got_one;
 
-        if (ERRNO != E_INPROGRESS) {
+        if (errno != EINPROGRESS) {
             /* Remove dead one. */
             remove_fd(pfd, addr, slen, &num, i--);
         }
@@ -242,11 +236,11 @@ got_one:
     sockfd = pfd[i].fd;
 
 out:
-    saved_errno = ERRNO;
+    saved_errno = errno;
     for (i = 0; i < num; i++)
         if (pfd[i].fd != sockfd)
             close(pfd[i].fd);
-    set_last_error(saved_errno);
+    errno = saved_errno;
     return sockfd;
 }
 

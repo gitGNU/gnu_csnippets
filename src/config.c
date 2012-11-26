@@ -96,8 +96,7 @@ struct config *config_parse(const char *filename)
 
                 tokens = strexplode(line, '=', &n_tokens);
                 if (!tokens || n_tokens > 2) {
-                    elog("parser error: illegal equality at line %d\n",
-                            current_line);
+                    elog("parser error: illegal equality at line %d\n", current_line);
                     break;
                 }
  

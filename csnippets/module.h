@@ -45,22 +45,6 @@ struct module_list {
 };
 
 /**
- * The following attributes should be used to initialize/deinitialize(construct/destruct)
- * a module, Example:
- *
- * my_module.c:
- *     void __init init(void) { ... }
- *     void __exit terminate(void) { ... }
- */
-#ifdef __GNUC__
-#define __init       __attribute__((constructor))
-#define __exit       __attribute__((destructor))
-#else
-#define __init
-#define __exit
-#endif
-
-/**
  * module_load() - Load a single module
  *
  * @param file - (.dll,.so,...) to load from.

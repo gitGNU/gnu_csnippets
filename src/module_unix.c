@@ -35,8 +35,7 @@ static inline __const int filter(const struct dirent *dir)
     return strlen(name) > 3 ? !strcmp(name + strlen(name) - 3, ".so") : 0;
 }
 
-int module_load(const char *file, struct module **mod,
-        const char *start_name)
+int module_load(const char *file, struct module **mod, const char *start_name)
 {
     FILE *fp;
     struct module *module = NULL;

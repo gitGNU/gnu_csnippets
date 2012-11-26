@@ -23,7 +23,7 @@
 #define _COMPAT_H
 
 /**
- * Compatibility with other platforms, mostly POSIX sockets -> Win32
+ * Compatibility with other platforms should go here.
  */
 #ifdef _WIN32
 #ifndef USE_SELECT
@@ -35,26 +35,10 @@
 #ifdef USE_KQUEUE
     #undef USE_KQUEUE
 #endif
-#define ERRNO             WSAGetLastError()
-#define set_last_error(e) WSASetLastError((e))
-#define E_BLOCK           WSAEWOULDBLOCK
-#define E_AGAIN           EAGAIN
-#define E_ISCONN          WSAEISCONN
-#define E_ALREADY         WSAEALREADY
-#define E_INPROGRESS      WSAEINPROGRESS
-#define E_INTR            WSAEINTR
 #elif defined __linux
 #if !defined USE_EPOLL && !defined USE_SELECT
     #define USE_EPOLL
 #endif
-#define ERRNO             errno
-#define set_last_error(e) errno = (e)
-#define E_BLOCK           EWOULDBLOCK
-#define E_AGAIN           EAGAIN
-#define E_ISCONN          EISCONN
-#define E_ALREADY         EALREADY
-#define E_INPROGRESS      EINPROGRESS
-#define E_INTR            EINTR
 #else
 #ifdef USE_KQUEUE
     #error "kqueue isn't implemented yet."

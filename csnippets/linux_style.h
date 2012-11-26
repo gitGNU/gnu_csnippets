@@ -18,11 +18,13 @@
     __attribute__((format(__printf__, nfmt, narg)))
 #define __const         __attribute__((const))
 #define __unused        __attribute__((unused))
+#define __init          __attribute__((constructor))
+#define __exit          __attribute__((destructor))
 #define GCC_VERSION (__GNUC__ * 10000 \
                             + __GNUC_MINOR__ * 100 \
                             + __GNUC_PATCHLEVEL__)
 #if GCC_VERSION >= 40500
-#define __unreachable() __builtin_unreachable();
+#define __unreachable() __builtin_unreachable()
 #else
 #define __unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #endif  /* GCC_VERSION */
@@ -37,7 +39,9 @@
 #define __printf(nfmt, narg)
 #define __const
 #define __unused
-#define __unreachable()
+#define __unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
+#define __init
+#define __exit
 #endif  /* __GNUC__ */
 
 #endif    /* _LINUX_STYLE_H */

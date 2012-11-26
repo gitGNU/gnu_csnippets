@@ -15,6 +15,7 @@ set(src_SOURCES ${src_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/rwlock.c
     ${CMAKE_CURRENT_LIST_DIR}/task.c
     ${CMAKE_CURRENT_LIST_DIR}/module.c
+    ${CMAKE_CURRENT_LIST_DIR}/poll.c
 )
 
 set(BUILD_COMMIT "devel" CACHE "Git commit string (intended for releases)" STRING)
