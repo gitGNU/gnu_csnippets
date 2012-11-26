@@ -297,12 +297,11 @@ static void *poll_on_client(void *client)
 		int ret = sockset_poll(events);
 		for (i = 0; i < ret; i++)
 			if (sockset_active(events, i) == conn->fd &&
-			    !__poll_on_client(NULL, conn, events, sockset_revent(events, i)))
-				break;
+			    !__poll_on_client(NULL, conn, events, sockset_revent(events, i))) {
+				sockset_deinit(events);
+				pthread_exit(NULL);
+			}
 	}
-
-	sockset_deinit(events);
-	pthread_exit(NULL);
 }
 
 static void *poll_on_server(void *_socket)
