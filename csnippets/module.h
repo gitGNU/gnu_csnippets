@@ -25,23 +25,23 @@
 #include "list.h"
 
 struct module_symbol {
-    char *symbol_name;           /* symbol name (aka function name mostly)  */
-    void *func_ptr;              /* the function pointer, this should be casted
+	char *symbol_name;           /* symbol name (aka function name mostly)  */
+	void *func_ptr;              /* the function pointer, this should be casted
                                       to something like void (*my_func) (...);  */
-    struct list_node node;
+	struct list_node node;
 };
 
 struct module {
-    void *handle;                   /* internal usage */
-    struct list_head children;      /* Symbols list  */
-    struct list_node node;          /* Next and previous module, see list.h  */
+	void *handle;                   /* internal usage */
+	struct list_head children;      /* Symbols list  */
+	struct list_node node;          /* Next and previous module, see list.h  */
 };
 
 struct module_list {
-    struct module *module;      /* This is the first module in the list  */
+	struct module *module;      /* This is the first module in the list  */
 
-    struct list_head children;  /* List of modules  */
-    unsigned int num_modules;   /* how many modules were loaded?  */
+	struct list_head children;  /* List of modules  */
+	unsigned int num_modules;   /* how many modules were loaded?  */
 };
 
 /**
@@ -80,7 +80,7 @@ struct module_list {
  *    }
  */
 extern int module_load(const char *filename, struct module **module,
-        const char *start_name);
+                       const char *start_name);
 
 /**
  * modules_load() - Load a list of modules from dir `dir'.
@@ -115,7 +115,7 @@ extern int module_load(const char *filename, struct module **module,
  *    }
  */
 extern int modules_load(const char *dir, struct module_list **list,
-        const char *start_name);
+                        const char *start_name);
 
 /**
  * modules_cleanup() - Free modules

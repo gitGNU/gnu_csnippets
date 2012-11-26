@@ -35,8 +35,8 @@ typedef struct socket socket_t;
 typedef struct connection connection_t;
 
 struct sk_buff {
-    char *data;             /* The data read of this fd.  */
-    size_t size;            /* length of data.  */
+	char *data;             /* The data read of this fd.  */
+	size_t size;            /* length of data.  */
 };
 
 struct sock_events;
@@ -55,58 +55,58 @@ struct sock_events;
  * \endcode
  */
 struct sock_operations {
-    /* Called when we've have connected.  This is the root of the connection.  
-     * It should be used to setup other callbacks!  */
-    void (*connect) (connection_t *self);
+	/* Called when we've have connected.  This is the root of the connection.
+	 * It should be used to setup other callbacks!  */
+	void (*connect) (connection_t *self);
 
-    /* Called when we've disconnected.   */
-    void (*disconnect) (connection_t *self);
+	/* Called when we've disconnected.   */
+	void (*disconnect) (connection_t *self);
 
-    /* Called when anything is read.  */
-    void (*read) (connection_t *self, const struct sk_buff *buff);
+	/* Called when anything is read.  */
+	void (*read) (connection_t *self, const struct sk_buff *buff);
 
-    /* Called when this connection writes something (on successfull write operations only) */
-    void (*write) (connection_t *self, const struct sk_buff *buff);
+	/* Called when this connection writes something (on successfull write operations only) */
+	void (*write) (connection_t *self, const struct sk_buff *buff);
 };
 
 struct socket {
-    int fd;                         /* Socket file descriptor.  */
+	int fd;                         /* Socket file descriptor.  */
 
-    struct list_head children;      /* The list of conn */
-    connection_t *conn;             /* The head connection */
-    unsigned int num_connections;   /* Current active connections */
-    pthread_mutex_t conn_lock;      /* The connection lock, for adding new connections,
+	struct list_head children;      /* The list of conn */
+	connection_t *conn;             /* The head connection */
+	unsigned int num_connections;   /* Current active connections */
+	pthread_mutex_t conn_lock;      /* The connection lock, for adding new connections,
                                        removing dead ones, incrementing number of active connections */
 
-    struct sock_events *events;     /* Internal usage  */
+	struct sock_events *events;     /* Internal usage  */
 
-    /**
-     * on_accept() this callback is called whenever a new connection
-     * is accepted.  self is this socket, conn is obviously the 
-     * accepted connection.
-     *
-     * See below for more information on what to do when this function is called.
-     */
-    void (*on_accept) (socket_t *self, connection_t *conn);
+	/**
+	 * on_accept() this callback is called whenever a new connection
+	 * is accepted.  self is this socket, conn is obviously the
+	 * accepted connection.
+	 *
+	 * See below for more information on what to do when this function is called.
+	 */
+	void (*on_accept) (socket_t *self, connection_t *conn);
 };
 
 struct connection {
-    int fd;              /* The socket file descriptor */
-    char ip[1025];       /* The IP of this connection */
-    char port[32];       /* The port we're connected to */
-    char *remote;        /* Who did we connect to?  Or who did we come from?  */
-    time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */
+	int fd;              /* The socket file descriptor */
+	char ip[1025];       /* The IP of this connection */
+	char port[32];       /* The port we're connected to */
+	char *remote;        /* Who did we connect to?  Or who did we come from?  */
+	time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */
 
-    size_t max_read_size;    /* This should be set before creating the connection  by calling connection_set_read_size().
+	size_t max_read_size;    /* This should be set before creating the connection  by calling connection_set_read_size().
                                 The default size is 2048 and is set by connection_create().  */
-    struct sk_buff rbuff;    /* This buffer is changed everytime there's new data to read,
+	struct sk_buff rbuff;    /* This buffer is changed everytime there's new data to read,
                                 This buffer is constantly passed to on_read */
-    struct sk_buff wbuff;    /* "write buffer" this is changed whenever data has been been sent.
+	struct sk_buff wbuff;    /* "write buffer" this is changed whenever data has been been sent.
                                 If the data was successfully sent over the connection, on_write() will be
                                 called.  */
 
-    struct sock_operations ops;  /* operations  */
-    struct list_node node;   /* The node */
+	struct sock_operations ops;  /* operations  */
+	struct list_node node;   /* The node */
 };
 
 #define EVENT_READ  0x01   /* There's data to be read on this connection.  */
@@ -151,14 +151,14 @@ extern void connection_free(connection_t *conn);
  * @service port or a register service.
  */
 extern int socket_connect(connection_t *conn, const char *addr,
-        const char *service);
+                          const char *service);
 /** socket_listen() - Listen on this socket.
  *
  * @address can be NULL if independent
  * @port port to listen on.
  */
 extern int socket_listen(socket_t *socket, const char *address,
-        const char *service, long max_conns);
+                         const char *service, long max_conns);
 
 /**
  * socket_write() - Write string on socket connection

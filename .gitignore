@@ -7,4 +7,5 @@ lib/
 !.gitignore
 !.travis.yml
 *.kdev4
+*.orig
 

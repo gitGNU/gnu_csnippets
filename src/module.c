@@ -23,14 +23,14 @@
 
 void modules_cleanup(struct module_list *modules)
 {
-    struct module *module, *next;
-    if (unlikely(!modules))
-        return;
+	struct module *module, *next;
+	if (unlikely(!modules))
+		return;
 
-    list_for_each_safe(&modules->children, module, next, node) {
-        list_del_from(&modules->children, &module->node);
-        module_cleanup(module);
-    }
-    free(modules);
+	list_for_each_safe(&modules->children, module, next, node) {
+		list_del_from(&modules->children, &module->node);
+		module_cleanup(module);
+	}
+	free(modules);
 }
 

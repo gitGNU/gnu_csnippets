@@ -6,13 +6,13 @@ _BEGIN_DECLS
 typedef union rwlock rwlock_t;
 
 union rwlock {
-    unsigned u;
-    unsigned short us;
-    __extension__ struct {
-        unsigned char write;
-        unsigned char read;
-        unsigned char users;
-    } s;
+	unsigned u;
+	unsigned short us;
+	__extension__ struct {
+		unsigned char write;
+		unsigned char read;
+		unsigned char users;
+	} s;
 };
 
 extern void rwlock_wrlock(rwlock_t *l);

@@ -38,8 +38,8 @@
  * needed, see stack_push().
  */
 struct stack {
-    void **ptr;     /* the internel array */
-    size_t size;
+	void **ptr;     /* the internel array */
+	size_t size;
 };
 
 #define INITIAL_SIZE 10
@@ -61,13 +61,13 @@ struct stack {
  */
 static inline bool stack_init(struct stack *s, size_t size)
 {
-    if (!size)
-        size = INITIAL_SIZE;
-    s->ptr = calloc(size, sizeof(void *));
-    if (!s->ptr)
-        return false;
-    s->size = size;
-    return true;
+	if (!size)
+		size = INITIAL_SIZE;
+	s->ptr = calloc(size, sizeof(void *));
+	if (!s->ptr)
+		return false;
+	s->size = size;
+	return true;
 }
 
 /**
@@ -80,20 +80,20 @@ static inline bool stack_init(struct stack *s, size_t size)
  */
 static inline void stack_free(struct stack *s, void (*destructor) (void *))
 {
-    int i;
+	int i;
 
-    for (i = 0; i < s->size; ++i) {
-        if (!s->ptr[i])
-            continue;
-        if (!destructor)
-            free(s->ptr[i]);
-        else
-            (*destructor) (s->ptr[i]);
-    }
+	for (i = 0; i < s->size; ++i) {
+		if (!s->ptr[i])
+			continue;
+		if (!destructor)
+			free(s->ptr[i]);
+		else
+			(*destructor) (s->ptr[i]);
+	}
 
-    free(s->ptr);
-    s->size = 0;
-    s->ptr = NULL;
+	free(s->ptr);
+	s->size = 0;
+	s->ptr = NULL;
 }
 
 /**
@@ -103,12 +103,12 @@ static inline void stack_free(struct stack *s, void (*destructor) (void *))
  */
 static inline bool stack_grow(struct stack *s, int new_size)
 {
-    void *tmp;
+	void *tmp;
 
-    xrealloc(tmp, s->ptr, new_size * sizeof(void *), return false);
-    s->ptr = tmp;
-    s->size = new_size;
-    return true;
+	xrealloc(tmp, s->ptr, new_size * sizeof(void *), return false);
+	s->ptr = tmp;
+	s->size = new_size;
+	return true;
 }
 
 /**
@@ -124,29 +124,29 @@ static inline bool stack_grow(struct stack *s, int new_size)
  */
 static inline int stack_push(struct stack *s, void *ptr, int where, void (*constructor) (void *))
 {
-    int place = where;
+	int place = where;
 
-    /* If where is -1, find the place ourselves.  */
-    if (place == -1) {
-        /* Find the first empty place.  */
-        for (place = 0; place < s->size && s->ptr[place]; ++place);
-        /* If there's no space left, reallocate  */
-        if (place == s->size && s->ptr[place] != NULL) {
-            if (!stack_grow(s, s->size + SIZE_INCREMENT))
-                return -1;
-        }
-    } else {
-        assert(place >= 0);
-        if (place > s->size) {
-            if (!stack_grow(s, (place - s->size) + 1))
-                return -1;
-        }
-    }
+	/* If where is -1, find the place ourselves.  */
+	if (place == -1) {
+		/* Find the first empty place.  */
+		for (place = 0; place < s->size && s->ptr[place]; ++place);
+		/* If there's no space left, reallocate  */
+		if (place == s->size && s->ptr[place] != NULL) {
+			if (!stack_grow(s, s->size + SIZE_INCREMENT))
+				return -1;
+		}
+	} else {
+		assert(place >= 0);
+		if (place > s->size) {
+			if (!stack_grow(s, (place - s->size) + 1))
+				return -1;
+		}
+	}
 
-    s->ptr[place] = ptr;
-    if (constructor)
-        (*constructor) (ptr);
-    return place;
+	s->ptr[place] = ptr;
+	if (constructor)
+		(*constructor) (ptr);
+	return place;
 }
 
 /**
@@ -158,7 +158,7 @@ static inline int stack_push(struct stack *s, void *ptr, int where, void (*const
  */
 static inline void *stack_pop(struct stack *s)
 {
-    return s ? s->ptr[--s->size] : NULL;
+	return s ? s->ptr[--s->size] : NULL;
 }
 
 /**
@@ -170,7 +170,7 @@ static inline void *stack_pop(struct stack *s)
  */
 static inline void *stack_top(struct stack *s)
 {
-    return s ? s->ptr[s->size - 1] : NULL;
+	return s ? s->ptr[s->size - 1] : NULL;
 }
 
 /**
@@ -183,37 +183,37 @@ static inline void *stack_top(struct stack *s)
  * \sa stack_push().
  */
 static inline bool stack_remove(struct stack *s, void *ptr, bool (*compare_function) (const void *, const void *),
-        void (*destructor) (void *), bool duplicate)
+                                void (*destructor) (void *), bool duplicate)
 {
-    int i;
-    bool r;
+	int i;
+	bool r;
 
-    for (i = 0; i < s->size; ++i) {
-        if (!compare_function) {
-            r = !!(s->ptr[i] == ptr);
-            if (r) {
-                if (!destructor)
-                    free(s->ptr[i]);
-                else
-                    (*destructor) (s->ptr[i]);
-                s->ptr[i] = NULL;
-            }
-        } else {
-            r = (*compare_function) (s->ptr[i], ptr);
-            if (r) {
-                 if (!destructor)
-                    free(s->ptr[i]);
-                else
-                    (*destructor) (s->ptr[i]);
-                s->ptr[i] = NULL;
-            }
-        }
+	for (i = 0; i < s->size; ++i) {
+		if (!compare_function) {
+			r = !!(s->ptr[i] == ptr);
+			if (r) {
+				if (!destructor)
+					free(s->ptr[i]);
+				else
+					(*destructor) (s->ptr[i]);
+				s->ptr[i] = NULL;
+			}
+		} else {
+			r = (*compare_function) (s->ptr[i], ptr);
+			if (r) {
+				if (!destructor)
+					free(s->ptr[i]);
+				else
+					(*destructor) (s->ptr[i]);
+				s->ptr[i] = NULL;
+			}
+		}
 
-        if (!duplicate && r)
-            break;
-    }
+		if (!duplicate && r)
+			break;
+	}
 
-    return r;
+	return r;
 }
 
 #endif  /* _STACK_H */

@@ -32,9 +32,9 @@ _BEGIN_DECLS
 typedef void (*task_routine) (void *);
 
 typedef struct {
-    task_routine start_routine;    /* See above */
-    void *param;                   /* The param to call the function (start_routine) with.  */
-    struct list_node node;         /* The next and prev task */
+	task_routine start_routine;    /* See above */
+	void *param;                   /* The param to call the function (start_routine) with.  */
+	struct list_node node;         /* The next and prev task */
 } task_t;
 
 /**
@@ -67,7 +67,7 @@ extern void tasks_add(task_t *task);
  * Create a task, NOTE: This does NOT add it to the queue.
  *
  * Returns a malloc'd task with task_routine routine and param param.
- * 
+ *
  * Add it with task_add(...);
  *
  * Example Usage:

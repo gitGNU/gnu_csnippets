@@ -37,8 +37,7 @@ _BEGIN_DECLS
  *		struct list_node list;
  *	};
  */
-struct list_node
-{
+struct list_node {
 	struct list_node *next, *prev;
 };
 
@@ -54,8 +53,7 @@ struct list_node
  *		unsigned int num_children;
  *	};
  */
-struct list_head
-{
+struct list_head {
 	struct list_node n;
 };
 
@@ -104,7 +102,7 @@ struct list_head *list_check(const struct list_head *h, const char *abortstr);
  *	}
  */
 struct list_node *list_check_node(const struct list_node *n,
-				  const char *abortstr);
+                                  const char *abortstr);
 
 #ifdef __debug_list
 #define list_debug(h) list_check((h), __func__)
@@ -470,8 +468,7 @@ static inline void *list_node_to_off_(struct list_node *node, size_t off)
 {
 	return (void *)((char *)node - off);
 }
-static inline struct list_node *list_node_from_off_(void *ptr, size_t off)
-{
+static inline struct list_node *list_node_from_off_(void *ptr, size_t off) {
 	return (struct list_node *)((char *)ptr + off);
 }
 

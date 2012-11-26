@@ -24,21 +24,21 @@ typedef unsigned long (*hash_function) (const char *);
 typedef bool (*hash_compare) (const void *v1, const void *v2);
 
 struct pair {
-    char *key;
-    void *value;
+	char *key;
+	void *value;
 };
 
 struct bucket {
-    unsigned int count;    /* Count of pairs.  */
-    struct pair *pairs;    /* The pairs array.  */
+	unsigned int count;    /* Count of pairs.  */
+	struct pair *pairs;    /* The pairs array.  */
 };
 
 struct map {
-    unsigned int count;           /* Count of buckets in this map */
-    struct bucket *buckets;       /* Buckets array.  */
-    hash_function hash_function;  /* The hash function pointer.  This should be set or
+	unsigned int count;           /* Count of buckets in this map */
+	struct bucket *buckets;       /* Buckets array.  */
+	hash_function hash_function;  /* The hash function pointer.  This should be set or
                                      map_new() will initialize it as if this was a string map.  */
-    hash_compare  hash_comp;      /* The compare function pointer.  This is used when trying to find
+	hash_compare  hash_comp;      /* The compare function pointer.  This is used when trying to find
                                      a pair.  */
 };
 

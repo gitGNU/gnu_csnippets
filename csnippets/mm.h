@@ -22,7 +22,7 @@
 #ifndef _MEMORY_MANAGEMENT_H
 #define _MEMORY_MANAGEMENT_H
 
-/* Memory management functions, previously named as 
+/* Memory management functions, previously named as
  * "Auxiliars" or briefly "helpers".  */
 
 #define xfree(p) do { if (p) free(p); p = NULL; } while (0)

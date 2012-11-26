@@ -27,21 +27,21 @@
  */
 #ifdef _WIN32
 #ifndef USE_SELECT
-    #define USE_SELECT
+#define USE_SELECT
 #endif
 #ifdef USE_EPOLL
-    #undef USE_EPOLL
+#undef USE_EPOLL
 #endif
 #ifdef USE_KQUEUE
-    #undef USE_KQUEUE
+#undef USE_KQUEUE
 #endif
 #elif defined __linux
 #if !defined USE_EPOLL && !defined USE_SELECT
-    #define USE_EPOLL
+#define USE_EPOLL
 #endif
 #else
 #ifdef USE_KQUEUE
-    #error "kqueue isn't implemented yet."
+#error "kqueue isn't implemented yet."
 #endif
 #endif
 

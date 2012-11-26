@@ -34,39 +34,39 @@ static int verbose = 1;
 
 static __attribute__((constructor)) void log_init(void)
 {
-    (void) freopen(LOG_FILE, "w", stderr);
+	(void) freopen(LOG_FILE, "w", stderr);
 }
 
 void __noreturn error_nret(const char *str, ...)
 {
-    va_list ap;
-    char *buff;
+	va_list ap;
+	char *buff;
 
-    va_start(ap, str);
-    vasprintf(&buff, str, ap); 
-    va_end(ap);
+	va_start(ap, str);
+	vasprintf(&buff, str, ap);
+	va_end(ap);
 
-    __dolog(_("%s: %s\n%s: error is not recoverable, terminating now...\n"), prog,
-            buff, prog);
-    free(buff);
-    exit(EXIT_FAILURE);
+	__dolog(_("%s: %s\n%s: error is not recoverable, terminating now...\n"), prog,
+	        buff, prog);
+	free(buff);
+	exit(EXIT_FAILURE);
 }
 
 void dolog(const char *str, ...)
 {
-    va_list va;
-    char *buff;
+	va_list va;
+	char *buff;
 
-    va_start(va, str);
-    (void) vasprintf(&buff, str, va);
-    va_end(va);
+	va_start(va, str);
+	(void) vasprintf(&buff, str, va);
+	va_end(va);
 
-    __dolog(_("%s: %s"), prog, buff);
-    free(buff);
+	__dolog(_("%s: %s"), prog, buff);
+	free(buff);
 }
 
 void set_verbose_level(int level)
 {
-    verbose = !!level;
+	verbose = !!level;
 }
 

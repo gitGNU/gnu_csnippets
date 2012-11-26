@@ -27,96 +27,95 @@
 #endif
 
 struct sock_events {
-    fd_set active_fd_set;
-    size_t maxfd;
+	fd_set active_fd_set;
+	size_t maxfd;
 };
 
-struct sock_events *sockset_init(int fd)
-{
-    struct sock_events *ev = malloc(sizeof(struct sock_events));
-    if (!ev)
-        return NULL;
+struct sock_events *sockset_init(int fd) {
+	struct sock_events *ev = malloc(sizeof(struct sock_events));
+	if (!ev)
+		return NULL;
 
-    FD_ZERO(&ev->active_fd_set);
-    FD_SET(fd, &ev->active_fd_set);
+	FD_ZERO(&ev->active_fd_set);
+	FD_SET(fd, &ev->active_fd_set);
 
-    ev->maxfd = fd;
-    return ev;
+	ev->maxfd = fd;
+	return ev;
 }
 
 void sockset_deinit(struct sock_events *p)
 {
-    free(p);
+	free(p);
 }
 
 void sockset_add(struct sock_events *p, int fd)
 {
-    struct sock_events *evs = (struct sock_events *)p;
-    if (unlikely(!evs))
-        return;
-    FD_SET(fd, &evs->active_fd_set);
-    if (fd > evs->maxfd)
-        evs->maxfd = fd;
+	struct sock_events *evs = (struct sock_events *)p;
+	if (unlikely(!evs))
+		return;
+	FD_SET(fd, &evs->active_fd_set);
+	if (fd > evs->maxfd)
+		evs->maxfd = fd;
 }
 
 void sockset_del(struct sock_events *p, int fd)
 {
-    struct sock_events *evs = (struct sock_events *)p;
-    if (unlikely(!evs))
-        return;
+	struct sock_events *evs = (struct sock_events *)p;
+	if (unlikely(!evs))
+		return;
 
-    FD_CLR(fd, &evs->active_fd_set);
+	FD_CLR(fd, &evs->active_fd_set);
 }
 
 int sockset_poll(socket_t *sock, int desired_fd, connection_t **conn)
 {
-    int n;
-    int fd = 0;
-    struct sock_events *evs = sock->events;
-    connection_t *ret;
-    fd_set rset, wset;
+	int n;
+	int fd = 0;
+	struct sock_events *evs = sock->events;
+	connection_t *ret;
+	fd_set rset, wset;
 
-    if (unlikely(!evs))
-        return -1;
+	if (unlikely(!evs))
+		return -1;
 
-    rset = evs->active_fd_set;
-    n = select(evs->maxfd + 1, &rset, NULL, NULL, NULL);
-    if (n < 0)
-        return -1;
+	rset = evs->active_fd_set;
+	n = select(evs->maxfd + 1, &rset, NULL, NULL, NULL);
+	if (n < 0)
+		return -1;
 
-    if (FD_ISSET(desired_fd, &rset)) {
-        return 1;
-    } else {
-        list_for_each(&sock->children, ret, node) {
-            if (++fd > evs->maxfd)
-                break;
+	if (FD_ISSET(desired_fd, &rset)) {
+		return 1;
+	} else {
+		list_for_each(&sock->children, ret, node) {
+			if (++fd > evs->maxfd)
+				break;
 
-            if (FD_ISSET(ret->fd, &rset)) {
-                *conn = ret;
-                return 0;
-            }
-        }
-    }
+			if (FD_ISSET(ret->fd, &rset)) {
+				*conn = ret;
+				return 0;
+			}
+		}
+	}
 
-    return -1;
+	return -1;
 }
 
 int sockset_poll_and_get_fd(struct sock_events *events, int desired_fd)
 {
-    struct sock_events *evs = (struct sock_events *)events;
-    int n, fd;
-    fd_set rset;
-    if (unlikely(!evs))
-        return -1;
+	struct sock_events *evs = (struct sock_events *)events;
+	int n, fd;
+	fd_set rset;
+	if (unlikely(!evs))
+		return -1;
 
-    rset = evs->active_fd_set;
-    n = select(desired_fd + 1, &rset, NULL, NULL, NULL);
-    if (n < 0)
-        return -1;
+	rset = evs->active_fd_set;
+	n = select(desired_fd + 1, &rset, NULL, NULL, NULL);
+	if (n < 0)
+		return -1;
 
-    if (FD_ISSET(desired_fd, &rset))
-        return 0;
-    return -1;
+	if (FD_ISSET(desired_fd, &rset))
+		return 0;
+	return -1;
 }
 
 #endif

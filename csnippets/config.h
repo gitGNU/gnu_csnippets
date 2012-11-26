@@ -25,17 +25,17 @@
 _BEGIN_DECLS
 
 struct def {
-    char key[33];
-    char *value;
+	char key[33];
+	char *value;
 
-    struct def *next;
+	struct def *next;
 };
 
 struct config {
-    char section[32];
+	char section[32];
 
-    struct def *def;
-    struct config *next;
+	struct def *def;
+	struct config *next;
 };
 
 extern struct config *config_parse(const char *filename);
