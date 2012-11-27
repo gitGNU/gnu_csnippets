@@ -68,7 +68,8 @@ void sockset_add(struct sock_events *evs, int fd, int bit)
 		        fd, errno, strerror(errno));
 }
 
-struct sock_events *sockset_init(void) {
+struct sock_events *sockset_init(void)
+{
 	struct sock_events *ev;
 
 	xmalloc(ev, sizeof(struct sock_events), return NULL);

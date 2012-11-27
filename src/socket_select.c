@@ -52,6 +52,7 @@ struct sock_events *sockset_init(void)
 
 void sockset_deinit(struct sock_events *p)
 {
+	free(p->events);
 	free(p);
 }
 
