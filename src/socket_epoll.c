@@ -34,6 +34,34 @@ struct sock_events {
 	int epoll_fd;
 };
 
+struct sock_events *sockset_init(void)
+{
+	struct sock_events *ev;
+
+	xmalloc(ev, sizeof(struct sock_events), return NULL);
+	if ((ev->epoll_fd = epoll_create1(0)) < 0) {
+#ifdef _DEBUG_SOCKET
+		perror("epoll_create1");
+#endif
+		free(ev);
+		return NULL;
+	}
+
+	xcalloc(ev->events, MAX_EVENTS, sizeof(struct epoll_event),
+			free(ev); return NULL);
+	return ev;
+}
+
+void sockset_deinit(struct sock_events *evs)
+{
+	if (unlikely(!evs))
+		return;
+
+	free(evs->events);
+	free(evs);
+}
+
+
 uint32_t sockset_revent(struct sock_events *ev, int index)
 {
 	uint32_t events = ev->events[index].events;
@@ -48,7 +76,7 @@ uint32_t sockset_revent(struct sock_events *ev, int index)
 
 __inline __const int sockset_active(struct sock_events *evs, int index)
 {
-	return evs->events[index].data.fd;;
+	return evs->events[index].data.fd;
 }
 
 void sockset_add(struct sock_events *evs, int fd, int bit)
@@ -57,40 +85,17 @@ void sockset_add(struct sock_events *evs, int fd, int bit)
 	if (unlikely(!evs))
 		return;
 
+	ev.events = EPOLLET | EPOLLPRI;
 	if (bit & EVENT_READ)
 		ev.events |= EPOLLIN;
 	if (bit & EVENT_WRITE)
 		ev.events |= EPOLLOUT;
 
+	memset(&ev.data, 0, sizeof(ev.data));
 	ev.data.fd = fd;
 	if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_ADD, fd, &ev) < 0)
 		eprintf("sockset_add(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, errno, strerror(errno));
-}
-
-struct sock_events *sockset_init(void)
-{
-	struct sock_events *ev;
-
-	xmalloc(ev, sizeof(struct sock_events), return NULL);
-	if ((ev->epoll_fd = epoll_create1(0)) < 0) {
-		perror("epoll_create1");
-		free(ev);
-		return NULL;
-	}
-
-	xcalloc(ev->events, MAX_EVENTS, sizeof(struct epoll_event),
-	        free(ev); return NULL);
-	return ev;
-}
-
-void sockset_deinit(struct sock_events *evs)
-{
-	if (unlikely(!evs))
-		return;
-
-	free(evs->events);
-	free(evs);
 }
 
 void sockset_del(struct sock_events *evs, int fd)
@@ -109,18 +114,6 @@ int sockset_poll(struct sock_events *evs)
 	if (unlikely(!evs))
 		return -1;
 
-	do
-		n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
-	while (n == -1 && errno == EINTR);
-	return n;
-}
-
-int sockset_poll_and_get_fd(struct sock_events *evs, int desired_fd)
-{
-	int n, index;
-	uint32_t flags;
-	if (unlikely(!evs))
-		return -1;
 	do
 		n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
 	while (n == -1 && errno == EINTR);

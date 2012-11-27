@@ -142,7 +142,7 @@ int sockset_poll(struct sock_events *evs)
 	return i;
 }
 
-int sockset_active(struct sock_events *evs, int index)
+__inline __const int sockset_active(struct sock_events *evs, int index)
 {
 	return evs->events[index]->fd;
 }

@@ -50,7 +50,7 @@ if(WIN32)
     set(src_DEFINITIONS ${src_DEFINITIONS} -D_WIN32_WINNT=0x0600)
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--large-address-aware") # strip all debug information
     set(src_LIBRARIES "-lws2_32")
-    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_windows.c)
+    #    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_windows.c)
 elseif(APPLE)
     set(src_DEFINITIONS ${src_DEFINITIONS} -D_REENTRANT) # enable thread safe code
 endif()

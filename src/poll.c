@@ -26,14 +26,13 @@
 
 #if defined(WIN32)
 # include <malloc.h>
+#else
+# include <sys/types.h>
 #endif
-
-#include <sys/types.h>
 
 /* Specification.  */
 #include <poll.h>
 
-#include <errno.h>
 #include <limits.h>
 #include <assert.h>
 
@@ -62,8 +61,6 @@
 #ifdef HAVE_SYS_FILIO_H
 # include <sys/filio.h>
 #endif
-
-#include <time.h>
 
 #ifndef INFTIM
 # define INFTIM (-1)

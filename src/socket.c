@@ -33,26 +33,24 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <errno.h>
 #include <fcntl.h>
+#include <sys/time.h>
 #endif
 #include <csnippets/poll.h>
-#include <stdarg.h>
-#include <sys/time.h>
 #include <time.h>
 
 #ifdef _WIN32
 static bool is_initialized = false;
 #define SOCK_INIT() do { \
-    WSADATA wsa; \
-    if (!is_initialized) { \
-        if (0 != WSAStartup(MAKEWORD(2, 2), &wsa)) { \
-            WSACleanup(); \
-            warning("WSAStartup() failed\n"); \
-            return NULL; \
-        } \
-        is_initialized = true; \
-    } \
+	WSADATA wsa; \
+	if (!is_initialized) { \
+		if (0 != WSAStartup(MAKEWORD(2, 2), &wsa)) { \
+			WSACleanup(); \
+			warning("WSAStartup() failed\n"); \
+			return NULL; \
+		} \
+		is_initialized = true; \
+	} \
 } while (0)
 static __exit __unused void __cleanup(void)
 {
@@ -479,7 +477,7 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 		goto out;
 	}
 
-	free(addr);
+	freeaddrinfo(addr);
 	return 0;
 out:
 	if (addr)
