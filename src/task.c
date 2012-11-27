@@ -122,7 +122,7 @@ void tasks_add(task_t *task)
 	pthread_mutex_lock(&mutex);
 	if (running) {
 		empty = list_empty(&tasks);
-		list_add(&tasks, &task->node);
+		list_add_tail(&tasks, &task->node);
 	} else
 		printf("attempting to add a task to a terminated task queue\n");
 

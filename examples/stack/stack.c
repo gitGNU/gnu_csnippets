@@ -7,8 +7,6 @@ static bool stack_compare_string(const char *s1, const char *s2)
 
 int main(int argc, char **argv)
 {
-    log_init();
-
     struct stack on_stack;
     int i;
 

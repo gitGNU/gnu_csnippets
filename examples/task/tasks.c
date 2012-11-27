@@ -51,8 +51,6 @@ void test(void *p)
 
 int main(int argc, char **argv)
 {
-    log_init();
-
     tasks_init();
     events_init();
 
