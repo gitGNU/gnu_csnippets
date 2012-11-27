@@ -21,12 +21,12 @@ static void on_write(connection_t *s, const struct sk_buff *buff)
 
 static void on_disconnect(connection_t *s)
 {
-    eprintf("%s disconnected\n", s->ip);
+    eprintf("%s disconnected\n", s->host);
 }
 
 static void on_connect(connection_t *s)
 {
-    socket_write(s, "hi %s\n", s->ip);
+    socket_write(s, "hi %s\n", s->host);
 }
 
 static struct sock_operations sops = {
@@ -39,7 +39,7 @@ static struct sock_operations sops = {
 static void on_accept(socket_t *s, connection_t *n)
 {
     n->ops = sops;
-    eprintf("Accepted connection from %s\n", n->ip);
+    eprintf("Accepted connection from %s\n", n->host);
 }
 
 static void __noreturn signal_handle(int sig)

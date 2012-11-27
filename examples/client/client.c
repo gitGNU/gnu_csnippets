@@ -16,7 +16,7 @@ static void on_write(connection_t *s, const struct sk_buff *buff)
 
 static void on_disconnect(connection_t *s)
 {
-    printf("%s disconnected\n", s->ip);
+    printf("%s disconnected\n", s->host);
     exit(EXIT_SUCCESS);
 }
 

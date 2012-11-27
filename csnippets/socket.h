@@ -92,7 +92,7 @@ struct socket {
 
 struct connection {
 	int fd;              /* The socket file descriptor */
-	char ip[1025];       /* The IP of this connection */
+	char host[1025];     /* The hostname of this connection */
 	char port[32];       /* The port we're connected to */
 	char *remote;        /* Who did we connect to?  Or who did we come from?  */
 	time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */

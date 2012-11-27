@@ -370,7 +370,7 @@ static void *poll_on_server(void *_socket)
 				                hbuf, sizeof hbuf,
 				                sbuf, sizeof sbuf,
 				                NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-					strncpy(conn->ip, hbuf, sizeof conn->ip);
+					strncpy(conn->host, hbuf, sizeof conn->host);
 					strncpy(conn->port, sbuf, sizeof conn->port);
 				}
 
