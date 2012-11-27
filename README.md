@@ -7,7 +7,7 @@ A nice snippets of C code that's meant to take part of other software.
 ### Origin
 
 Some of the codes here are taken from other sources (rewritten or changed a bit to fit).
-Send an email to <f.fallen45@gmail.com>  if you need your credit to be put on your code.
+Send an email to <f.fallen45@gmail.com>  if you think your credit is missing.
 
 ### Contribute
 
