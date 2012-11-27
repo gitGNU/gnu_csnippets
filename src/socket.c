@@ -428,11 +428,15 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 	if (!address)
 		return -errno;
 
-	if ((conn->fd = net_connect(address)) < 0)
-		goto finish;
+	if ((conn->fd = net_connect(address)) < 0) {
+		freeaddrinfo(address);
+		return -errno;
+	}
 
-	if (!socket_set_read_size(conn, 2048))
-		goto finish;
+	if (!socket_set_read_size(conn, 2048)) {
+		freeaddrinfo(address);
+		return -errno;
+	}
 
 	conn->remote = (char *)addr;
 	if (IsAvail(&conn->ops, connect))
@@ -441,8 +445,6 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 	if ((ret = pthread_create(&thread, NULL, poll_on_client, (void *)conn)) != 0)
 		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
 
-finish:
-	freeaddrinfo(address);
 	return ret;
 }
 
@@ -462,28 +464,30 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 
 	if (sock->fd < 0)
 		sock->fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (sock->fd < 0)
-		goto out;
-	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0)
-		goto out;
-	if (bind(sock->fd, addr->ai_addr, addr->ai_addrlen) == -1
-		|| listen(sock->fd, max_conns) == -1
-		|| !set_nonblock(sock->fd))
-		goto out;
-
-	list_head_init(&sock->children);
-	if ((ret = pthread_create(&thread, NULL, poll_on_server, (void *)sock)) != 0) {
-		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
-		goto out;
+	if (sock->fd < 0) {
+		freeaddrinfo(addr);
+		return -1;
 	}
 
-	freeaddrinfo(addr);
-	return 0;
-out:
-	if (addr)
+	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0) {
 		freeaddrinfo(addr);
-	if (sock->fd)
 		close(sock->fd);
+		return -1;
+	}
+
+	if (bind(sock->fd, addr->ai_addr, addr->ai_addrlen) == -1
+			|| listen(sock->fd, max_conns) == -1
+			|| !set_nonblock(sock->fd)) {
+		freeaddrinfo(addr);
+		close(sock->fd);
+		return -1;
+	}
+
+	list_head_init(&sock->children);
+	if ((ret = pthread_create(&thread, NULL, poll_on_server, (void *)sock)) != 0)
+		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
+
+	freeaddrinfo(addr);
 	return ret;
 }
 
