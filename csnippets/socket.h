@@ -97,8 +97,6 @@ struct connection {
 	char *remote;        /* Who did we connect to?  Or who did we come from?  */
 	time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */
 
-	size_t max_read_size;    /* This should be set before creating the connection  by calling connection_set_read_size().
-                                The default size is 2048 and is set by connection_create().  */
 	struct sk_buff rbuff;    /* This buffer is changed everytime there's new data to read,
                                 This buffer is constantly passed to on_read */
 	struct sk_buff wbuff;    /* "write buffer" this is changed whenever data has been been sent.
@@ -190,11 +188,23 @@ extern int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size);
  */
 extern bool socket_set_read_size(connection_t *conn, int size);
 
+/** socket_get_read_size() - get maximum read size
+ *
+ * returns the maximum read size for the connection, -1 on failure.
+ */
+extern int socket_get_read_size(connection_t *conn);
+
 /** socket_set_send_size() - set maximum write/send size
  *
  * returns true on success, false otherwise
  */
 extern bool socket_set_send_size(connection_t *conn, int size);
+
+/** socket_get_send_size() - get maximum send size
+ *
+ * returns the maximum send size for the connection, -1 on failure.
+ */
+extern int socket_get_send_size(connection_t *conn);
 
 /**
  * socket_read() - read from a socket

@@ -109,9 +109,10 @@ static void rm_connection(socket_t *socket, connection_t *conn)
 }
 
 static struct addrinfo *net_lookup(const char *hostname,
-                                   const char *service,
-                                   int family,
-                                   int socktype) {
+		const char *service,
+		int family,
+		int socktype)
+{
 	struct addrinfo hints;
 	struct addrinfo *res;
 
@@ -146,9 +147,11 @@ static bool set_nonblock(int fd)
 /* We only handle IPv4 and IPv6 */
 #define MAX_PROTOS 2
 
-static void remove_fd(struct pollfd *pfd, const struct addrinfo **addr,
-                      socklen_t *slen, unsigned int *num,
-                      unsigned int i)
+static void remove_fd(struct pollfd *pfd,
+		const struct addrinfo **addr,
+		socklen_t *slen,
+		unsigned int *num,
+		unsigned int i)
 {
 	memmove(pfd + i, pfd + i + 1, (*num - i - 1) * sizeof(pfd[0]));
 	memmove(addr + i, addr + i + 1, (*num - i - 1) * sizeof(addr[0]));
@@ -243,8 +246,10 @@ out:
 	return sockfd;
 }
 
-static bool __poll_on_client(socket_t *sock, connection_t *conn, void *events,
-                             uint32_t flags)
+static bool __poll_on_client(socket_t *sock,
+		connection_t *conn,
+		void *events,
+		uint32_t flags)
 {
 	if (unlikely(!conn))
 		return false;
@@ -268,7 +273,7 @@ static bool __poll_on_client(socket_t *sock, connection_t *conn, void *events,
 	}
 
 	if (flags & EVENT_READ) {
-		bool err = !socket_read(conn, NULL, conn->max_read_size);
+		bool err = !socket_read(conn, NULL, socket_get_read_size(conn));
 		if (err) {
 			if (IsBlocking())
 				return true;
@@ -467,8 +472,8 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0)
 		goto out;
 	if (bind(sock->fd, addr->ai_addr, addr->ai_addrlen) == -1
-	    || listen(sock->fd, max_conns) == -1
-	    || !set_nonblock(sock->fd))
+		|| listen(sock->fd, max_conns) == -1
+		|| !set_nonblock(sock->fd))
 		goto out;
 
 	list_head_init(&sock->children);
@@ -538,7 +543,7 @@ int socket_bwrite(connection_t *conn, const unsigned char *bytes, size_t size)
 	if (unlikely(!conn))
 		return -1;
 
-	sent = send(conn->fd, (char *)bytes, size, 0);
+	sent = send(conn->fd, bytes, size, 0);
 	if (sent < 0)
 		return -1;
 
@@ -566,8 +571,24 @@ bool socket_set_read_size(connection_t *conn, int size)
 		return false;
 	}
 
-	conn->max_read_size = size;
 	return true;
+}
+
+int socket_get_read_size(connection_t *conn)
+{
+	int size = -1;
+	socklen_t slen = sizeof(size);
+
+	if (getsockopt(conn->fd, SOL_SOCKET, SO_RCVBUF, &size, &slen) != 0) {
+#ifdef _DEBUG_SOCKET
+		eprintf("socket_get_read_size(%p, %d): failed because getsockopt() returned -1, the errno was: %d,"
+		        " the error string is: %s\n",
+		        conn, size, errno, strerror(errno));
+#endif
+		return -1;
+	}
+
+	return size;
 }
 
 bool socket_set_send_size(connection_t *conn, int size)
@@ -587,6 +608,23 @@ bool socket_set_send_size(connection_t *conn, int size)
 	return true;
 }
 
+int socket_get_send_size(connection_t *conn)
+{
+	int size = -1;
+	socklen_t slen = sizeof(size);
+
+	if (getsockopt(conn->fd, SOL_SOCKET, SO_SNDBUF, &size, &slen) != 0) {
+#ifdef _DEBUG_SOCKET
+		eprintf("socket_get_send_size(%p, %d): failed because getsockopt() returned -1, the errno was: %d,"
+		        " the error string is: %s\n",
+		        conn, size, errno, strerror(errno));
+#endif
+		return -1;
+	}
+
+	return size;
+}
+
 bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 {
 	char *buffer;
@@ -596,7 +634,7 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 		return false;
 
 	if (!size)
-		size = conn->max_read_size;
+		size = socket_get_read_size(conn);
 
 	buffer = calloc(size, sizeof(char));
 	if (!buffer)
