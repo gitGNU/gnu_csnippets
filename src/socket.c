@@ -415,9 +415,6 @@ connection_t *connection_create(int fd)
 	ret->fd = fd;
 	ret->remote = NULL;
 
-	ret->rbuff.size = 0;
-	ret->rbuff.data = NULL;
-
 	ret->wbuff.size = 0;
 	ret->wbuff.data = NULL;
 	return ret;
@@ -653,13 +650,15 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 	}
 	buffer[count] = '\0';
 
-	conn->rbuff.data = buffer;
-	conn->rbuff.size = count;
+	struct sk_buff on_stack = {
+		.data = buffer,
+		.size = count
+	};
 	if (buff)
-		*buff = conn->rbuff;
+		*buff = on_stack;
 
 	if (IsAvail(&conn->ops, read))
-		callop(&conn->ops, read, conn, &conn->rbuff);
+		callop(&conn->ops, read, conn, &on_stack);
 
 	if (buffer) free(buffer);
 	return true;

@@ -97,8 +97,6 @@ struct connection {
 	char *remote;        /* Who did we connect to?  Or who did we come from?  */
 	time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */
 
-	struct sk_buff rbuff;    /* This buffer is changed everytime there's new data to read,
-                                This buffer is constantly passed to on_read */
 	struct sk_buff wbuff;    /* "write buffer" this is changed whenever data has been been sent.
                                 If the data was successfully sent over the connection, on_write() will be
                                 called.  */
