@@ -23,7 +23,6 @@
  */
 #include <csnippets/socket.h>
 #include <csnippets/asprintf.h>
-#include <csnippets/atomic.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -89,7 +88,7 @@ static void add_connection(socket_t *socket, connection_t *conn)
 	pthread_mutex_lock(&socket->conn_lock);
 
 	list_add_tail(&socket->children, &conn->node);
-	atomic_ref(&socket->num_connections);
+	++socket->num_connections;
 	sockset_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
 
 	pthread_mutex_unlock(&socket->conn_lock);
@@ -100,7 +99,7 @@ static void rm_connection(socket_t *socket, connection_t *conn)
 	pthread_mutex_lock(&socket->conn_lock);
 
 	list_del_from(&socket->children, &conn->node);
-	atomic_deref(&socket->num_connections);
+	--socket->num_connections;
 	sockset_del(socket->events, conn->fd);
 
 	pthread_mutex_unlock(&socket->conn_lock);
