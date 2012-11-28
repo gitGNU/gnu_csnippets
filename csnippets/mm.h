@@ -9,21 +9,21 @@
 #define __alloc_failure(s) do { warning("failed to allocate %ld bytes\n", (long) s); } while(0)
 #define xmalloc(p, s, action) do {  \
     p = calloc(1, s); \
-    if (unlikely(!p)) { \
+    if (!p) { \
         __alloc_failure(s); \
         action; \
     } \
 } while (0)
 #define xcalloc(p, l, s, action) do { \
     p = calloc(l, s); \
-    if (unlikely(!p)) { \
+    if (!p) { \
         __alloc_failure((s) * (l)); \
         action; \
     } \
 } while (0)
 #define xrealloc(new_ptr, old_ptr, count, action) do { \
     new_ptr = realloc((old_ptr), count);  \
-    if (unlikely(!new_ptr)) {\
+    if (!new_ptr) {\
         __alloc_failure((count)); \
         action; \
     } \
