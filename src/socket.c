@@ -61,7 +61,7 @@ static __exit __unused void __cleanup(void)
 #endif
 
 #if (EAGAIN == EWOULDBLOCK)
-static __inline __const  bool IsBlocking(void)
+static __inline __const bool IsBlocking(void)
 {
 	return errno == EWOULDBLOCK;
 }
@@ -89,7 +89,6 @@ static void add_connection(socket_t *socket, connection_t *conn)
 
 	list_add_tail(&socket->children, &conn->node);
 	++socket->num_connections;
-	sockset_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
 
 	pthread_mutex_unlock(&socket->conn_lock);
 }
@@ -100,7 +99,6 @@ static void rm_connection(socket_t *socket, connection_t *conn)
 
 	list_del_from(&socket->children, &conn->node);
 	--socket->num_connections;
-	sockset_del(socket->events, conn->fd);
 
 	pthread_mutex_unlock(&socket->conn_lock);
 }
@@ -133,7 +131,8 @@ static bool set_nonblock(int fd)
 	if (flags == -1)
 		return false;
 
-	flags |= O_NONBLOCK;
+	if (!(flags & O_NONBLOCK))
+		flags |= O_NONBLOCK;
 	return fcntl(fd, F_SETFL, flags) == 0;
 #else
 	flags = 1;
@@ -382,6 +381,7 @@ static void *poll_on_server(void *_socket)
 				if (unlikely(!socket->conn))   /* We don't always expect socket->conn to be null... */
 					socket->conn = conn;
 
+				sockset_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
 				add_connection(socket, conn);
 			}
 
@@ -550,6 +550,13 @@ int socket_bwrite(connection_t *conn, const unsigned char *bytes, size_t size)
 		         (conn->wbuff.size + (size - sent)) * sizeof(char), return -1);
 		memcpy(&conn->wbuff.data[conn->wbuff.size], &bytes[sent], size - sent);
 		conn->wbuff.size += size - sent;
+	} else {
+		struct sk_buff on_stack = {
+			.data = (char *)bytes,
+			.size = size
+		};
+		if (IsAvail(&conn->ops, write))
+			callop(&conn->ops, write, conn, &on_stack);
 	}
 
 	return sent;
