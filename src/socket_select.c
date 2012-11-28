@@ -72,7 +72,7 @@ void sockset_add(struct sock_events *evs, int fd, int bits)
 		evs->fds[fd].read |= 1;
 	if (bits & EVENT_WRITE)
 		evs->fds[fd].write |= 1;
-	evs->fds[fd].fd = fd;	
+	evs->fds[fd].fd = fd;
 }
 
 void sockset_del(struct sock_events *p, int fd)

@@ -23,12 +23,12 @@
 
 #include <csnippets/module.h>
 
-void __init init(void)
+static void __init init(void)
 {
     printf("Constructing\n");
 }
 
-void __exit terminate(void)
+static void __exit terminate(void)
 {
     printf("Destructing...\n");
 }
