@@ -139,8 +139,11 @@ void events_add(event_t *event)
 	if (likely(running)) {
 		empty = list_empty(&events);
 		list_add_tail(&events, &event->node);
-	} else
-		printf("attempting to add an event to a terminated event queue\n");
+	}
+#ifdef _DEBUG_EVENTS
+	else
+		warning("attempting to add an event to a terminated event queue\n");
+#endif
 
 	pthread_mutex_unlock(&mutex);
 	if (empty)
