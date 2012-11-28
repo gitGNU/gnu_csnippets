@@ -85,7 +85,7 @@ void sockset_add(struct sock_events *evs, int fd, int bit)
 	if (unlikely(!evs))
 		return;
 
-	ev.events = EPOLLET | EPOLLPRI;
+	ev.events = EPOLLPRI;
 	if (bit & EVENT_READ)
 		ev.events |= EPOLLIN;
 	if (bit & EVENT_WRITE)
