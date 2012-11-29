@@ -22,7 +22,7 @@ static void on_disconnect(connection_t *s)
 
 static void on_connect(connection_t *s)
 {
-    printf("Connected to %s\n", s->remote);
+    printf("Connected to %s:%s\n", s->remote, s->port);
 }
 
 static void __noreturn signal_handle(int sig)

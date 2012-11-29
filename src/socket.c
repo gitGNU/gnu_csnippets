@@ -365,11 +365,10 @@ static void *poll_on_server(void *_socket)
 
 				conn->last_active = time(NULL);
 				if (getnameinfo(&in_addr, in_len,
-				                hbuf, sizeof hbuf,
-				                sbuf, sizeof sbuf,
-				                NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-					strncpy(conn->host, hbuf, sizeof conn->host);
-					strncpy(conn->port, sbuf, sizeof conn->port);
+					conn->host, sizeof conn->host,
+					conn->port, sizeof conn->port,
+					NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+					; /* nothing... */
 				}
 
 				if (likely(socket->on_accept)) {
@@ -435,6 +434,13 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 	if (!socket_set_read_size(conn, 2048)) {
 		freeaddrinfo(address);
 		return -errno;
+	}
+
+	if (getnameinfo(address->ai_addr, address->ai_addrlen,
+		conn->host, sizeof conn->host,
+		conn->port, sizeof conn->port,
+		NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+		; /* nothing... */
 	}
 
 	conn->remote = (char *)addr;

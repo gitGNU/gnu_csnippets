@@ -31,7 +31,7 @@
 #endif
 
 /* Specification.  */
-#include <poll.h>
+#include <csnippets/poll.h>
 
 #include <limits.h>
 #include <assert.h>
