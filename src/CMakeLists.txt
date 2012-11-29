@@ -17,6 +17,7 @@ set(src_SOURCES ${src_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/module.c
     ${CMAKE_CURRENT_LIST_DIR}/poll.c
 )
+set(src_PRE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
 
 set(BUILD_COMMIT "devel" CACHE "Git commit string (intended for releases)" STRING)
 set(BUILD_REVISION "0" CACHE "Git revision string (intended for releases)" STRING)
@@ -28,7 +29,7 @@ endif()
 
 # gcc compile flags
 set(WARNS_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-variable -Wno-sign-compare -Werror")
-set(CMAKE_C_FLAGS                   "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
+set(CMAKE_C_FLAGS                   "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${src_PRE_INCLUDE}")
 set(CMAKE_C_FLAGS_DEBUG             "-O0 -g3 -ggdb")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O1 -g3 -ggdb -fno-omit-frame-pointer")
 set(CMAKE_C_FLAGS_RELEASE           "-O2")
