@@ -364,13 +364,11 @@ static void *poll_on_server(void *_socket)
 				}
 
 				conn->last_active = time(NULL);
-				if (getnameinfo(&in_addr, in_len,
+				getnameinfo(&in_addr, in_len,
 					conn->host, sizeof conn->host,
 					conn->port, sizeof conn->port,
-					NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-					; /* nothing... */
-				}
-
+					NI_NUMERICHOST | NI_NUMERICSERV);
+				gethostname(conn->remote, sizeof conn->remote);
 				if (likely(socket->on_accept)) {
 					(*socket->on_accept) (socket, conn);
 					if (IsAvail(&conn->ops, connect))
@@ -409,7 +407,6 @@ connection_t *connection_create(int fd)
 	SOCK_INIT();
 	xmalloc(ret, sizeof(*ret), return NULL);
 	ret->fd = fd;
-	ret->remote = NULL;
 
 	ret->wbuff.size = 0;
 	ret->wbuff.data = NULL;
@@ -436,14 +433,11 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 		return -errno;
 	}
 
-	if (getnameinfo(address->ai_addr, address->ai_addrlen,
-		conn->host, sizeof conn->host,
+	getnameinfo(address->ai_addr, address->ai_addrlen,
+		conn->remote, sizeof conn->remote,
 		conn->port, sizeof conn->port,
-		NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-		; /* nothing... */
-	}
-
-	conn->remote = (char *)addr;
+		NI_NUMERICHOST | NI_NUMERICSERV);
+	gethostname(conn->host, sizeof conn->host);
 	if (IsAvail(&conn->ops, connect))
 		callop(&conn->ops, connect, conn);
 

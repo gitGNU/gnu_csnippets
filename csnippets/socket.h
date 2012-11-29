@@ -94,7 +94,7 @@ struct connection {
 	int fd;              /* The socket file descriptor */
 	char host[1025];     /* The hostname of this connection */
 	char port[32];       /* The port we're connected to */
-	char *remote;        /* Who did we connect to?  Or who did we come from?  */
+	char remote[1025];   /* Who did we connect to?  Or who did we come from?  */
 	time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */
 
 	struct sk_buff wbuff;    /* "write buffer" this is changed whenever data has been been sent.
