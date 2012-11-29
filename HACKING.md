@@ -1,12 +1,12 @@
-### Coding Style=
+## Coding Style
 
 I use and prefer Linux style over all but may be switching to GNU coding standards since I'm starting to like them.
 
 Use tabs of 8 width and braces in line not after.  If you feel the code looks like spaghetti, use astyle to format it.
 
-## Braces
+### Braces
 
-# If statements
+#### If statements
 
 Braces should be placed in the same line:
 ```c
@@ -33,7 +33,7 @@ if (foo) {
 	}
 ```
 
-# Loops
+#### Loops
 
 Same as if statements:
 ```c
@@ -44,7 +44,7 @@ for (i = 0; i < whatever; i++)
 		ok();
 ```
 
-# Functions
+#### Functions
 Put braces after definition:
 ```c
 void foo(void)
@@ -94,6 +94,7 @@ Comment code you feel confusing.
 ### Commits
 
 Please [signoff](http://gerrit.googlecode.com/svn/documentation/2.0/user-signedoffby.html) your commits.
+
 Use [detailed commit messages](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)
 
 More to come.
