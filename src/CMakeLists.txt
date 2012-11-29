@@ -1,7 +1,7 @@
-set(src_LIBRARIES "")
-set(src_DEFINITIONS "")
-set(src_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/..")
-set(src_SOURCES ${src_SOURCES}
+set(csnippets_LIBRARIES "")
+set(csnippets_DEFINITIONS "")
+set(csnippets_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/..")
+set(csnippets_SOURCES ${csnippets_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/asprintf.c
     ${CMAKE_CURRENT_LIST_DIR}/config.c
     ${CMAKE_CURRENT_LIST_DIR}/event.c
@@ -17,7 +17,7 @@ set(src_SOURCES ${src_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/module.c
     ${CMAKE_CURRENT_LIST_DIR}/poll.c
 )
-set(src_PRE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
+set(csnippets_PRE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
 
 set(BUILD_COMMIT "devel" CACHE "Git commit string (intended for releases)" STRING)
 set(BUILD_REVISION "0" CACHE "Git revision string (intended for releases)" STRING)
@@ -29,7 +29,7 @@ endif()
 
 # gcc compile flags
 set(WARNS_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-variable -Wno-sign-compare -Werror")
-set(CMAKE_C_FLAGS                   "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${src_PRE_INCLUDE}")
+set(CMAKE_C_FLAGS                   "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${csnippets_PRE_INCLUDE}")
 set(CMAKE_C_FLAGS_DEBUG             "-O0 -g3 -ggdb")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O1 -g3 -ggdb -fno-omit-frame-pointer")
 set(CMAKE_C_FLAGS_RELEASE           "-O2")
@@ -48,32 +48,32 @@ find_package(LibIntl)
 
 if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads -D__use_select")
-    set(src_DEFINITIONS ${src_DEFINITIONS} -D_WIN32_WINNT=0x0600)
+    set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -D_WIN32_WINNT=0x0600)
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--large-address-aware") # strip all debug information
-    set(src_LIBRARIES "-lws2_32")
-    #    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_windows.c)
+    set(csnippets_LIBRARIES "-lws2_32")
+    #    set(csnippets_SOURCES ${csnippets_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_windows.c)
 elseif(APPLE)
-    set(src_DEFINITIONS ${src_DEFINITIONS} -D_REENTRANT) # enable thread safe code
+    set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -D_REENTRANT) # enable thread safe code
 endif()
 
 if(NOT WIN32)
-    set(src_SOURCES ${src_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_unix.c)
+    set(csnippets_SOURCES ${csnippets_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_unix.c)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    set(src_DEFINITIONS "${src_DEFINITIONS} -D_DEBUG_SOCKET -D_DEBUG_EVENTS -D_DEBUG_TASKS -D_DEBUG_MODULES")
+    set(csnippets_DEFINITIONS "${csnippets_DEFINITIONS} -D_DEBUG_SOCKET -D_DEBUG_EVENTS -D_DEBUG_TASKS -D_DEBUG_MODULES")
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--no-as-needed")
     message(STATUS "Debug information: ON")
 else()
     message(STATUS "Debug information: OFF")
-    set(src_DEFINITIONS ${src_DEFINITIONS} -DNDEBUG) # NDEBUG disable asserts
+    set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -DNDEBUG) # NDEBUG disable asserts
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--as-needed -Wl,-s") # strip all debug information
 endif()
 
 
-set(src_INCLUDE_DIRS ${src_INCLUDE_DIRS} ${DL_INCLUDE_DIR})
-set(src_LIBRARIES ${src_LIBRARIES} ${LIBINTL_LIBRARIES} -lpthread ${DL_LIBRARIES})
+set(csnippets_INCLUDE_DIRS ${csnippets_INCLUDE_DIRS} ${DL_INCLUDE_DIR})
+set(csnippets_LIBRARIES ${csnippets_LIBRARIES} ${LIBINTL_LIBRARIES} -lpthread ${DL_LIBRARIES})
 if(LIBINTL_FOUND)
-    set(src_DEFINITIONS "${src_DEFINITIONS} -DHAVE_LIBINTL_H")
+    set(csnippets_DEFINITIONS "${csnippets_DEFINITIONS} -DHAVE_LIBINTL_H")
 endif()
 
