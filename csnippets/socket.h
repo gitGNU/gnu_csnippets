@@ -225,7 +225,7 @@ extern bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size);
  *
  * returns true on success, false otherwise
  */
-extern bool __const socket_remove(socket_t *socket, connection_t *conn);
+extern bool socket_remove(socket_t *socket, connection_t *conn);
 
 #endif    /* _SOCKET_H */
 
