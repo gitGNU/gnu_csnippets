@@ -55,8 +55,7 @@ struct sock_events;
  * \endcode
  */
 struct sock_operations {
-	/* Called when we've have connected.  This is the root of the connection.
-	 * It should be used to setup other callbacks!  */
+	/* Called when we've have connected.  */
 	void (*connect) (connection_t *self);
 
 	/* Called when we've disconnected.   */
@@ -97,8 +96,8 @@ struct connection {
 	char remote[1025];   /* Who did we connect to?  Or who did we come from?  */
 	time_t last_active;  /* The timestamp of last activity.  Useful for PING PONG. */
 
-	struct sk_buff wbuff;    /* "write buffer" this is changed whenever data has been been sent.
-                                If the data was successfully sent over the connection, on_write() will be
+	struct sk_buff wbuff;/* "write buffer" this is changed whenever data has been been sent.
+                                If the data was successfully sent over the connection, ops.write will be
                                 called.  */
 
 	struct sock_operations ops;  /* operations  */
@@ -124,7 +123,7 @@ extern void socket_free(socket_t *socket);
 /**
  * Create a connection
  *
- * @on_connect, the callback to use for on_connect
+ * fd can be -1 if not known, but then call socket_connect() to do the rest.
  */
 extern connection_t *connection_create(int fd);
 
@@ -142,7 +141,7 @@ extern void connection_free(connection_t *conn);
 /**
  * socket_connect() - connect to a server.
  *
- * @conn a malloc'd connection that has atleast the on_connect callback setup.
+ * @conn a malloc'd connection (the connection should have sock_operationrs setup) 
  * @addr the address the server is listening on.
  * @service port or a register service.
  */
@@ -211,12 +210,11 @@ extern int socket_get_send_size(connection_t *conn);
  * @size how many characters to read?
  *
  * on successfull read, this function returns true and does the following:
- *   * calls conn->on_read if not NULL.
+ *   * calls conn->ops.read if not NULL.
  *   * sets the data read to `buff'.
  * on failure, this function returns false.
  *
- * This function heap allocates memory for the data read, this means
- * buff->data must be free'd later on to avoid memory leak issues.
+ * This function heap allocates memory for the data read, we free it later on if the user didn't.
  */
 extern bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size);
 
