@@ -444,6 +444,7 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 	if ((ret = pthread_create(&thread, NULL, poll_on_client, (void *)conn)) != 0)
 		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
 
+	freeaddrinfo(address);
 	return ret;
 }
 
@@ -641,7 +642,7 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 	if (!size)
 		size = socket_get_read_size(conn);
 
-	buffer = calloc(size, sizeof(char));
+	buffer = calloc(size + 1, sizeof(char));
 	if (!buffer)
 		return false;
 
