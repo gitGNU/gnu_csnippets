@@ -181,9 +181,8 @@ int modules_load(const char *dir, struct module_list **modules,
 	list_head_init(&mods->children);
 	while (so_count--) {
 		if ((ret = module_load(so_list[so_count]->d_name, &mod,
-		                       start_name) != 0)) {
-			warning("failed to load module: %s (%d)\n",
-			        so_list[so_count]->d_name, ret);
+						start_name) != 0)) {
+			warning("failed to load module: %s (%d)\n", so_list[so_count]->d_name, ret);
 		} else {
 			++mods->num_modules;
 			list_add(&mods->children, &mod->node);

@@ -21,8 +21,8 @@
 #define __init          __attribute__((constructor))
 #define __exit          __attribute__((destructor))
 #define GCC_VERSION (__GNUC__ * 10000 \
-                            + __GNUC_MINOR__ * 100 \
-                            + __GNUC_PATCHLEVEL__)
+			+ __GNUC_MINOR__ * 100 \
+			+ __GNUC_PATCHLEVEL__)
 #if GCC_VERSION >= 40500
 #define __unreachable() __builtin_unreachable()
 #else
@@ -33,7 +33,7 @@
 #define __noreturn
 #define likely(x) (x)
 #define unlikely(x) (x)
-#define __inline__ inline
+#define __inline
 #define __warn_unused
 #define __weak
 #define __printf(nfmt, narg)
