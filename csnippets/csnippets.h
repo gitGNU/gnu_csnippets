@@ -13,8 +13,8 @@
  */
 #if defined _MSC_VER
 typedef enum _Bool {
-        false = 0,
-        true  = 1
+	false = 0,
+	true  = 1
 } bool;
 #else
 #include <stdbool.h>
@@ -46,12 +46,14 @@ typedef enum _Bool {
 #define countof(array) (sizeof((array)) / sizeof((array)[0]))
 
 /* C++ compatiblity.  */
+#if !defined(_BEGIN_DECLS) && !defined(_END_DECLS)
 #ifdef __cplusplus
 #define _BEGIN_DECLS extern "C" {
 #define _END_DECLS   }
 #else
 #define _BEGIN_DECLS
 #define _END_DECLS
+#endif
 #endif
 
 #if HAVE_LIBINTL_H

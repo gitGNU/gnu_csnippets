@@ -20,11 +20,13 @@
  * THE SOFTWARE.
  */
 #ifdef USE_EPOLL
-#ifndef __linux
+#if !defined(__linux) || !defined(linux) || !defined(__linux__)
 #error "Epoll requires Linux"
 #endif
 
+#ifndef MAX_EVENTS
 #define MAX_EVENTS 1024
+#endif
 #include <csnippets/socket.h>
 #include <sys/epoll.h>
 #include <unistd.h>   /* close() */

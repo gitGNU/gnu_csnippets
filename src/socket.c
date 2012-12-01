@@ -45,7 +45,7 @@ static bool is_initialized = false;
 	if (!is_initialized) { \
 		if (0 != WSAStartup(MAKEWORD(2, 2), &wsa)) { \
 			WSACleanup(); \
-			warning("WSAStartup() failed\n"); \
+			eprintf("WSAStartup() failed\n"); \
 			return NULL; \
 		} \
 		is_initialized = true; \
@@ -103,10 +103,12 @@ static void rm_connection(socket_t *socket, connection_t *conn)
 	pthread_mutex_unlock(&socket->conn_lock);
 }
 
-static struct addrinfo *net_lookup(const char *hostname,
+static struct addrinfo *net_lookup(
+		const char *hostname,
 		const char *service,
 		int family,
-		int socktype)
+		int socktype
+)
 {
 	struct addrinfo hints;
 	struct addrinfo *res;
@@ -143,11 +145,13 @@ static bool set_nonblock(int fd)
 /* We only handle IPv4 and IPv6 */
 #define MAX_PROTOS 2
 
-static void remove_fd(struct pollfd *pfd,
+static void remove_fd(
+		struct pollfd *pfd,
 		const struct addrinfo **addr,
 		socklen_t *slen,
 		unsigned int *num,
-		unsigned int i)
+		unsigned int i
+)
 {
 	memmove(pfd + i, pfd + i + 1, (*num - i - 1) * sizeof(pfd[0]));
 	memmove(addr + i, addr + i + 1, (*num - i - 1) * sizeof(addr[0]));
@@ -245,7 +249,7 @@ out:
 static bool __poll_on_client(
 		socket_t *sock,
 		connection_t *conn,
-		void *events,
+		struct sock_events *events,
 		uint32_t flags
 )
 {
@@ -254,11 +258,13 @@ static bool __poll_on_client(
 
 	conn->last_active = time(NULL);
 	if (flags & EVENT_WRITE && conn->wbuff.size > 0) {
-		int len = -1;
+		int len;
+
+		errno = 0;
 		do
 			len = send(conn->fd, conn->wbuff.data, conn->wbuff.size, 0);
 		while (len == -1 && errno == EINTR);
-		if (len < 0 || len != conn->wbuff.size)
+		if ((len < 0 || len != conn->wbuff.size) && !IsBlocking())
 			__unreachable();
 
 		if (IsAvail(&conn->ops, write))
@@ -526,6 +532,7 @@ int socket_write(connection_t *conn, const char *fmt, ...)
 	if (!data || len < 0)
 		return -ENOMEM;
 
+	errno = 0;
 	sent = send(conn->fd, data, len, 0);
 	if (sent < 0) {
 #ifdef _DEBUG_SOCKET
@@ -541,6 +548,10 @@ int socket_write(connection_t *conn, const char *fmt, ...)
 		         (conn->wbuff.size + (len - sent)) * sizeof(char), free(data); return -1);
 		memcpy(&conn->wbuff.data[conn->wbuff.size], &data[sent], len - sent);
 		conn->wbuff.size += len - sent;
+#ifdef _DEBUG_SOCKET
+		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
+				sent, len, len - sent, &conn->wbuff.data[conn->wbuff.size]);
+#endif
 	} else {
 		struct sk_buff on_stack = {
 			.data = data,
@@ -570,6 +581,10 @@ int socket_bwrite(connection_t *conn, const unsigned char *bytes, size_t size)
 		         (conn->wbuff.size + (size - sent)) * sizeof(char), return -1);
 		memcpy(&conn->wbuff.data[conn->wbuff.size], &bytes[sent], size - sent);
 		conn->wbuff.size += size - sent;
+#ifdef _DEBUG_SOCKET
+		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
+				sent, size, size - sent, &conn->wbuff.data[conn->wbuff.size]);
+#endif
 	} else {
 		struct sk_buff on_stack = {
 			.data = (char *)bytes,

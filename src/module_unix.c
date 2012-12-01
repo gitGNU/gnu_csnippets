@@ -75,8 +75,8 @@ int module_load(const char *file, struct module **mod, const char *start_name)
 	shdr = (Elf32_Shdr *)(buffer + hdr->e_shoff);
 
 	for (i = 0; i < hdr->e_shnum; ++i) {
-		if (shdr[i].sh_type == SHT_STRTAB &&
-		    strcmp(buffer + shdr[hdr->e_shstrndx].sh_offset + shdr[i].sh_name,
+		if (shdr[i].sh_type == SHT_STRTAB
+		    && strcmp(buffer + shdr[hdr->e_shstrndx].sh_offset + shdr[i].sh_name,
 		           ".dynstr") == 0) {
 			symbol_loc = i;
 			break;
@@ -182,7 +182,9 @@ int modules_load(const char *dir, struct module_list **modules,
 	while (so_count--) {
 		if ((ret = module_load(so_list[so_count]->d_name, &mod,
 						start_name) != 0)) {
+#ifdef _DEBUG_MODULES
 			warning("failed to load module: %s (%d)\n", so_list[so_count]->d_name, ret);
+#endif
 		} else {
 			++mods->num_modules;
 			list_add(&mods->children, &mod->node);

@@ -7,7 +7,7 @@
 #ifndef _LINUX_STYLE_H
 #define _LINUX_STYLE_H
 
-#ifdef __GNUC__
+#if defined __GNUC__ || defined __clang__
 #define __noreturn      __attribute__((noreturn))
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
@@ -23,12 +23,12 @@
 #define GCC_VERSION (__GNUC__ * 10000 \
 			+ __GNUC_MINOR__ * 100 \
 			+ __GNUC_PATCHLEVEL__)
-#if GCC_VERSION >= 40500
+#if GCC_VERSION >= 40500 || defined __clang__
 #define __unreachable() __builtin_unreachable()
 #else
 #define __unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #endif  /* GCC_VERSION */
-#else   /* not __GNUC__ */
+#else   /* not __GNUC__ || __clang__ */
 #define __attribute__(x)
 #define __noreturn
 #define likely(x) (x)
@@ -42,7 +42,7 @@
 #define __unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #define __init
 #define __exit
-#endif  /* __GNUC__ */
+#endif  /* __GNUC__ || __clang__ */
 
 #endif    /* _LINUX_STYLE_H */
 
