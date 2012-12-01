@@ -242,10 +242,12 @@ out:
 	return sockfd;
 }
 
-static bool __poll_on_client(socket_t *sock,
+static bool __poll_on_client(
+		socket_t *sock,
 		connection_t *conn,
 		void *events,
-		uint32_t flags)
+		uint32_t flags
+)
 {
 	if (unlikely(!conn))
 		return false;
@@ -296,13 +298,17 @@ static void *poll_on_client(void *client)
 	sockset_add(events, conn->fd, EVENT_READ | EVENT_WRITE);
 	while (1) {
 		int ret = sockset_poll(events);
-		for (i = 0; i < ret; i++)
-			if (sockset_active(events, i) == conn->fd &&
-			    !__poll_on_client(NULL, conn, events, sockset_revent(events, i))) {
+		for (i = 0; i < ret; i++) {
+			if (sockset_active(events, i) == conn->fd
+			    && !__poll_on_client(NULL, conn, events,
+				    sockset_revent(events, i))) {
 				sockset_deinit(events);
 				pthread_exit(NULL);
 			}
+		}
 	}
+
+	__unreachable();
 }
 
 static void *poll_on_server(void *_socket)
@@ -323,6 +329,14 @@ static void *poll_on_server(void *_socket)
 	while (1) {
 		connection_t *conn = NULL;
 		int ret = sockset_poll(socket->events);
+		if (ret < 0) {
+#ifdef _DEBUG_SOCKET
+			eprintf("poll_on_server(): sockset_poll() returned a negative result, is the server "
+					" socket closed?\n");
+#endif
+			pthread_exit(NULL);
+		}
+
 		for (i = 0; i < ret; i++) {
 			cfd = sockset_active(socket->events, i);
 			bits = sockset_revent(socket->events, i);
@@ -336,8 +350,12 @@ static void *poll_on_server(void *_socket)
 				continue;
 			}
 
-			if (!(bits & EVENT_READ))
+			if (!(bits & EVENT_READ)) {
+#ifdef _DEBUG_SOCKET
+				eprintf("poll_on_server(): bits do not contain EVENT_READ on the server socket\n");
+#endif
 				pthread_exit(NULL);
+			}
 
 			while (1) {
 				in_fd = accept(socket->fd, &in_addr, &in_len);
@@ -368,6 +386,7 @@ static void *poll_on_server(void *_socket)
 					conn->host, sizeof conn->host,
 					conn->port, sizeof conn->port,
 					NI_NUMERICHOST | NI_NUMERICSERV);
+				/* FIXME: should this really be gethostname() ?_? */
 				gethostname(conn->remote, sizeof conn->remote);
 				if (likely(socket->on_accept)) {
 					(*socket->on_accept) (socket, conn);
@@ -381,7 +400,6 @@ static void *poll_on_server(void *_socket)
 				sockset_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
 				add_connection(socket, conn);
 			}
-
 		}
 	}
 
@@ -417,26 +435,27 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 {
 	struct addrinfo *address;
 	pthread_t thread;
-	int ret = -errno;
+	int ret;
 
 	address = net_lookup(addr, service, AF_INET, SOCK_STREAM);
 	if (!address)
-		return -errno;
+		return -1;
 
 	if ((conn->fd = net_connect(address)) < 0) {
 		freeaddrinfo(address);
-		return -errno;
+		return -1;
 	}
 
 	if (!socket_set_read_size(conn, 2048)) {
 		freeaddrinfo(address);
-		return -errno;
+		return -1;
 	}
 
 	getnameinfo(address->ai_addr, address->ai_addrlen,
 		conn->remote, sizeof conn->remote,
 		conn->port, sizeof conn->port,
 		NI_NUMERICHOST | NI_NUMERICSERV);
+	/* FIXME: Should this really be gethostname() ?_? */
 	gethostname(conn->host, sizeof conn->host);
 	if (IsAvail(&conn->ops, connect))
 		callop(&conn->ops, connect, conn);
@@ -456,11 +475,11 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 	struct addrinfo *addr;
 
 	if (!sock)
-		return false;
+		return -1;
 
 	addr = net_lookup(address, service, AF_INET, SOCK_STREAM);
 	if (!addr)
-		return -EHOSTUNREACH;
+		return -1;
 
 	if (sock->fd < 0)
 		sock->fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
