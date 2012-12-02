@@ -53,7 +53,7 @@ void foo(void)
 }
 ```
 
-It's okay to not use the extern keyword to declare:
+It's okay to use the extern keyword to declare:
 ```c
 extern void foo(void);
 ```
