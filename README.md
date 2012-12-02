@@ -12,6 +12,7 @@ Current modules implemented:
      2. Asynchronous Events
      3. Asynchronous sockets (with epoll and select support)
      4. Dynamic Library Loading (currently works for Linux, it can load .so files and get callable function address)
+     5. Dyanmic Stack (This can be used as standalone header see the comments in csnippets/stack.h)
 
 and much more, glance at the directory csnippets/ to see included modules (This is where the headers go)
 
@@ -46,8 +47,7 @@ Another version of the GitHub repository can be browsered at: http://git.savanna
 
 ### TODO and bug reports
 
-Please report any bugs you encounter [here](https://github.com/allanference/csnippets/issues) or post to the
-mailing list: https://lists.nongnu.org/mailman/listinfo/csnippets-bugs
+Please report any bugs you encounter to the mailing list: https://lists.nongnu.org/mailman/listinfo/csnippets-bugs
 
 ### License
 
