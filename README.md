@@ -28,7 +28,7 @@ Please see AUTHORS for more information.
 
 The project currently have 2 mailing lists:
 
-Development: https://lists.nongnu.org/mailman/listinfo/csnipets-dev
+Development: https://lists.nongnu.org/mailman/listinfo/csnippets-dev
 
 Bug reports: https://lists.nongnu.org/mailman/listinfo/csnippets-bugs
 
