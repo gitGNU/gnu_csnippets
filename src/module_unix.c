@@ -71,7 +71,7 @@ int module_load(const char *file, struct module **mod, const char *start_name)
 	}
 	fclose(fp);
 
-	hdr = (Elf32_Ehdr *)buffer;
+	hdr  = (Elf32_Ehdr *)buffer;
 	shdr = (Elf32_Shdr *)(buffer + hdr->e_shoff);
 
 	for (i = 0; i < hdr->e_shnum; ++i) {
@@ -126,8 +126,9 @@ int module_load(const char *file, struct module **mod, const char *start_name)
 
 		symbol->func_ptr = dlsym(handle, symbols[i]);
 		if ((errorstr = dlerror())) {
-			warning("error resolving symbol %s: %s\n",
-			        symbols[i], errorstr);
+#ifdef _DEBUG_MODULES
+			warning("error resolving symbol %s: %s\n", symbols[i], errorstr);
+#endif
 			goto cleanup;
 		}
 
