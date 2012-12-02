@@ -103,6 +103,17 @@ static void rm_connection(socket_t *socket, connection_t *conn)
 	pthread_mutex_unlock(&socket->conn_lock);
 }
 
+static __inline char *skb_put(struct sk_buff *skb, int len)
+{
+	char *tmp;
+
+	xrealloc(skb->data, skb->data,
+			(skb->size + len) * sizeof(char), return NULL);
+	tmp = &skb->data[skb->size];
+	skb->size += len;
+	return tmp;
+}
+
 static struct addrinfo *net_lookup(
 		const char *hostname,
 		const char *service,
@@ -533,7 +544,9 @@ int socket_write(connection_t *conn, const char *fmt, ...)
 		return -ENOMEM;
 
 	errno = 0;
-	sent = send(conn->fd, data, len, 0);
+	do
+		sent = send(conn->fd, data, len, 0);
+	while (sent == -1 && errno == EINTR);
 	if (sent < 0) {
 #ifdef _DEBUG_SOCKET
 		eprintf("send(): returned %d, errno is %d, estring is %s\n", sent,
@@ -544,10 +557,7 @@ int socket_write(connection_t *conn, const char *fmt, ...)
 	}
 
 	if (sent != len) {
-		xrealloc(conn->wbuff.data, conn->wbuff.data,
-		         (conn->wbuff.size + (len - sent)) * sizeof(char), free(data); return -1);
-		memcpy(&conn->wbuff.data[conn->wbuff.size], &data[sent], len - sent);
-		conn->wbuff.size += len - sent;
+		memcpy(skb_put(&conn->wbuff, len - sent), &data[sent], len - sent);
 #ifdef _DEBUG_SOCKET
 		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
 				sent, len, len - sent, &conn->wbuff.data[conn->wbuff.size]);
@@ -572,15 +582,15 @@ int socket_bwrite(connection_t *conn, const unsigned char *bytes, size_t size)
 	if (unlikely(!conn))
 		return -1;
 
-	sent = send(conn->fd, bytes, size, 0);
+	errno = 0;
+	do
+		sent = send(conn->fd, bytes, size, 0);
+	while (sent == -1 && errno == EINTR);
 	if (sent < 0)
 		return -1;
 
 	if (sent != size) {
-		xrealloc(conn->wbuff.data, conn->wbuff.data,
-		         (conn->wbuff.size + (size - sent)) * sizeof(char), return -1);
-		memcpy(&conn->wbuff.data[conn->wbuff.size], &bytes[sent], size - sent);
-		conn->wbuff.size += size - sent;
+		memcpy(skb_put(&conn->wbuff, size - sent), &bytes[sent], size - sent);
 #ifdef _DEBUG_SOCKET
 		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
 				sent, size, size - sent, &conn->wbuff.data[conn->wbuff.size]);
@@ -691,7 +701,7 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 		free(buffer);
 		return false;
 	}
-	buffer[count] = '\0';
+	buffer[count + 1] = '\0';
 
 	struct sk_buff on_stack = {
 		.data = buffer,

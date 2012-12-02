@@ -69,7 +69,9 @@ int main(int argc, char **argv)
     signal(SIGTERM, signal_handle);
     while (1) {
         sleep(5);
+	pthread_mutex_lock(&socket->conn_lock);
         eprintf("%d connections ATM\n", socket->num_connections);
+	pthread_mutex_unlock(&socket->conn_lock);
     }
 
     socket_free(socket);
