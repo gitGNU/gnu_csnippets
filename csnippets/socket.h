@@ -107,28 +107,29 @@ struct connection {
 #define EVENT_READ  0x01   /* There's data to be read on this connection.  */
 #define EVENT_WRITE 0x02   /* We're free to send incomplete data.  */
 
-/** socket_create() - Create and prepare a socket for listening.
+/**
+ * socket_create() - Create and prepare a socket for listening.
  *
  * @return a malloc'd socket or NULL on failure.
  */
 extern socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *));
 
 /**
- * Free socket and all of it's connections if any.
+ * socket_free() - Free socket and all of it's connections if any.
  *
  * @socket a socket returned by socket_create().
  */
 extern void socket_free(socket_t *socket);
 
 /**
- * Create a connection
+ * connection_create() - Create a connection
  *
  * fd can be -1 if not known, but then call socket_connect() to do the rest.
  */
 extern connection_t *connection_create(int fd);
 
 /**
- * Close & Free the connection
+ * connection_free() - Close & Free the connection
  *
  * Note: Consider calling socket_remove() before calling this function, see below.
  * Note: That the above note applies only if this connection is part of
@@ -147,10 +148,11 @@ extern void connection_free(connection_t *conn);
  */
 extern int socket_connect(connection_t *conn, const char *addr,
                           const char *service);
-/** socket_listen() - Listen on this socket.
+/**
+ * socket_listen() - Listen on this socket for incoming connections.
  *
  * @address can be NULL if independent
- * @port port to listen on.
+ * @port to listen on.
  */
 extern int socket_listen(socket_t *socket, const char *address,
                          const char *service, long max_conns);
@@ -158,8 +160,8 @@ extern int socket_listen(socket_t *socket, const char *address,
 /**
  * socket_write() - Write string on socket connection
  *
- * @param conn a connection created by socket_connect() or from the listening socket.
- * @param data the data to send
+ * @conn a connection created by socket_connect() or from the listening socket.
+ * @data the data to send
  * @return errno (negatively!) on failure, 0 on success.
  *
  * This function stores the data in conn->squeue, and then
@@ -179,25 +181,29 @@ extern int socket_write(connection_t *conn, const char *fmt, ...);
  */
 extern int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size);
 
-/** socket_set_read_size() - set maximum read size
+/**
+ * socket_set_read_size() - set maximum read size
  *
  * returns true on success, false otherwise
  */
 extern bool socket_set_read_size(connection_t *conn, int size);
 
-/** socket_get_read_size() - get maximum read size
+/**
+ * socket_get_read_size() - get maximum read size
  *
  * returns the maximum read size for the connection, -1 on failure.
  */
 extern int socket_get_read_size(connection_t *conn);
 
-/** socket_set_send_size() - set maximum write/send size
+/**
+ * socket_set_send_size() - set maximum write/send size
  *
  * returns true on success, false otherwise
  */
 extern bool socket_set_send_size(connection_t *conn, int size);
 
-/** socket_get_send_size() - get maximum send size
+/**
+ * socket_get_send_size() - get maximum send size
  *
  * returns the maximum send size for the connection, -1 on failure.
  */

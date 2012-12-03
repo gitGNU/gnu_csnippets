@@ -43,7 +43,7 @@ struct map {
 };
 
 /**
- * Initialize the map, set everything to NULL.
+ * MAP_INIT() - Initialize the map, set everything to NULL.
  *
  * Intended to work as if the map is stack allocation.
  * To use a heap allocation, allocate it manually.
@@ -51,48 +51,55 @@ struct map {
  * Then call map_new() on it.
  */
 #define MAP_INIT { 1, NULL, NULL, NULL }
-/*
- * some helper macros for `pair'
- */
+/* some helper macros for `pair' */
 #define PAIR_KEY(pair) (pair)->key
 #define PAIR_VALUE(pair, cast) (cast)(pair)->value
 
 /**
- * Allocate map members, buckets, etc.  Set the default hash
+ * map_new() - allocate @map members
+ *
+ * Allocate @map members, buckets, etc.  Set the default hash
  * function if it's not already set, and so on with hash_comp.
  *
  * returns true on success, false otherwise.
  */
 extern bool map_new(struct map *map);
 /**
+ * map_free() - free map members (This does not free @map itself).
+ *
  * Free stuff in `map'.  buckets and so on.
  */
 extern void map_free(struct map *map);
 /**
- * Get a pair in the map, by key.
+ * map_get() - Get a pair in the map, by key.
  *
  * So why does this return `pair' and not just the value?  Since the hash_comp()
  * function is configurable, this is left to the user just incase if the user would
  * compare with wildcards but then we would return the actual 'key'.
  */
 extern struct pair *map_get(const struct map *map, const char *key);
-/* Check if the map has key `key'. */
+/**
+ * map_has() - Like map_get() but returns boolean
+ *
+ * Check if the map has key `key'. */
 extern bool map_has(const struct map *map, const char *key);
 /**
- * Remove `key' from the map.
+ * map_remove() - Remove `key' from the map.
  *
  * NOTE: This does NOT free the value!
  * returns true on success, false otherwise.
  */
 extern bool map_remove(const struct map* map, const char *key);
 /**
- * Put a pair in the map.
+ * map_put() - Put a pair in the map.
  *
  * @returns the pair that has been put.  This can be useful in rare cases but it can be
  * ignored.
  */
 extern struct pair *map_put(const struct map *map, const char *key, void *value);
 /**
+ * map_get_count() - compute the count of pairs
+ *
  * Calculate the count of (valid) pairs in the map.
  */
 extern int map_get_count(const struct map* map);
