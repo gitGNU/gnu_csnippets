@@ -22,7 +22,7 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#include "list.h"
+#include <csnippets/list.h>
 
 _BEGIN_DECLS
 

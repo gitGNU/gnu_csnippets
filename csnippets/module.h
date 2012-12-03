@@ -22,7 +22,7 @@
 #ifndef _MODULE_H
 #define _MODULE_H
 
-#include "list.h"
+#include <csnippets/list.h>
 
 struct module_symbol {
 	char *symbol_name;           /* symbol name (aka function name mostly)  */

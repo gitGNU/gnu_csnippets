@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-
 set(csnippets_LIBRARIES "")
 set(csnippets_DEFINITIONS "")
 set(csnippets_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/..")
@@ -91,7 +90,6 @@ else()
     set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -DNDEBUG) # NDEBUG disable asserts
     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--as-needed -Wl,-s") # strip all debug information
 endif()
-
 
 set(csnippets_INCLUDE_DIRS ${csnippets_INCLUDE_DIRS} ${DL_INCLUDE_DIR})
 set(csnippets_LIBRARIES ${csnippets_LIBRARIES} ${LIBINTL_LIBRARIES} -lpthread ${DL_LIBRARIES})

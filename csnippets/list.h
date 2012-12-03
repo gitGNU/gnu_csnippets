@@ -20,7 +20,7 @@
 #ifndef _LIST_H
 #define _LIST_H
 
-#include "container_of.h"
+#include <csnippets/container_of.h>
 
 _BEGIN_DECLS
 

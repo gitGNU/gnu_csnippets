@@ -26,7 +26,7 @@
 #ifndef _SOCKET_H
 #define _SOCKET_H
 
-#include "list.h"
+#include <csnippets/list.h>
 
 #include <time.h>
 #include <pthread.h>
