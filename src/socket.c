@@ -271,14 +271,12 @@ static bool __poll_on_client(connection_t *conn, uint32_t flags)
 		while (len == -1 && errno == EINTR);
 		if ((len < 0 || len != conn->wbuff.size) && !IsBlocking())
 			__unreachable();
-
-		if (IsAvail(&conn->ops, write))
+		else if (IsAvail(&conn->ops, write)) {
 			callop(&conn->ops, write, conn, &conn->wbuff);
-
-		free(conn->wbuff.data);
-		conn->wbuff.data = NULL;
-		conn->wbuff.size = 0;
-		return true;
+			free(conn->wbuff.data);
+			conn->wbuff.data = NULL;
+			conn->wbuff.size = 0;
+		}
 	}
 
 	if (flags & EVENT_READ) {
@@ -717,7 +715,7 @@ void socket_free(socket_t *socket)
 	list_for_each_safe(&socket->children, conn, next, node) {
 		if (conn->fd > 0)
 			close(conn->fd);
-		list_del_from(&socket->children, &conn->node);
+		rm_connection(socket, conn);
 		free(conn);
 	}
 
