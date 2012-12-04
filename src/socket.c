@@ -41,23 +41,22 @@
 #ifdef _WIN32
 static bool is_initialized = false;
 #define SOCK_INIT() do { \
-	WSADATA wsa; \
-	if (!is_initialized) { \
-		if (0 != WSAStartup(MAKEWORD(2, 2), &wsa)) { \
-			WSACleanup(); \
-			eprintf("WSAStartup() failed\n"); \
-			return NULL; \
-		} \
-		is_initialized = true; \
-	} \
 } while (0)
+static __init __unused void __startup(void)
+{
+	WSADATA wsa;
+	if (0 != WSAStartup(MAKEWORD(2, 2), &wsa)) {
+		WSACleanup();
+		eprintf("WSAStartup() failed\n");
+		return NULL;
+	}
+}
+
 static __exit __unused void __cleanup(void)
 {
 	is_initialized = false;
 	WSACleanup();
 }
-#else
-#define SOCK_INIT()
 #endif
 
 #if (EAGAIN == EWOULDBLOCK)
@@ -71,7 +70,7 @@ static __inline __const bool IsBlocking(void)
 	return errno == EWOULDBLOCK || errno == EAGAIN;
 }
 #endif
-#define IsAvail(sops, func) ((sops)->func != NULL ? true : false)
+#define IsAvail(sops, func) !!(sops)->func
 #define callop(sops, func, ...) (sops)->func (__VA_ARGS__)
 
 /* Boring, polling specific functions  */
@@ -257,12 +256,7 @@ out:
 	return sockfd;
 }
 
-static bool __poll_on_client(
-		socket_t *sock,
-		connection_t *conn,
-		struct sock_events *events,
-		uint32_t flags
-)
+static bool __poll_on_client(connection_t *conn, uint32_t flags)
 {
 	if (unlikely(!conn))
 		return false;
@@ -317,8 +311,7 @@ static void *poll_on_client(void *client)
 		int ret = sockset_poll(events);
 		for (i = 0; i < ret; i++) {
 			if (sockset_active(events, i) == conn->fd
-			    && !__poll_on_client(NULL, conn, events,
-				    sockset_revent(events, i))) {
+			    && !__poll_on_client(conn, sockset_revent(events, i))) {
 				sockset_deinit(events);
 				pthread_exit(NULL);
 			}
@@ -359,7 +352,7 @@ static void *poll_on_server(void *_socket)
 			bits = sockset_revent(socket->events, i);
 			if (cfd != socket->fd) {
 				list_for_each(&socket->children, conn, node) {
-					if (conn->fd == cfd  && !__poll_on_client(socket, conn, socket->events, bits)) {
+					if (conn->fd == cfd  && !__poll_on_client(conn, bits)) {
 						rm_connection(socket, conn);
 						connection_free(conn);
 					}
@@ -426,7 +419,6 @@ static void *poll_on_server(void *_socket)
 socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *))
 {
 	socket_t *ret;
-	SOCK_INIT();
 	xmalloc(ret, sizeof(socket_t), return NULL);
 
 	ret->on_accept = on_accept;
@@ -439,7 +431,6 @@ connection_t *connection_create(int fd)
 {
 	connection_t *ret;
 
-	SOCK_INIT();
 	xmalloc(ret, sizeof(*ret), return NULL);
 	ret->fd = fd;
 
