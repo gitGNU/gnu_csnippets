@@ -322,9 +322,8 @@ static void *poll_on_server(void *_socket)
 	struct sockaddr in_addr;
 	socklen_t in_len = sizeof(in_addr);
 	int in_fd;
-	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 	uint32_t bits;
-	int ret, i, cfd;
+	int i, cfd;
 
 	socket->events = sockset_init();
 	if (!socket->events)
