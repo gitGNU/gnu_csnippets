@@ -39,9 +39,6 @@
 #include <time.h>
 
 #ifdef _WIN32
-static bool is_initialized = false;
-#define SOCK_INIT() do { \
-} while (0)
 static __init __unused void __startup(void)
 {
 	WSADATA wsa;
