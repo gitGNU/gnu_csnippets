@@ -218,12 +218,5 @@ extern int socket_get_send_size(connection_t *conn);
  */
 extern bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size);
 
-/**
- * socket_remove() - remove connection from listening socket
- *
- * returns true on success, false otherwise
- */
-extern bool socket_remove(socket_t *socket, connection_t *conn);
-
 #endif    /* _SOCKET_H */
 

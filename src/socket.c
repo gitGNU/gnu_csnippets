@@ -539,22 +539,20 @@ int socket_write(connection_t *conn, const char *fmt, ...)
 		return -errno;
 	}
 
+	struct sk_buff on_stack = {
+		.data = data,
+		.size = len
+	};
+	if (IsAvail(&conn->ops, write))
+		callop(&conn->ops, write, conn, &on_stack);
 	if (sent != len) {
 		memcpy(skb_put(&conn->wbuff, len - sent), &data[sent], len - sent);
 #ifdef _DEBUG_SOCKET
 		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
 				sent, len, len - sent, &conn->wbuff.data[conn->wbuff.size]);
 #endif
-	} else {
-		struct sk_buff on_stack = {
-			.data = data,
-			.size = len
-		};
-		if (IsAvail(&conn->ops, write))
-			callop(&conn->ops, write, conn, &on_stack);
-		if (data)
-			free(data);
-	}
+	} else if (data)
+		free(data);
 
 	return sent;
 }
@@ -572,19 +570,18 @@ int socket_bwrite(connection_t *conn, const unsigned char *bytes, size_t size)
 	if (sent < 0)
 		return -1;
 
+	struct sk_buff on_stack = {
+		.data = (char *)bytes,
+		.size = size
+	};
+	if (IsAvail(&conn->ops, write))
+		callop(&conn->ops, write, conn, &on_stack);
 	if (sent != size) {
 		memcpy(skb_put(&conn->wbuff, size - sent), &bytes[sent], size - sent);
 #ifdef _DEBUG_SOCKET
 		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
 				sent, size, size - sent, &conn->wbuff.data[conn->wbuff.size]);
 #endif
-	} else {
-		struct sk_buff on_stack = {
-			.data = (char *)bytes,
-			.size = size
-		};
-		if (IsAvail(&conn->ops, write))
-			callop(&conn->ops, write, conn, &on_stack);
 	}
 
 	return sent;
@@ -674,7 +671,9 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 		return false;
 
 	errno = 0;
-	count = recv(conn->fd, buffer, size, 0);
+	do
+		count = recv(conn->fd, buffer, size, 0);
+	while (count == -1 && errno == EINTR);
 	if (count == -1) {
 		if (IsBlocking()) {
 			free(buffer);
@@ -729,14 +728,5 @@ void connection_free(connection_t *conn)
 
 	close(conn->fd);
 	free(conn);
-}
-
-bool socket_remove(socket_t *socket, connection_t *conn)
-{
-	if (!socket || !conn)
-		return false;
-
-	rm_connection(socket, conn);
-	return true;
 }
 
