@@ -11,7 +11,6 @@
 #define __noreturn      __attribute__((noreturn))
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
-#define __inline__      inline __attribute__((always_inline))
 #define __warn_unused   __attribute__((warn_unused_result))
 #define __weak          __attribute__((weak))
 #define __printf(nfmt, narg) \
@@ -33,7 +32,6 @@
 #define __noreturn
 #define likely(x) (x)
 #define unlikely(x) (x)
-#define __inline
 #define __warn_unused
 #define __weak
 #define __printf(nfmt, narg)

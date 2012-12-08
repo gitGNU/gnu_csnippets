@@ -72,20 +72,14 @@ struct socket {
 	int fd;                         /* Socket file descriptor.  */
 
 	struct list_head children;      /* The list of conn */
-	connection_t *conn;             /* The head connection */
 	unsigned int num_connections;   /* Current active connections */
-	pthread_mutex_t conn_lock;      /* The connection lock, for adding new connections,
-                                       removing dead ones, incrementing number of active connections */
+
+	/* The connection lock, for adding new connections,
+	 * removing dead ones, incrementing number of active connections */
+	pthread_mutex_t conn_lock;
+
 
 	struct sock_events *events;     /* Internal usage  */
-
-	/**
-	 * on_accept() this callback is called whenever a new connection
-	 * is accepted.  self is this socket, conn is obviously the
-	 * accepted connection.
-	 *
-	 * See below for more information on what to do when this function is called.
-	 */
 	void (*on_accept) (socket_t *self, connection_t *conn);
 };
 
@@ -96,12 +90,12 @@ struct connection {
 	char remote[1025];	/* Who did we connect to?  Or who did we come from?  */
 	time_t last_active;	/* The timestamp of last activity.  Useful for PING PONG. */
 
-	struct sk_buff wbuff;	/* "write buffer" this is changed whenever data has been been sent.
-				   If the data was successfully sent over the connection, ops.write will be
-				   called.  */
-
+	/* "write buffer" this is changed whenever data has been been sent.
+	 * If the data was successfully sent over the connection, ops.write will be
+	 * called.  */
+	struct sk_buff wbuff;
 	struct sock_operations ops;  /* operations  */
-	struct list_node node;	     /* The node */
+	struct list_node node;	     /* next & prevvious conn */
 };
 
 #define EVENT_READ  0x01   /* There's data to be read on this connection.  */

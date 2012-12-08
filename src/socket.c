@@ -325,11 +325,6 @@ static void *poll_on_server(void *_socket)
 	uint32_t bits;
 	int i, cfd;
 
-	socket->events = sockset_init();
-	if (!socket->events)
-		return NULL;
-
-	sockset_add(socket->events, socket->fd, EVENT_READ);
 	while (1) {
 		connection_t *conn = NULL;
 		int ret = sockset_poll(socket->events);
@@ -398,9 +393,6 @@ static void *poll_on_server(void *_socket)
 						callop(&conn->ops, connect, conn);
 				}
 
-				if (unlikely(!socket->conn))   /* We don't always expect socket->conn to be null... */
-					socket->conn = conn;
-
 				sockset_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
 				add_connection(socket, conn);
 			}
@@ -415,8 +407,13 @@ socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *))
 	socket_t *ret;
 	xmalloc(ret, sizeof(socket_t), return NULL);
 
+	ret->events = sockset_init();
+	if (!ret->events) {
+		free(ret);
+		return NULL;
+	}
+
 	ret->on_accept = on_accept;
-	ret->conn = NULL;
 	ret->fd = -1;
 	return ret;
 }
@@ -508,6 +505,7 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 	if ((ret = pthread_create(&thread, NULL, poll_on_server, (void *)sock)) != 0)
 		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
 
+	sockset_add(sock->events, sock->fd, EVENT_READ);
 	freeaddrinfo(addr);
 	return ret;
 }
