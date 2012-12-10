@@ -11,12 +11,12 @@ static socket_t *socket = NULL;  /* global for signal */
 
 static void on_read(connection_t *s, const struct sk_buff *buff)
 {
-    eprintf("(read)[%d][%zd]: %s\n", s->fd, buff->size, buff->data);
+    eprintf("(read)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
 }
 
 static void on_write(connection_t *s, const struct sk_buff *buff)
 {
-    eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, buff->data);
+    eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
 }
 
 static void on_disconnect(connection_t *s)
@@ -26,7 +26,7 @@ static void on_disconnect(connection_t *s)
 
 static void on_connect(connection_t *s)
 {
-    socket_write(s, "hi %s\n", s->host);
+    socket_writestr(s, "hi %s\n", s->host);
 }
 
 static struct sock_operations sops = {

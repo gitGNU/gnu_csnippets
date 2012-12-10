@@ -99,13 +99,13 @@ static void rm_connection(socket_t *socket, connection_t *conn)
 	pthread_mutex_unlock(&socket->conn_lock);
 }
 
-static __inline char *skb_put(struct sk_buff *skb, int len)
+static __inline void *skb_put(struct sk_buff *skb, int len)
 {
 	char *tmp;
 
 	xrealloc(skb->data, skb->data,
 			(skb->size + len) * sizeof(char), return NULL);
-	tmp = &skb->data[skb->size];
+	tmp = &((char *)skb->data)[skb->size];
 	skb->size += len;
 	return tmp;
 }
@@ -510,21 +510,57 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 	return ret;
 }
 
-int socket_write(connection_t *conn, const char *fmt, ...)
+bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 {
-	char *data;
-	int len, sent;
-	va_list va;
+	char *buffer;
+	ssize_t count;
 
-	if (unlikely(!conn || conn->fd < 0))
+	if (unlikely(!conn))
+		return false;
+
+	if (!size)
+		size = socket_get_read_size(conn);
+
+	buffer = calloc(size + 1, sizeof(char));
+	if (!buffer)
+		return false;
+
+	errno = 0;
+	do
+		count = recv(conn->fd, buffer, size, 0);
+	while (count == -1 && errno == EINTR);
+	if (count == -1) {
+		if (IsBlocking()) {
+			free(buffer);
+			return false;
+		}
+	} else if (count == 0) {
+		free(buffer);
+		return false;
+	}
+	buffer[count + 1] = '\0';
+
+	struct sk_buff on_stack = {
+		.data = buffer,
+		.size = count
+	};
+	if (buff)
+		*buff = on_stack;
+
+	if (IsAvail(&conn->ops, read))
+		callop(&conn->ops, read, conn, &on_stack);
+
+	if (buffer) free(buffer);
+	return true;
+}
+
+int socket_write(connection_t *conn, const void *data, size_t len)
+{
+	int sent;
+	size_t i;
+
+	if (unlikely(!conn || conn->fd < 0 || !data))
 		return -EINVAL;
-
-	va_start(va, fmt);
-	len = vasprintf(&data, fmt, va);
-	va_end(va);
-
-	if (!data || len < 0)
-		return -ENOMEM;
 
 	errno = 0;
 	do
@@ -535,56 +571,38 @@ int socket_write(connection_t *conn, const char *fmt, ...)
 		eprintf("send(): returned %d, errno is %d, estring is %s\n", sent,
 		        errno, strerror(errno));
 #endif
-		free(data);
 		return -errno;
 	}
 
 	struct sk_buff on_stack = {
-		.data = data,
+		.data = (void *)data,
 		.size = len
 	};
 	if (IsAvail(&conn->ops, write))
 		callop(&conn->ops, write, conn, &on_stack);
 	if (sent != len) {
-		memcpy(skb_put(&conn->wbuff, len - sent), &data[sent], len - sent);
+		memcpy(skb_put(&conn->wbuff, len - sent), &((char *)data)[sent], len - sent);
 #ifdef _DEBUG_SOCKET
 		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
-				sent, len, len - sent, &conn->wbuff.data[conn->wbuff.size]);
+				sent, len, len - sent, &((char *)conn->wbuff.data)[conn->wbuff.size]);
 #endif
-	} else if (data)
-		free(data);
-
+	}
 	return sent;
 }
 
-int socket_bwrite(connection_t *conn, const unsigned char *bytes, size_t size)
+int socket_writestr(connection_t *conn, const char *fmt, ...)
 {
-	int sent;
-	if (unlikely(!conn))
-		return -1;
+	char *ptr;
+	va_list ap;
+	int len;
 
-	errno = 0;
-	do
-		sent = send(conn->fd, bytes, size, 0);
-	while (sent == -1 && errno == EINTR);
-	if (sent < 0)
-		return -1;
+	va_start(ap, fmt);
+	len = vasprintf(&ptr, fmt, ap);
+	va_end(ap);
 
-	struct sk_buff on_stack = {
-		.data = (char *)bytes,
-		.size = size
-	};
-	if (IsAvail(&conn->ops, write))
-		callop(&conn->ops, write, conn, &on_stack);
-	if (sent != size) {
-		memcpy(skb_put(&conn->wbuff, size - sent), &bytes[sent], size - sent);
-#ifdef _DEBUG_SOCKET
-		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
-				sent, size, size - sent, &conn->wbuff.data[conn->wbuff.size]);
-#endif
-	}
-
-	return sent;
+	if (!ptr || len < 0)
+		return -ENOMEM;
+	return socket_write(conn, ptr, len);
 }
 
 bool socket_set_read_size(connection_t *conn, int size)
@@ -653,50 +671,6 @@ int socket_get_send_size(connection_t *conn)
 	}
 
 	return size;
-}
-
-bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
-{
-	char *buffer;
-	ssize_t count;
-
-	if (unlikely(!conn))
-		return false;
-
-	if (!size)
-		size = socket_get_read_size(conn);
-
-	buffer = calloc(size + 1, sizeof(char));
-	if (!buffer)
-		return false;
-
-	errno = 0;
-	do
-		count = recv(conn->fd, buffer, size, 0);
-	while (count == -1 && errno == EINTR);
-	if (count == -1) {
-		if (IsBlocking()) {
-			free(buffer);
-			return false;
-		}
-	} else if (count == 0) {
-		free(buffer);
-		return false;
-	}
-	buffer[count + 1] = '\0';
-
-	struct sk_buff on_stack = {
-		.data = buffer,
-		.size = count
-	};
-	if (buff)
-		*buff = on_stack;
-
-	if (IsAvail(&conn->ops, read))
-		callop(&conn->ops, read, conn, &on_stack);
-
-	if (buffer) free(buffer);
-	return true;
 }
 
 void socket_free(socket_t *socket)

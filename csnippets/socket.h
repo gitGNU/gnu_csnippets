@@ -35,8 +35,10 @@ typedef struct socket socket_t;
 typedef struct connection connection_t;
 
 struct sk_buff {
-	char *data;             /* The data read of this fd.  */
-	size_t size;            /* length of data.  */
+	/** The data read from a recv() syscall  */
+	void *data;
+	/** length of @data.  */
+	size_t size;
 };
 
 struct sock_events;
@@ -150,7 +152,6 @@ extern int socket_connect(connection_t *conn, const char *addr,
  */
 extern int socket_listen(socket_t *socket, const char *address,
                          const char *service, long max_conns);
-
 /**
  * socket_write() - Write string on socket connection
  *
@@ -162,18 +163,10 @@ extern int socket_listen(socket_t *socket, const char *address,
  * calls conn->on_write later on if connection ever becomes available
  * for writing.
  */
-extern int socket_write(connection_t *conn, const char *fmt, ...);
+extern int socket_write(connection_t *conn, const void *data, size_t len);
 
-/**
- * socket_bwrite() - Write byte array on socket connection
- *
- * @conn the socket connection
- * @bytes the byte array to send
- * @size the size of `bytes'.
- *
- * The behavior is same as socket_write().
- */
-extern int socket_bwrite(connection_t *conn, const uint8_t *bytes, size_t size);
+/* Write a formatted string */
+extern int socket_writestr(connection_t *conn, const char *fmt, ...);
 
 /**
  * socket_set_read_size() - set maximum read size

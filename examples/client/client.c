@@ -6,12 +6,12 @@ static connection_t *conn = NULL;
 
 static void on_read(connection_t *s, const struct sk_buff *buff)
 {
-    printf("[%d]: %s", s->fd, buff->data);
+    printf("[%d]: %s", s->fd, (char *)buff->data);
 }
 
 static void on_write(connection_t *s, const struct sk_buff *buff)
 {
-    eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, buff->data);
+    eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
 }
 
 static void on_disconnect(connection_t *s)
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 
     char buffer[1024];
     while (fgets(buffer, sizeof buffer, stdin))
-        socket_write(conn, buffer);
+        socket_writestr(conn, buffer);
 
     return 0;
 }
