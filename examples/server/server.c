@@ -3,28 +3,28 @@
 #include <signal.h>
 #include <unistd.h>
 
-static socket_t *socket = NULL;  /* global for signal */
+static struct listener *socket = NULL;  /* global for signal */
 
 /**
  * Callbacks, self-explained
  */
 
-static void on_read(connection_t *s, const struct sk_buff *buff)
+static void on_read(struct conn *s, const struct sk_buff *buff)
 {
     eprintf("(read)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
 }
 
-static void on_write(connection_t *s, const struct sk_buff *buff)
+static void on_write(struct conn *s, const struct sk_buff *buff)
 {
     eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
 }
 
-static void on_disconnect(connection_t *s)
+static void on_disconnect(struct conn *s)
 {
     eprintf("%s disconnected\n", s->host);
 }
 
-static void on_connect(connection_t *s)
+static void on_connect(struct conn *s)
 {
     socket_writestr(s, "hi %s\n", s->host);
 }
@@ -36,7 +36,7 @@ static struct sock_operations sops = {
     .disconnect   = on_disconnect
 };
 
-static void on_accept(socket_t *s, connection_t *n)
+static void on_accept(struct listener *s, struct conn *n)
 {
     n->ops = sops;
     eprintf("Accepted connection from %s\n", n->host);

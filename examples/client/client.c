@@ -2,32 +2,32 @@
 
 #include <signal.h>
 
-static connection_t *conn = NULL;
+static struct conn *conn = NULL;
 
-static void on_read(connection_t *s, const struct sk_buff *buff)
+static void on_read(struct conn *s, const struct sk_buff *buff)
 {
     printf("[%d]: %s", s->fd, (char *)buff->data);
 }
 
-static void on_write(connection_t *s, const struct sk_buff *buff)
+static void on_write(struct conn *s, const struct sk_buff *buff)
 {
     eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
 }
 
-static void on_disconnect(connection_t *s)
+static void on_disconnect(struct conn *s)
 {
     printf("%s disconnected\n", s->host);
     exit(EXIT_SUCCESS);
 }
 
-static void on_connect(connection_t *s)
+static void on_connect(struct conn *s)
 {
     printf("Connected to %s:%s\n", s->remote, s->port);
 }
 
 static void __noreturn signal_handle(int sig)
 {
-    connection_free(conn);
+    conn_free(conn);
     printf("Terminated\n");
     exit(EXIT_SUCCESS);
 }
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     };
 
 
-    conn = connection_create(-1);
+    conn = conn_create(-1);
     if (!conn)
         return 1;
 

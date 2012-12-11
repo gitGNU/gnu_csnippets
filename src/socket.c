@@ -79,7 +79,7 @@ extern int                  sockset_poll(struct sock_events *);
 extern int                  sockset_active(struct sock_events *, int);
 extern uint32_t             sockset_revent(struct sock_events *, int);
 
-static void add_connection(socket_t *socket, connection_t *conn)
+static void add_connection(struct listener *socket, struct conn *conn)
 {
 	pthread_mutex_lock(&socket->conn_lock);
 
@@ -89,7 +89,7 @@ static void add_connection(socket_t *socket, connection_t *conn)
 	pthread_mutex_unlock(&socket->conn_lock);
 }
 
-static void rm_connection(socket_t *socket, connection_t *conn)
+static void rm_connection(struct listener *socket, struct conn *conn)
 {
 	pthread_mutex_lock(&socket->conn_lock);
 
@@ -253,7 +253,7 @@ out:
 	return sockfd;
 }
 
-static bool __poll_on_client(connection_t *conn, uint32_t flags)
+static bool __poll_on_conn(struct conn *conn, uint32_t flags)
 {
 	if (unlikely(!conn))
 		return false;
@@ -291,9 +291,9 @@ static bool __poll_on_client(connection_t *conn, uint32_t flags)
 	return true;
 }
 
-static void *poll_on_client(void *client)
+static void *poll_on_conn(void *client)
 {
-	connection_t *conn = (connection_t *)client;
+	struct conn *conn = client;
 	void *events;
 	int i;
 
@@ -306,7 +306,7 @@ static void *poll_on_client(void *client)
 		int ret = sockset_poll(events);
 		for (i = 0; i < ret; i++) {
 			if (sockset_active(events, i) == conn->fd
-			    && !__poll_on_client(conn, sockset_revent(events, i))) {
+			    && !__poll_on_conn(conn, sockset_revent(events, i))) {
 				sockset_deinit(events);
 				pthread_exit(NULL);
 			}
@@ -316,9 +316,9 @@ static void *poll_on_client(void *client)
 	__unreachable();
 }
 
-static void *poll_on_server(void *_socket)
+static void *poll_on_listener(void *_socket)
 {
-	socket_t *socket = (socket_t *)_socket;
+	struct listener *socket = (struct listener *)_socket;
 	struct sockaddr in_addr;
 	socklen_t in_len = sizeof(in_addr);
 	int in_fd;
@@ -326,11 +326,11 @@ static void *poll_on_server(void *_socket)
 	int i, cfd;
 
 	while (1) {
-		connection_t *conn = NULL;
+		struct conn *conn = NULL;
 		int ret = sockset_poll(socket->events);
 		if (ret < 0) {
 #ifdef _DEBUG_SOCKET
-			eprintf("poll_on_server(): sockset_poll() returned a negative result, is the server "
+			eprintf("poll_on_listener(): sockset_poll() returned a negative result, is the server "
 					" socket closed?\n");
 #endif
 			pthread_exit(NULL);
@@ -341,9 +341,9 @@ static void *poll_on_server(void *_socket)
 			bits = sockset_revent(socket->events, i);
 			if (cfd != socket->fd) {
 				list_for_each(&socket->children, conn, node) {
-					if (conn->fd == cfd  && !__poll_on_client(conn, bits)) {
+					if (conn->fd == cfd  && !__poll_on_conn(conn, bits)) {
 						rm_connection(socket, conn);
-						connection_free(conn);
+						conn_free(conn);
 					}
 				}
 				continue;
@@ -351,7 +351,7 @@ static void *poll_on_server(void *_socket)
 
 			if (!(bits & EVENT_READ)) {
 #ifdef _DEBUG_SOCKET
-				eprintf("poll_on_server(): bits do not contain EVENT_READ on the server socket\n");
+				eprintf("poll_on_listener(): bits do not contain EVENT_READ on the server socket\n");
 #endif
 				pthread_exit(NULL);
 			}
@@ -368,7 +368,7 @@ static void *poll_on_server(void *_socket)
 					continue;
 				}
 
-				conn = connection_create(in_fd);
+				conn = conn_create(in_fd);
 				if (!conn) {
 					close(in_fd);
 					continue;
@@ -402,10 +402,10 @@ static void *poll_on_server(void *_socket)
 	__unreachable();
 }
 
-socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *))
+struct listener *socket_create(void (*on_accept) (struct listener *, struct conn *))
 {
-	socket_t *ret;
-	xmalloc(ret, sizeof(socket_t), return NULL);
+	struct listener *ret;
+	xmalloc(ret, sizeof(struct listener), return NULL);
 
 	ret->events = sockset_init();
 	if (!ret->events) {
@@ -418,9 +418,9 @@ socket_t *socket_create(void (*on_accept) (socket_t *, connection_t *))
 	return ret;
 }
 
-connection_t *connection_create(int fd)
+struct conn *conn_create(int fd)
 {
-	connection_t *ret;
+	struct conn *ret;
 
 	xmalloc(ret, sizeof(*ret), return NULL);
 	ret->fd = fd;
@@ -430,7 +430,7 @@ connection_t *connection_create(int fd)
 	return ret;
 }
 
-int socket_connect(connection_t *conn, const char *addr, const char *service)
+int socket_connect(struct conn *conn, const char *addr, const char *service)
 {
 	struct addrinfo *address;
 	pthread_t thread;
@@ -459,14 +459,14 @@ int socket_connect(connection_t *conn, const char *addr, const char *service)
 	if (IsAvail(&conn->ops, connect))
 		callop(&conn->ops, connect, conn);
 
-	if ((ret = pthread_create(&thread, NULL, poll_on_client, (void *)conn)) != 0)
+	if ((ret = pthread_create(&thread, NULL, poll_on_conn, (void *)conn)) != 0)
 		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
 
 	freeaddrinfo(address);
 	return ret;
 }
 
-int socket_listen(socket_t *sock, const char *address, const char *service, long max_conns)
+int socket_listen(struct listener *sock, const char *address, const char *service, long max_conns)
 {
 	int reuse_addr = 1;
 	pthread_t thread;
@@ -502,7 +502,7 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 	}
 
 	list_head_init(&sock->children);
-	if ((ret = pthread_create(&thread, NULL, poll_on_server, (void *)sock)) != 0)
+	if ((ret = pthread_create(&thread, NULL, poll_on_listener, (void *)sock)) != 0)
 		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
 
 	sockset_add(sock->events, sock->fd, EVENT_READ);
@@ -510,7 +510,7 @@ int socket_listen(socket_t *sock, const char *address, const char *service, long
 	return ret;
 }
 
-bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
+bool socket_read(struct conn *conn, struct sk_buff *buff, size_t size)
 {
 	char *buffer;
 	ssize_t count;
@@ -554,7 +554,7 @@ bool socket_read(connection_t *conn, struct sk_buff *buff, size_t size)
 	return true;
 }
 
-int socket_write(connection_t *conn, const void *data, size_t len)
+int socket_write(struct conn *conn, const void *data, size_t len)
 {
 	int sent;
 	size_t i;
@@ -590,7 +590,7 @@ int socket_write(connection_t *conn, const void *data, size_t len)
 	return sent;
 }
 
-int socket_writestr(connection_t *conn, const char *fmt, ...)
+int socket_writestr(struct conn *conn, const char *fmt, ...)
 {
 	char *ptr;
 	va_list ap;
@@ -605,7 +605,7 @@ int socket_writestr(connection_t *conn, const char *fmt, ...)
 	return socket_write(conn, ptr, len);
 }
 
-bool socket_set_read_size(connection_t *conn, int size)
+bool socket_set_read_size(struct conn *conn, int size)
 {
 	if (unlikely(!conn))
 		return false;
@@ -622,7 +622,7 @@ bool socket_set_read_size(connection_t *conn, int size)
 	return true;
 }
 
-int socket_get_read_size(connection_t *conn)
+int socket_get_read_size(struct conn *conn)
 {
 	int size = -1;
 	socklen_t slen = sizeof(size);
@@ -639,7 +639,7 @@ int socket_get_read_size(connection_t *conn)
 	return size;
 }
 
-bool socket_set_send_size(connection_t *conn, int size)
+bool socket_set_send_size(struct conn *conn, int size)
 {
 	if (unlikely(!conn))
 		return false;
@@ -656,7 +656,7 @@ bool socket_set_send_size(connection_t *conn, int size)
 	return true;
 }
 
-int socket_get_send_size(connection_t *conn)
+int socket_get_send_size(struct conn *conn)
 {
 	int size = -1;
 	socklen_t slen = sizeof(size);
@@ -673,9 +673,9 @@ int socket_get_send_size(connection_t *conn)
 	return size;
 }
 
-void socket_free(socket_t *socket)
+void socket_free(struct listener *socket)
 {
-	connection_t *conn, *next;
+	struct conn *conn, *next;
 	if (!socket)
 		return;
 
@@ -692,7 +692,7 @@ void socket_free(socket_t *socket)
 	free(socket);
 }
 
-void connection_free(connection_t *conn)
+void conn_free(struct conn *conn)
 {
 	if (unlikely(!conn || conn->fd < 0))
 		return;
