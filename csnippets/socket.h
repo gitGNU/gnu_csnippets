@@ -38,7 +38,6 @@ struct sk_buff {
 	size_t size;
 };
 
-struct sock_events;
 /**
  * \code
  *     struct sock_operationrs sops = {
@@ -77,7 +76,6 @@ struct listener {
 	/* The connection lock, for adding new connections,
 	 * removing dead ones, incrementing number of active connections */
 	pthread_mutex_t conn_lock;
-
 
 	struct sock_events *events;     /* Internal usage  */
 	void (*on_accept) (struct listener *self, struct conn *conn);

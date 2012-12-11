@@ -436,7 +436,7 @@ int socket_connect(struct conn *conn, const char *addr, const char *service)
 	pthread_t thread;
 	int ret;
 
-	address = net_lookup(addr, service, AF_INET, SOCK_STREAM);
+	address = net_lookup(addr, service, AF_UNSPEC, SOCK_STREAM);
 	if (!address)
 		return -1;
 
@@ -476,7 +476,7 @@ int socket_listen(struct listener *sock, const char *address, const char *servic
 	if (!sock)
 		return -1;
 
-	addr = net_lookup(address, service, AF_INET, SOCK_STREAM);
+	addr = net_lookup(address, service, AF_UNSPEC, SOCK_STREAM);
 	if (!addr)
 		return -1;
 
