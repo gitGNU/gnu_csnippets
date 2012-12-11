@@ -55,6 +55,11 @@ MIT (Also known as "The Expat License")
 
 ### Building
 
+Before compiling, make sure you have:
+      1. CMake 2.6 or later   (get it by your package manager or from the cmake website)
+      2. GCC (GNU C Compiler)
+      3. GNU Make
+
 ```sh
 ./build.sh
 ```
