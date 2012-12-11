@@ -35,35 +35,35 @@ typedef struct fd_select {
 	char write : 2;   /* second bit: pending data */
 } fd_select_t;
 
-struct sock_events {
+struct pollev {
 	size_t maxfd;
 	fd_select_t fds[MAX_EVENTS], **events;
 };
 
-struct sock_events *sockset_init(void)
+struct pollev *pollev_init(void)
 {
-	struct sock_events *ev;
+	struct pollev *ev;
 
-	xmalloc(ev, sizeof(struct sock_events), return NULL);
+	xmalloc(ev, sizeof(struct pollev), return NULL);
 	xcalloc(ev->events, MAX_EVENTS, sizeof(fd_select_t *),
 			free(ev); return NULL);
 	return ev;
 }
 
-void sockset_deinit(struct sock_events *p)
+void pollev_deinit(struct pollev *p)
 {
 	free(p->events);
 	free(p);
 }
 
-void sockset_add(struct sock_events *evs, int fd, int bits)
+void pollev_add(struct pollev *evs, int fd, int bits)
 {
 	if (unlikely(!evs))
 		return;
 
 	if (fd > MAX_EVENTS) {
 #ifdef _DEBUG_SOCKET
-		eprintf("sockset_add(): fd %d is out of range\n", fd);
+		eprintf("pollev_add(): fd %d is out of range\n", fd);
 #endif
 		return;
 	}
@@ -75,15 +75,15 @@ void sockset_add(struct sock_events *evs, int fd, int bits)
 	evs->fds[fd].fd = fd;
 }
 
-void sockset_del(struct sock_events *p, int fd)
+void pollev_del(struct pollev *p, int fd)
 {
-	struct sock_events *evs = (struct sock_events *)p;
+	struct pollev *evs = (struct pollev *)p;
 	if (unlikely(!evs))
 		return;
 
 	if (fd > MAX_EVENTS) {
 #ifdef _DEBUG_SOCKET
-		eprintf("sockset_del(): fd %d is out of range\n", fd);
+		eprintf("pollev_del(): fd %d is out of range\n", fd);
 #endif
 		return;
 	}
@@ -92,7 +92,7 @@ void sockset_del(struct sock_events *p, int fd)
 	evs->fds[fd].write = 0;
 }
 
-int sockset_poll(struct sock_events *evs)
+int pollev_poll(struct pollev *evs)
 {
 	int fd, i, maxfd, numfds;
 	fd_set rfds, wfds, efds;
@@ -142,12 +142,12 @@ int sockset_poll(struct sock_events *evs)
 	return i;
 }
 
-__inline __const int sockset_active(struct sock_events *evs, int index)
+__inline __const int pollev_active(struct pollev *evs, int index)
 {
 	return evs->events[index]->fd;
 }
 
-uint32_t sockset_revent(struct sock_events *evs, int index)
+uint32_t pollev_revent(struct pollev *evs, int index)
 {
 	uint32_t r;
 	int fd = evs->events[index]->fd;

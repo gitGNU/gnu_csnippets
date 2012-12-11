@@ -28,8 +28,8 @@ set(csnippets_SOURCES ${csnippets_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/event.c
     ${CMAKE_CURRENT_LIST_DIR}/map.c
     ${CMAKE_CURRENT_LIST_DIR}/socket.c
-    ${CMAKE_CURRENT_LIST_DIR}/socket_select.c
-    ${CMAKE_CURRENT_LIST_DIR}/socket_epoll.c
+    ${CMAKE_CURRENT_LIST_DIR}/select_event.c
+    ${CMAKE_CURRENT_LIST_DIR}/epoll_event.c
     ${CMAKE_CURRENT_LIST_DIR}/strmisc.c
     ${CMAKE_CURRENT_LIST_DIR}/error.c
     ${CMAKE_CURRENT_LIST_DIR}/list.c

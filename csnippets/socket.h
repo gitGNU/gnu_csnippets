@@ -77,7 +77,7 @@ struct listener {
 	 * removing dead ones, incrementing number of active connections */
 	pthread_mutex_t conn_lock;
 
-	struct sock_events *events;     /* Internal usage  */
+	struct pollev *events;     /* Internal usage  */
 	void (*on_accept) (struct listener *self, struct conn *conn);
 };
 

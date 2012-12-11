@@ -71,13 +71,13 @@ static __inline __const bool IsBlocking(void)
 #define callop(sops, func, ...) (sops)->func (__VA_ARGS__)
 
 /* Boring, polling specific functions  */
-extern struct sock_events * sockset_init(void);
-extern void                 sockset_deinit(struct sock_events *);
-extern void                 sockset_add(struct sock_events *, int, int);
-extern void                 sockset_del(struct sock_events *, int);
-extern int                  sockset_poll(struct sock_events *);
-extern int                  sockset_active(struct sock_events *, int);
-extern uint32_t             sockset_revent(struct sock_events *, int);
+extern struct pollev * pollev_init(void);
+extern void                 pollev_deinit(struct pollev *);
+extern void                 pollev_add(struct pollev *, int, int);
+extern void                 pollev_del(struct pollev *, int);
+extern int                  pollev_poll(struct pollev *);
+extern int                  pollev_active(struct pollev *, int);
+extern uint32_t             pollev_revent(struct pollev *, int);
 
 static void add_connection(struct listener *socket, struct conn *conn)
 {
@@ -297,17 +297,17 @@ static void *poll_on_conn(void *client)
 	void *events;
 	int i;
 
-	events = sockset_init();
+	events = pollev_init();
 	if (!events)
 		return NULL;
 
-	sockset_add(events, conn->fd, EVENT_READ | EVENT_WRITE);
+	pollev_add(events, conn->fd, EVENT_READ | EVENT_WRITE);
 	while (1) {
-		int ret = sockset_poll(events);
+		int ret = pollev_poll(events);
 		for (i = 0; i < ret; i++) {
-			if (sockset_active(events, i) == conn->fd
-			    && !__poll_on_conn(conn, sockset_revent(events, i))) {
-				sockset_deinit(events);
+			if (pollev_active(events, i) == conn->fd
+			    && !__poll_on_conn(conn, pollev_revent(events, i))) {
+				pollev_deinit(events);
 				pthread_exit(NULL);
 			}
 		}
@@ -318,27 +318,28 @@ static void *poll_on_conn(void *client)
 
 static void *poll_on_listener(void *_socket)
 {
-	struct listener *socket = (struct listener *)_socket;
+	struct listener *socket = _socket;
 	struct sockaddr in_addr;
 	socklen_t in_len = sizeof(in_addr);
 	int in_fd;
 	uint32_t bits;
-	int i, cfd;
+	int i, cfd, nfds;
+	struct conn *conn = NULL;
 
+	assert(socket);
 	while (1) {
-		struct conn *conn = NULL;
-		int ret = sockset_poll(socket->events);
-		if (ret < 0) {
+		nfds = pollev_poll(socket->events);
+		if (nfds < 0) {
 #ifdef _DEBUG_SOCKET
-			eprintf("poll_on_listener(): sockset_poll() returned a negative result, is the server "
+			eprintf("poll_on_listener(): pollev_poll() returned a negative result, is the server "
 					" socket closed?\n");
 #endif
 			pthread_exit(NULL);
 		}
 
-		for (i = 0; i < ret; i++) {
-			cfd = sockset_active(socket->events, i);
-			bits = sockset_revent(socket->events, i);
+		for (i = 0; i < nfds; i++) {
+			cfd = pollev_active(socket->events, i);
+			bits = pollev_revent(socket->events, i);
 			if (cfd != socket->fd) {
 				list_for_each(&socket->children, conn, node) {
 					if (conn->fd == cfd  && !__poll_on_conn(conn, bits)) {
@@ -393,7 +394,7 @@ static void *poll_on_listener(void *_socket)
 						callop(&conn->ops, connect, conn);
 				}
 
-				sockset_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
+				pollev_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
 				add_connection(socket, conn);
 			}
 		}
@@ -407,7 +408,7 @@ struct listener *socket_create(void (*on_accept) (struct listener *, struct conn
 	struct listener *ret;
 	xmalloc(ret, sizeof(struct listener), return NULL);
 
-	ret->events = sockset_init();
+	ret->events = pollev_init();
 	if (!ret->events) {
 		free(ret);
 		return NULL;
@@ -505,7 +506,7 @@ int socket_listen(struct listener *sock, const char *address, const char *servic
 	if ((ret = pthread_create(&thread, NULL, poll_on_listener, (void *)sock)) != 0)
 		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
 
-	sockset_add(sock->events, sock->fd, EVENT_READ);
+	pollev_add(sock->events, sock->fd, EVENT_READ);
 	freeaddrinfo(addr);
 	return ret;
 }
@@ -687,7 +688,7 @@ void socket_free(struct listener *socket)
 	}
 
 	if (socket->events)
-		sockset_deinit(socket->events);
+		pollev_deinit(socket->events);
 	pthread_mutex_destroy(&socket->conn_lock);
 	free(socket);
 }

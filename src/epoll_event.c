@@ -31,16 +31,16 @@
 #include <sys/epoll.h>
 #include <unistd.h>   /* close() */
 
-struct sock_events {
+struct pollev {
 	struct epoll_event *events;
 	int epoll_fd;
 };
 
-struct sock_events *sockset_init(void)
+struct pollev *pollev_init(void)
 {
-	struct sock_events *ev;
+	struct pollev *ev;
 
-	xmalloc(ev, sizeof(struct sock_events), return NULL);
+	xmalloc(ev, sizeof(struct pollev), return NULL);
 	if ((ev->epoll_fd = epoll_create1(0)) < 0) {
 #ifdef _DEBUG_SOCKET
 		perror("epoll_create1");
@@ -54,7 +54,7 @@ struct sock_events *sockset_init(void)
 	return ev;
 }
 
-void sockset_deinit(struct sock_events *evs)
+void pollev_deinit(struct pollev *evs)
 {
 	if (unlikely(!evs))
 		return;
@@ -64,7 +64,7 @@ void sockset_deinit(struct sock_events *evs)
 }
 
 
-uint32_t sockset_revent(struct sock_events *ev, int index)
+uint32_t pollev_revent(struct pollev *ev, int index)
 {
 	uint32_t events = ev->events[index].events;
 	uint32_t r = 0;
@@ -76,12 +76,12 @@ uint32_t sockset_revent(struct sock_events *ev, int index)
 	return r;
 }
 
-__inline __const int sockset_active(struct sock_events *evs, int index)
+__inline __const int pollev_active(struct pollev *evs, int index)
 {
 	return evs->events[index].data.fd;
 }
 
-void sockset_add(struct sock_events *evs, int fd, int bit)
+void pollev_add(struct pollev *evs, int fd, int bit)
 {
 	struct epoll_event ev;
 	if (unlikely(!evs))
@@ -96,21 +96,21 @@ void sockset_add(struct sock_events *evs, int fd, int bit)
 	memset(&ev.data, 0, sizeof(ev.data));
 	ev.data.fd = fd;
 	if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_ADD, fd, &ev) < 0)
-		eprintf("sockset_add(): epoll_ctl(%d) returned an error %d(%s)\n",
+		eprintf("pollev_add(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, errno, strerror(errno));
 }
 
-void sockset_del(struct sock_events *evs, int fd)
+void pollev_del(struct pollev *evs, int fd)
 {
 	if (unlikely(!evs))
 		return;
 
 	if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
-		eprintf("sockset_del(): epoll_ctl(%d) returned an error %d(%s)\n",
+		eprintf("pollev_del(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, errno, strerror(errno));
 }
 
-int sockset_poll(struct sock_events *evs)
+int pollev_poll(struct pollev *evs)
 {
 	int n;
 	if (unlikely(!evs))
