@@ -38,8 +38,6 @@ struct module {
 };
 
 struct module_list {
-	struct module *module;      /* This is the first module in the list  */
-
 	struct list_head children;  /* List of modules  */
 	unsigned int num_modules;   /* how many modules were loaded?  */
 };

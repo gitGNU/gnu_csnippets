@@ -27,7 +27,12 @@
 #ifndef MAX_EVENTS
 #define MAX_EVENTS 1024
 #endif
+
+#include <internal/socket_compat.h>
+
+#include <csnippets/io_poll.h>
 #include <csnippets/socket.h>
+
 #include <sys/epoll.h>
 #include <unistd.h>   /* close() */
 
@@ -59,38 +64,21 @@ void pollev_deinit(struct pollev *evs)
 	if (unlikely(!evs))
 		return;
 
+	close(evs->epoll_fd);
 	free(evs->events);
 	free(evs);
 }
 
-
-uint32_t pollev_revent(struct pollev *ev, int index)
-{
-	uint32_t events = ev->events[index].events;
-	uint32_t r = 0;
-
-	if (events & EPOLLIN)
-		r |= EVENT_READ;
-	else if (events & EPOLLOUT)
-		r |= EVENT_WRITE;
-	return r;
-}
-
-__inline __const int pollev_active(struct pollev *evs, int index)
-{
-	return evs->events[index].data.fd;
-}
-
-void pollev_add(struct pollev *evs, int fd, int bit)
+void pollev_add(struct pollev *evs, int fd, int bits)
 {
 	struct epoll_event ev;
 	if (unlikely(!evs))
 		return;
 
 	ev.events = EPOLLPRI;
-	if (bit & EVENT_READ)
+	if (bits & IO_READ)
 		ev.events |= EPOLLIN;
-	if (bit & EVENT_WRITE)
+	if (bits & IO_WRITE)
 		ev.events |= EPOLLOUT;
 
 	memset(&ev.data, 0, sizeof(ev.data));
@@ -107,7 +95,7 @@ void pollev_del(struct pollev *evs, int fd)
 
 	if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
 		eprintf("pollev_del(): epoll_ctl(%d) returned an error %d(%s)\n",
-		        fd, errno, strerror(errno));
+		        fd, s_error, strerror(s_error));
 }
 
 int pollev_poll(struct pollev *evs)
@@ -116,10 +104,33 @@ int pollev_poll(struct pollev *evs)
 	if (unlikely(!evs))
 		return -1;
 
+	s_seterror(0);
 	do
 		n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
-	while (n == -1 && errno == EINTR);
+	while (n == -1 && errno == s_EINTR);
 	return n;
+}
+
+uint32_t pollev_revent(struct pollev *ev, int index)
+{
+	uint32_t events = ev->events[index].events;
+	uint32_t r = 0;
+
+	if (unlikely(events & EPOLLHUP || events & EPOLLERR)) {
+		r |= IO_ERR;
+		return r;
+	}
+
+	if (events & EPOLLIN)
+		r |= IO_READ;
+	if (events & EPOLLOUT)
+		r |= IO_WRITE;
+	return r;
+}
+
+__inline __const int pollev_active(struct pollev *evs, int index)
+{
+	return evs->events[index].data.fd;
 }
 
 #endif

@@ -33,6 +33,7 @@
 #define fatal(str, args...)         error_nret(LOG_FATAL str, ##args)
 #define warning(str, args...)       dolog(LOG_WARNING str, ##args)
 #define eprintf(str, args...)       dolog(str, ##args)
+#define edebug(str, args...)	    dolog(__func__ str, ##args)
 
 /* error_nret() - Log a formatted string.
  *

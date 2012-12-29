@@ -9,3 +9,6 @@ lib/
 *.kdev4
 *.orig
 
+build
+tags
+

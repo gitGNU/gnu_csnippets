@@ -21,6 +21,8 @@
  */
 #if defined USE_SELECT
 
+#include <internal/socket_compat.h>
+#include <csnippets/io_poll.h>
 #include <csnippets/socket.h>
 #ifdef _WIN32
 #include <winsock2.h>
@@ -68,9 +70,9 @@ void pollev_add(struct pollev *evs, int fd, int bits)
 		return;
 	}
 
-	if (bits & EVENT_READ)
+	if (bits & IO_READ)
 		evs->fds[fd].read |= 1;
-	if (bits & EVENT_WRITE)
+	if (bits & IO_WRITE)
 		evs->fds[fd].write |= 1;
 	evs->fds[fd].fd = fd;
 }
@@ -113,8 +115,10 @@ int pollev_poll(struct pollev *evs)
 		}
 	}
 
-	errno = 0;
-	numfds = select(maxfd + 1, &rfds, &wfds, &efds, NULL);
+	s_seterror(0);
+	do
+		numfds = select(maxfd + 1, &rfds, &wfds, &efds, NULL);
+	while (numfds < 0 && errno == s_EINTR);
 	if (numfds == -1)
 		return -1;
 
@@ -152,10 +156,12 @@ uint32_t pollev_revent(struct pollev *evs, int index)
 	uint32_t r;
 	int fd = evs->events[index]->fd;
 
+	if (!(evs->fds[fd].read & 0x02) && !(evs->fd[fd].write & 0x02))
+		r |= IO_ERR;
 	if (evs->fds[fd].read & 0x02)
-		r |= EVENT_READ;
+		r |= IO_READ;
 	if (evs->fds[fd].write & 0x02)
-		r |= EVENT_WRITE;
+		r |= IO_WRITE;
 
 	evs->fds[fd].read &= 0x01;
 	evs->fds[fd].write &= 0x01;

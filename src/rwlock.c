@@ -1,6 +1,8 @@
 #include <csnippets/rwlock.h>
 #include <csnippets/atomic.h>
 
+#include <errno.h>
+
 void rwlock_wrlock(rwlock_t *l)
 {
 	unsigned me = atomic_xadd(&l->u, (1<<16));

@@ -33,7 +33,7 @@ static bool            running = false;
 static pthread_t       self;
 static LIST_HEAD(events);
 
-static void *events_thread(void *d)
+static void *events_thread(void __unused *unused)
 {
 	event_t *event = NULL, *next = NULL;
 	struct timespec ts;

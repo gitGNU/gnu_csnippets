@@ -29,13 +29,11 @@ typedef enum _Bool {
 #include <stddef.h>
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+#include <stdlib.h>
 
 #include <csnippets/linux_style.h>
 #include <csnippets/error.h>
-#include <csnippets/compat.h>
 #include <csnippets/mm.h>
 
 /*

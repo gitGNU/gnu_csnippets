@@ -29,7 +29,7 @@ static LIST_HEAD(tasks);
 static bool running = false;
 static pthread_t self;
 
-static void *tasks_thread(void *p)
+static void *tasks_thread(void __unused *unused)
 {
 	task_t *task = NULL, *next = NULL;
 

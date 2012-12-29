@@ -75,6 +75,8 @@ static void bar(void)
 
 Feel free to use goto's whenever possible, they're helpful but try not to make it look like spaghetti
 It's hard to follow goto statements so try to avoid them whenever you think you don't really need it.
+
+Bad:
 ```c
 static void baz(void)
 {

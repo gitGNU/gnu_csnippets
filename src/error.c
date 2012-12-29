@@ -27,9 +27,9 @@ static int verbose = 1;
 
 #define prog program_invocation_short_name
 #define __dolog(s, args...) do { \
-    fprintf(stderr, _(s), ##args); \
-    if (verbose > 0) \
-        fprintf(stdout, _(s), ##args); \
+	fprintf(stderr, _(s), ##args); \
+	if (verbose > 0) \
+		fprintf(stdout, _(s), ##args); \
 } while(0)
 
 static void __attribute__((constructor)) log_init(void)

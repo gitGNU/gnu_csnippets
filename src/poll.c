@@ -36,7 +36,7 @@
 #include <csnippets/poll.h>
 
 #include <limits.h>
-#include <assert.h>
+#include <errno.h>
 
 #if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
 # define WIN32_NATIVE

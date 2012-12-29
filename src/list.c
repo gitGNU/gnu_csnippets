@@ -30,7 +30,8 @@ static void *corrupt(const char *abortstr,
 }
 
 struct list_node *list_check_node(const struct list_node *node,
-                                  const char *abortstr) {
+                                  const char *abortstr)
+{
 	const struct list_node *p, *n;
 	int count = 0;
 
@@ -46,7 +47,9 @@ struct list_node *list_check_node(const struct list_node *node,
 	return (struct list_node *)node;
 }
 
-struct list_head *list_check(const struct list_head *h, const char *abortstr) {
+struct list_head *list_check(const struct list_head *h,
+			     const char *abortstr)
+{
 	if (!list_check_node(&h->n, abortstr))
 		return NULL;
 	return (struct list_head *)h;

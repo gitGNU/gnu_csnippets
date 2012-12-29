@@ -1,5 +1,5 @@
 /**
- * Various linux stlye macros, when I say linux style,
+ * Various Linux stlye macros, when I say Linux style,
  * I mean the macro style used in the Linux kernel (__noreturn, __weak, ...)
  *
  * Defines shortcuts for some attributes if __GNUC__ (GNU C compiler) used.
@@ -14,7 +14,7 @@
 #define __warn_unused   __attribute__((warn_unused_result))
 #define __weak          __attribute__((weak))
 #define __printf(nfmt, narg) \
-    __attribute__((format(__printf__, nfmt, narg)))
+	__attribute__((format(__printf__, nfmt, narg)))
 #define __const         __attribute__((const))
 #define __unused        __attribute__((unused))
 #define __init          __attribute__((constructor))
@@ -22,10 +22,8 @@
 #define GCC_VERSION (__GNUC__ * 10000 \
 			+ __GNUC_MINOR__ * 100 \
 			+ __GNUC_PATCHLEVEL__)
-#if GCC_VERSION >= 40500 || defined __clang__
-#define __unreachable() __builtin_unreachable()
-#else
-#define __unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
+#if GCC_VERSION < 40500 || !defined __clang__
+#define __builtin_unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #endif  /* GCC_VERSION */
 #else   /* not __GNUC__ || __clang__ */
 #define __attribute__(x)
@@ -37,7 +35,7 @@
 #define __printf(nfmt, narg)
 #define __const
 #define __unused
-#define __unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
+#define __builtin_unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #define __init
 #define __exit
 #endif  /* __GNUC__ || __clang__ */

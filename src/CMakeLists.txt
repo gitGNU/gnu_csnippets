@@ -10,7 +10,7 @@
 #
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,20 +23,19 @@ set(csnippets_LIBRARIES "")
 set(csnippets_DEFINITIONS "")
 set(csnippets_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/..")
 set(csnippets_SOURCES ${csnippets_SOURCES}
-    ${CMAKE_CURRENT_LIST_DIR}/asprintf.c
-    ${CMAKE_CURRENT_LIST_DIR}/config.c
-    ${CMAKE_CURRENT_LIST_DIR}/event.c
-    ${CMAKE_CURRENT_LIST_DIR}/map.c
-    ${CMAKE_CURRENT_LIST_DIR}/socket.c
-    ${CMAKE_CURRENT_LIST_DIR}/select_event.c
-    ${CMAKE_CURRENT_LIST_DIR}/epoll_event.c
-    ${CMAKE_CURRENT_LIST_DIR}/strmisc.c
-    ${CMAKE_CURRENT_LIST_DIR}/error.c
-    ${CMAKE_CURRENT_LIST_DIR}/list.c
-    ${CMAKE_CURRENT_LIST_DIR}/rwlock.c
-    ${CMAKE_CURRENT_LIST_DIR}/task.c
-    ${CMAKE_CURRENT_LIST_DIR}/module.c
-    ${CMAKE_CURRENT_LIST_DIR}/poll.c
+	${CMAKE_CURRENT_LIST_DIR}/asprintf.c
+	${CMAKE_CURRENT_LIST_DIR}/event.c
+	${CMAKE_CURRENT_LIST_DIR}/map.c
+	${CMAKE_CURRENT_LIST_DIR}/socket.c
+	${CMAKE_CURRENT_LIST_DIR}/select_event.c
+	${CMAKE_CURRENT_LIST_DIR}/epoll_event.c
+	${CMAKE_CURRENT_LIST_DIR}/strmisc.c
+	${CMAKE_CURRENT_LIST_DIR}/error.c
+	${CMAKE_CURRENT_LIST_DIR}/list.c
+	${CMAKE_CURRENT_LIST_DIR}/rwlock.c
+	${CMAKE_CURRENT_LIST_DIR}/task.c
+	${CMAKE_CURRENT_LIST_DIR}/module.c
+	${CMAKE_CURRENT_LIST_DIR}/poll.c
 )
 set(csnippets_PRE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
 
@@ -45,17 +44,17 @@ set(BUILD_REVISION "0" CACHE "Git revision string (intended for releases)" STRIN
 
 # default build type
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+	set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 endif()
 
 # gcc compile flags
-set(WARNS_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-variable -Wno-sign-compare -Werror")
-set(CMAKE_C_FLAGS                   "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${csnippets_PRE_INCLUDE}")
-set(CMAKE_C_FLAGS_DEBUG             "-O0 -g3 -ggdb")
+set(WARNS_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-variable -Wno-sign-compare ")
+set(CMAKE_C_FLAGS		    "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${csnippets_PRE_INCLUDE}")
+set(CMAKE_C_FLAGS_DEBUG		    "-O0 -g3 -ggdb")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O1 -g3 -ggdb -fno-omit-frame-pointer")
-set(CMAKE_C_FLAGS_RELEASE           "-O2")
-set(CMAKE_C_FLAGS_PERFORMANCE       "-Ofast -mmmx -msse -msse2")
-set(CMAKE_C_FLAGS_MINSIZEREL        "-Os")
+set(CMAKE_C_FLAGS_RELEASE	    "-O2")
+set(CMAKE_C_FLAGS_PERFORMANCE	    "-Ofast -mmmx -msse -msse2")
+set(CMAKE_C_FLAGS_MINSIZEREL	    "-Os")
 
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 add_definitions(-D"BUILD_TYPE=\\\"${CMAKE_BUILD_TYPE}\\\"")
@@ -68,32 +67,26 @@ find_package(DL REQUIRED)
 find_package(LibIntl)
 
 if(WIN32)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads -D__use_select")
-    set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -D_WIN32_WINNT=0x0600)
-    set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--large-address-aware") # strip all debug information
-    set(csnippets_LIBRARIES "-lws2_32")
-    #    set(csnippets_SOURCES ${csnippets_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_windows.c)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads -DUSE_SELECT")
+	set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--large-address-aware") # strip all debug information
+	set(csnippets_LIBRARIES "-lws2_32")
 elseif(APPLE)
-    set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -D_REENTRANT) # enable thread safe code
-endif()
-
-if(NOT WIN32)
-    set(csnippets_SOURCES ${csnippets_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/module_unix.c)
+	set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -D_REENTRANT) # enable thread safe code
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    set(csnippets_DEFINITIONS "${csnippets_DEFINITIONS} -D_DEBUG_SOCKET -D_DEBUG_EVENTS -D_DEBUG_TASKS -D_DEBUG_MODULES")
-    set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--no-as-needed")
-    message(STATUS "Debug information: ON")
+	set(csnippets_DEFINITIONS "${csnippets_DEFINITIONS} -D_DEBUG_SOCKET -D_DEBUG_EVENTS -D_DEBUG_TASKS -D_DEBUG_MODULES")
+	set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--no-as-needed")
+	message(STATUS "Debug information: ON")
 else()
-    message(STATUS "Debug information: OFF")
-    set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -DNDEBUG) # NDEBUG disable asserts
-    set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--as-needed -Wl,-s") # strip all debug information
+	message(STATUS "Debug information: OFF")
+	set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -DNDEBUG) # NDEBUG disable asserations
+	set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--as-needed -Wl,-s") # strip all debug information
 endif()
 
 set(csnippets_INCLUDE_DIRS ${csnippets_INCLUDE_DIRS} ${DL_INCLUDE_DIR})
-set(csnippets_LIBRARIES ${csnippets_LIBRARIES} ${LIBINTL_LIBRARIES} -lpthread ${DL_LIBRARIES})
+set(csnippets_LIBRARIES ${csnippets_LIBRARIES} ${LIBINTL_LIBRARIES} -pthread ${DL_LIBRARIES})
 if(LIBINTL_FOUND)
-    set(csnippets_DEFINITIONS "${csnippets_DEFINITIONS} -DHAVE_LIBINTL_H")
+	set(csnippets_DEFINITIONS "${csnippets_DEFINITIONS} -DHAVE_LIBINTL_H")
 endif()
 
