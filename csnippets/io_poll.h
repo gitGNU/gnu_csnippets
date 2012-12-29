@@ -19,31 +19,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef _COMPAT_H
-#define _COMPAT_H
+#ifndef _IO_POLL_H
+#define _IO_POLL_H
 
-/**
- * Compatibility with other platforms should go here.
- */
-#ifdef _WIN32
-#ifndef USE_SELECT
-#define USE_SELECT
-#endif
-#ifdef USE_EPOLL
-#undef USE_EPOLL
-#endif
-#ifdef USE_KQUEUE
-#undef USE_KQUEUE
-#endif
-#elif defined __linux
-#if !defined USE_EPOLL && !defined USE_SELECT
-#define USE_EPOLL
-#endif
-#else
-#ifdef USE_KQUEUE
-#error "kqueue isn't implemented yet."
-#endif
-#endif
+struct pollev;
 
-#endif   /* _COMPAT_H */
+extern struct pollev * pollev_init(void);
+extern void                 pollev_deinit(struct pollev *);
+extern void                 pollev_add(struct pollev *, int, int);
+extern void                 pollev_del(struct pollev *, int);
+extern int                  pollev_poll(struct pollev *);
+extern int                  pollev_active(struct pollev *, int);
+extern uint32_t             pollev_revent(struct pollev *, int);
+
+#endif
 

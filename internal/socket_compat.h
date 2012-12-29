@@ -19,28 +19,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef _SOCKET_COMPAT_H
+#define _SOCKET_COMPAT_H
 
-_BEGIN_DECLS
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>	 /* socklen_t */
 
-struct def {
-	char key[33];
-	char *value;
+#define s_close(fd) closesocket((fd))
+#define s_error     WSAGetLastError()
+#define s_seterror(e)  WSASetLastError((e))
 
-	struct def *next;
-};
+#define s_EAGAIN	WSAEWOULDBLOCK
+#define s_EBLOCK	WSAEWOULDBLOCK
+#define s_EINTR		WSAEINTR
+#define s_EINPROGRESS	WSAEINPROGRESS
 
-struct config {
-	char section[32];
+#define IsBlocking() (s_error == s_EBLOCK)
+#else
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/time.h>
 
-	struct def *def;
-	struct config *next;
-};
+#define s_close(fd)  close((fd))
+#define s_error      errno
+#define s_seterror(e) errno = (e)
 
-extern struct config *config_parse(const char *filename);
-extern void config_free(struct config *entry);
+#define s_EAGAIN     EAGAIN
+#define s_EBLOCK     EWOULDBLOCK
+#define s_EINTR      EINTR
+#define s_EINPROGRESS EINPROGRESS
 
-_END_DECLS
-#endif   /* _CONFIG_H */
+#define IsBlocking() (s_error == EWOULDBLOCK || s_error == EAGAIN)
+#endif
+
+#endif    /* _SOCKET_COMPAT_H  */
 

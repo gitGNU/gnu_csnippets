@@ -20,7 +20,7 @@ Glance at examples/ to see examples of each module.
 
 ### Origin
 
-Some of the codes here are taken from other sources (rewritten or changed a bit to fit).
+Some of the codes here is taken from other sources (rewritten or changed a bit to fit).
 Send an email to <f.fallen45@gmail.com>  if you think your credit is missing.
 
 Please see AUTHORS for more information.
@@ -45,6 +45,8 @@ Contributions are always welcome, and if you're ready to do so, please follow th
 We have a mailing list now, so feel free to populate your patches there: https://lists.nongnu.org/mailman/listinfo/csnippets-dev
 Another version of the GitHub repository can be browsered at: http://git.savannah.gnu.org/cgit/csnippets.git/
 
+Also glance at HACKING.md for coding style.
+
 ### TODO and bug reports
 
 Please report any bugs you encounter to the mailing list: https://lists.nongnu.org/mailman/listinfo/csnippets-bugs
@@ -58,7 +60,7 @@ MIT (Also known as "The Expat License")
 Before compiling, make sure you have:
 
       1. CMake 2.6 or later   (get it by your package manager or from the cmake website)
-      2. GCC (GNU C Compiler)
+      2. gcc (GNU C Compiler) part of the GNU Compiler Collection (GCC)
       3. GNU Make
 
 ```sh
@@ -68,9 +70,8 @@ or manually:
 ```sh
 mkdir build && cd build
 cmake ..
-make -jCORES
+make
 ```
-replace CORES with your cores.
 
 ### Installation
 
@@ -93,6 +94,6 @@ cmake .. -DINCLUDE_INSTALL_DIR=myinclude
 
 Finally run:
 ```
-make -jCORES all install
+make all install
 ```
 
