@@ -22,10 +22,14 @@
 #include <csnippets/error.h>
 #include <csnippets/asprintf.h>
 
+/* The following extern may break compilation on some compilers,
+ * or other libc, this one is from GLIBC (GNU libc).
+ */
 extern char *program_invocation_short_name;
 static int verbose = 1;
 
-#define prog program_invocation_short_name
+/* A short name instead of a longass one.  */
+#define prog	program_invocation_short_name
 #define __dolog(s, args...) do { \
 	fprintf(stderr, _(s), ##args); \
 	if (verbose > 0) \
@@ -46,8 +50,8 @@ void __noreturn error_nret(const char *str, ...)
 	vasprintf(&buff, str, ap);
 	va_end(ap);
 
-	__dolog(_("%s: %s\n%s: error is not recoverable, terminating now...\n"), prog,
-	        buff, prog);
+	__dolog(_("%s: %s\n%s: error is not recoverable, terminating now...\n"),
+			prog, buff, prog);
 	free(buff);
 	exit(EXIT_FAILURE);
 }

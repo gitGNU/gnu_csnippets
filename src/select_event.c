@@ -19,13 +19,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#if defined USE_SELECT
+#ifdef USE_SELECT
 
 #include <internal/socket_compat.h>
 #include <csnippets/io_poll.h>
 #include <csnippets/socket.h>
 #ifdef _WIN32
 #include <winsock2.h>
+#else
+#include <sys/time.h>
 #endif
 #ifndef MAX_EVENTS
 #define MAX_EVENTS 1024
@@ -153,13 +155,11 @@ __inline __const int pollev_active(struct pollev *evs, int index)
 
 uint32_t pollev_revent(struct pollev *evs, int index)
 {
-	uint32_t r;
 	int fd = evs->events[index]->fd;
+	uint32_t r = 0;
 
-	if (!(evs->fds[fd].read & 0x02) && !(evs->fd[fd].write & 0x02))
-		r |= IO_ERR;
 	if (evs->fds[fd].read & 0x02)
-		r |= IO_READ;
+		r = IO_READ;
 	if (evs->fds[fd].write & 0x02)
 		r |= IO_WRITE;
 

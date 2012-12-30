@@ -22,18 +22,25 @@
 #ifndef _ERROR_H
 #define _ERROR_H
 
-#define LOG_FATAL    "FATAL: "
-#define LOG_WARNING  "WARNING: "
-#define LOG_NOTICE   "NOTICE: "
+#if HAVE_LIBINTL_H
+#include <libintl.h>
+#define _(x) gettext((x))
+#else
+#define _(x) x
+#endif
 
-#define LOG_FILE "stderr.log"    /* log file to print to (stderr).  */
+#define LOG_FATAL	"FATAL: "
+#define LOG_WARNING	"WARNING: "
+#define LOG_NOTICE	"NOTICE: "
+
+#define LOG_FILE "stderr.log"	/* log file to print to (stderr).  */
 /* shortcuts. */
-#define elog(str, args...)          dolog(LOG_NOTICE str, ##args)
-#define die                         fatal
-#define fatal(str, args...)         error_nret(LOG_FATAL str, ##args)
-#define warning(str, args...)       dolog(LOG_WARNING str, ##args)
-#define eprintf(str, args...)       dolog(str, ##args)
-#define edebug(str, args...)	    dolog(__func__ str, ##args)
+#define elog(str, args...)	dolog(LOG_NOTICE str, ##args)
+#define die			fatal
+#define fatal(str, args...)	error_nret(LOG_FATAL str, ##args)
+#define warning(str, args...)	dolog(LOG_WARNING str, ##args)
+#define eprintf(str, args...)	dolog(str, ##args)
+#define edebug(str, args...)	dolog(__func__ str, ##args)
 
 /* error_nret() - Log a formatted string.
  *

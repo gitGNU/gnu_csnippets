@@ -54,12 +54,5 @@ typedef enum _Bool {
 #endif
 #endif
 
-#if HAVE_LIBINTL_H
-#include <libintl.h>
-#define _(x) gettext((x))
-#else
-#define _(x) x
-#endif
-
 #endif  /* _CSNIPPETS_H */
 

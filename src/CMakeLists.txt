@@ -25,7 +25,6 @@ set(csnippets_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/..")
 set(csnippets_SOURCES ${csnippets_SOURCES}
 	${CMAKE_CURRENT_LIST_DIR}/asprintf.c
 	${CMAKE_CURRENT_LIST_DIR}/event.c
-	${CMAKE_CURRENT_LIST_DIR}/map.c
 	${CMAKE_CURRENT_LIST_DIR}/socket.c
 	${CMAKE_CURRENT_LIST_DIR}/select_event.c
 	${CMAKE_CURRENT_LIST_DIR}/epoll_event.c

@@ -37,6 +37,9 @@ add_definitions(-D"VERSION=\\"${VERSION}\\"")
 if(USE_SELECT_HANDLER OR WIN32)
 	add_definitions(-DUSE_SELECT)
 elseif(UNIX)
+	# TODO: Epoll is Linux specific, we cannot just assign it to
+	# every UNIX-based system.  Instead select can be used as "generic"
+	# interface or the corresponding interface.
 	add_definitions(-DUSE_EPOLL)
 else()
 	message(STATUS "No poll interface specified, please use -DUSE_SELECT_HANDLER")

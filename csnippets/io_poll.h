@@ -24,7 +24,6 @@
 
 struct pollev;
 
-#define IO_ERR		0x00   /* An error occured, this is returned from pollev_revent only.  */
 #define IO_READ		0x01   /* There's data to be read.  */
 #define IO_WRITE	0x02   /* We're free to send incomplete data.  */
 
@@ -52,9 +51,6 @@ void pollev_deinit(struct pollev *);
  *
  * Bits should be something like:
  *	IO_READ | IO_WRITE or just one of them.
- *
- * Note, IO_ERR is not valid for this, it's only used by
- * pollev_revent to check for errors.
  *
  * We don't check if the file descriptor is valid.
  */
