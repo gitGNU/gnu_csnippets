@@ -90,6 +90,25 @@ done:
 	haha();
 }
 ```
+Fine:
+```
+static void blah(bool dontcare)
+[
+	int whatever;
+
+	whatever = hello ();
+	if (whatever && !dontcare)
+		goto out;
+
+	if (world() != dontcare)
+		goto out;
+
+	bleh (whatever, !dontcare);
+out:
+	/* Some nasty stuff before aborting.  */
+	__builtin_abort ();
+]
+```
 
 Comment code you feel confusing.
 
