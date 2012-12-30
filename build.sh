@@ -14,7 +14,7 @@ MAKEOPT=$(($CORES + 1))
 ARGS=1337
 # The target to build after building the static library.
 TARGET=server
-# the "make" command
+# the "make" command, change this to "mingw32-make" if using the MINGW toolchain.
 MAKE=make
 # the debugger
 DBG=gdb
@@ -23,6 +23,14 @@ buildopt=
 # whether we should clean before building
 clean_before_build=no
 
+# If this is the GIT version, define build commit and revision.
+# Otherwise, don't do anything.  We might need the
+# gen-version.sh script for releases, this will help
+# get the tag name and version associated.
+# Or alternatively, we could write an else case here, and
+# define those strings to something informative.
+#
+# Those are intended for feature-checking in the near future.
 if [ -d .git ]; then
 	buildopt="-DBUILD_COMMIT=`git describe --dirty --always` \
 			-DBUILD_REVISION=`git rev-list --all | wc -l`"
@@ -30,16 +38,11 @@ fi
 
 run() {
 	echo "Running $TARGET with $ARGS"
-	if [ -d "$TARGET_DIR" ]; then
-		cd $TARGET_DIR
-	fi
 	if [ "$1" = "$DBG" ]; then
 		$1 --args $TARGET $ARGS
 	else
 		./$TARGET $ARGS
 	fi
-	# return back to the old directory
-	cd ..
 }
 
 __make() {
