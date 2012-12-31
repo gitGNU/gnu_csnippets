@@ -73,12 +73,25 @@ _make() {
 	__make $TARGET $1
 }
 
-case "$2" in
-	-s) buildopt="$buildopt -DUSE_SELECT_HANDLER=ON" ;;
-	-c) clean_before_build=yes ;;
-	-cb) cross_build=yes ;;
-	*) buildopt="$buildopt -DUSE_SELECT_HANDLER=OFF" ;;
-esac
+debugging=no
+run_after=no
+while getopts scbgrh name
+do
+	case $name in
+	s)	buildopt="$buildopt -DUSE_SELECT_HANDLER=ON" ;;
+	c)	clean_before_build=yes ;;
+	b)	cross_build=yes ;;
+	g)	debugging=yes ;;
+	r)	run_after=yes ;;
+	?|-h)	printf "Usage %s: [-s -c -b -g -r]\n" $0
+		printf "%s: run me with:\n" $0
+		printf "	%s -s (to use select interface)\n"	$0
+		printf "	%s -c to clean before building\n"	$0
+		printf "	%s -g to run %s in debug mode\n"	$0 $TARGET
+		printf "	%s -r to run %s after building\n"	$0 $TARGET
+		exit 1 ;;
+	esac
+done
 
 if [ "$cross_build" = "yes" ]; then
 	if [ -d build ]; then
@@ -110,16 +123,12 @@ if [ "$clean_before_build" = "yes" ]; then
 	$MAKE clean
 fi
 
-case "$1" in
-	-g)  _make
-		run $DBG ;;
-	-a)  _make
-		run ;;
-	-gv) _make V=1
-		run $DBG ;;
-	-av) _make V=1
-		run ;;
-	-v)  _make V=1 ;;
-	*)   _make ;;
-esac
+_make
+if [ "$run_after" = "yes" ]; then
+	if [ "$debugging" = "yes" ]; then
+		run $DBG
+	else
+		run
+	fi
+fi
 

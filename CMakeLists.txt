@@ -30,22 +30,39 @@ if(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
 endif(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
 include(src/CMakeLists.txt)
+
 option(USE_SELECT_HANDLER "Use select handler instead of epoll (enabled by default on windows)" OFF)
 add_definitions(-D"VERSION=\\"${VERSION}\\"")
+
+set(SOCKET_INTERFACE "Select")
+set(SOCKET_INTERFACE_DEF "-DUSE_SELECT")
 if(USE_SELECT_HANDLER OR WIN32)
-	add_definitions(-DUSE_SELECT)
+	# do nothing, it's the default!
 elseif(UNIX)
 	# TODO: Epoll is Linux specific, we cannot just assign it to
 	# every UNIX-based system.  Instead select can be used as "generic"
 	# interface or the corresponding interface.
-	add_definitions(-DUSE_EPOLL)
+	set(SOCKET_INTERFACE "Epoll")
+	set(SOCKET_INTERFACE_DEF "-DUSE_EPOLL")
 else()
-	message(STATUS "No poll interface specified, please use -DUSE_SELECT_HANDLER")
+	message(STATUS "No poll interface specified,  falling back to default (${SOCKET_INTERFACE} interface)")
+endif()
+message(STATUS "Using interface: ${SOCKET_INTERFACE}")
+add_definitions(${SOCKET_INTERFACE_DEF})
+
+option(USE_STATIC_LIBS "Don't use shared libraries" ON)
+if(USE_STATIC_LIBS)
+	if(NOT APPLE)
+		set(CMAKE_C_LINK_FLAGS "-static-libgcc")
+	endif()
+	add_library(csnippets ${csnippets_SOURCES})
+	message(STATUS "Link to static libraries: ON")
+else()
+	add_library(csnippets SHARED ${csnippets_SOURCES})
+	message(STATUS "Link to static libraries: OFF")
 endif()
 
-add_library(csnippets ${csnippets_SOURCES})
 add_definitions(${csnippets_DEFINITIONS})
 target_link_libraries(csnippets ${csnippets_LIBRARIES})
 include_directories(csnippets ${csnippets_INCLUDE_DIRS})
@@ -58,8 +75,8 @@ include(examples/task/CMakeLists.txt)
 include(examples/stack/CMakeLists.txt)
 
 # Installation paths
-set(BIN_INSTALL_DIR bin CACHE PATH "Where to install binaries to.")
-set(LIB_INSTALL_DIR lib CACHE PATH "Where to install libraries to.")
+set(BIN_INSTALL_DIR	bin	CACHE PATH "Where to install binaries to.")
+set(LIB_INSTALL_DIR	lib	CACHE PATH "Where to install libraries to.")
 set(INCLUDE_INSTALL_DIR include CACHE PATH "Where to install headers to.")
 
 # Installation
@@ -68,3 +85,4 @@ install(TARGETS csnippets
 	RUNTIME DESTINATION ${BIN_INSTALL_DIR}
 	LIBRARY DESTINATION ${LIB_INSTALL_DIR}
 	ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
+

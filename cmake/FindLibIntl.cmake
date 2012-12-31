@@ -9,38 +9,39 @@
 #  LIBINTL_LIBRARIES - the library needed for linking
 
 IF (LibIntl_LIBRARY)
-   SET(LibIntl_FIND_QUIETLY TRUE)
-ENDIF ()
+	SET(LibIntl_FIND_QUIETLY TRUE)
+ENDIF()
 
 # for Windows we rely on the environement variables
 # %INCLUDE% and %LIB%; FIND_LIBRARY checks %LIB%
 # automatically on Windows
 IF(WIN32)
-    FIND_LIBRARY(LibIntl_LIBRARY
-        NAMES intl gettext
-    )
+	FIND_LIBRARY(LibIntl_LIBRARY
+		NAMES intl gettext
+	)
 ELSE()
-    FIND_LIBRARY(LibIntl_LIBRARY
-        NAMES intl gettextlib
-        PATHS /usr/lib /usr/local/lib
-    )
+	FIND_LIBRARY(LibIntl_LIBRARY
+		NAMES intl gettextlib
+		PATHS /usr/lib /usr/local/lib
+	)
 ENDIF()
 
 IF (LibIntl_LIBRARY)
-    SET(LIBINTL_FOUND TRUE)
-    SET(LIBINTL_LIBRARIES ${LibIntl_LIBRARY})
+	SET(LIBINTL_FOUND TRUE)
+	SET(LIBINTL_LIBRARIES ${LibIntl_LIBRARY})
 ELSE ()
-    SET(LIBINTL_FOUND FALSE)
+	SET(LIBINTL_FOUND FALSE)
 ENDIF ()
 
 IF (LIBINTL_FOUND)
-    IF (NOT LibIntl_FIND_QUIETLY)
-        MESSAGE(STATUS "Found libintl: ${LibIntl_LIBRARY}")
-    ENDIF ()
+	IF (NOT LibIntl_FIND_QUIETLY)
+		MESSAGE(STATUS "Found libintl: ${LibIntl_LIBRARY}")
+	ENDIF ()
 ELSE ()
-    IF (LibIntl_FIND_REQUIRED)
-        MESSAGE(FATAL_ERROR "Could NOT find libintl")
-    ENDIF ()
+	IF (LibIntl_FIND_REQUIRED)
+		MESSAGE(FATAL_ERROR "Could NOT find libintl")
+	ENDIF ()
 ENDIF ()
 
 MARK_AS_ADVANCED(LibIntl_LIBRARY)
+
