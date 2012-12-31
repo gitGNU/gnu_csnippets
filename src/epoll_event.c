@@ -113,6 +113,11 @@ int pollev_poll(struct pollev *pev)
 	return n;
 }
 
+__inline __const int pollev_active(struct pollev *pev, int index)
+{
+	return pev->events[index].data.fd;
+}
+
 uint32_t pollev_revent(struct pollev *ev, int index)
 {
 	uint32_t events = ev->events[index].events;
@@ -123,11 +128,6 @@ uint32_t pollev_revent(struct pollev *ev, int index)
 	if (events & EPOLLOUT)
 		r |= IO_WRITE;
 	return r;
-}
-
-__inline __const int pollev_active(struct pollev *pev, int index)
-{
-	return pev->events[index].data.fd;
 }
 
 #endif

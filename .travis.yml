@@ -2,7 +2,7 @@ language: c
 compiler:
   - gcc
 script: |
-  ./build.sh
+  ./build.sh -v -c
 
 notifications:
   irc:
