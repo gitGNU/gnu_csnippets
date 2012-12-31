@@ -22,100 +22,182 @@
  * THE SOFTWARE.
  */
 #include <csnippets/socket.h>
-#include <csnippets/asprintf.h>
+#include <csnippets/io_poll.h>   /* IO event-based polling.  */
+#include <csnippets/asprintf.h>  /* Needed in conn_writestr  */
+#include <csnippets/poll.h>      /* Fake poll(2) enviroment that is cross-platform.  (Part of gnulib) */
 
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>    /* socklen_t */
-#else
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/time.h>
-#endif
-#include <csnippets/poll.h>
-#include <time.h>
+#include <internal/socket_compat.h>  /* Internal definitions, for compatibility with various platforms.  */
 
-#ifdef _WIN32
-static __init __unused void __startup(void)
+struct sk_buff {
+	char *data;
+	size_t size;
+};
+
+struct listener {
+	int fd;
+
+	bool (*fn) (struct conn *, void *arg);
+	void *arg;
+
+	struct list_node node;
+};
+
+struct conn {
+	int fd;
+
+	bool (*next) (struct conn *, void *);
+	void *argp;
+
+	bool (*fn) (struct conn *, void *);
+	void *farg;
+	bool in_progress;
+
+	struct sockaddr sa;
+	int sa_len;
+
+	struct sk_buff wb;
+	struct list_node node;
+};
+
+static struct pollev *io_events;
+static LIST_HEAD(conns);
+static LIST_HEAD(listeners);
+
+static struct conn *find_conn(int fd)
 {
+	struct conn *ret;
+
+	list_for_each(&conns, ret, node)
+		if (ret->fd == fd)
+			return ret;
+	return NULL;
+}
+
+static struct listener *find_listener(int fd)
+{
+	struct listener *ret;
+
+	list_for_each(&listeners, ret, node)
+		if (ret->fd == fd)
+			return ret;
+	return NULL;
+}
+
+static bool do_write(struct conn *conn, const void *data, size_t len)
+{
+	int t_bytes = 0, r_bytes, n;
+	struct sk_buff *skb;
+	if (unlikely(!conn))
+		return false;
+
+	r_bytes = len;
+	skb = &conn->wb;
+	while (t_bytes < len) {
+		if (!skb->data)
+			do
+				n = send(conn->fd, data + t_bytes, r_bytes, 0);
+			while (n == -1 && s_error == s_EINTR);
+		else
+			n = -2;
+
+		if (n < 0) {
+			if ((IsBlocking() && r_bytes > 0) || n == -2) {
+				if (!skb->data) {
+					skb->size = r_bytes + 128;
+					xmalloc(skb->data, sizeof(char) * skb->size,
+							return -1);
+				} else {
+					skb->size += r_bytes;
+					alloc_grow(skb->data, sizeof(char) * skb->size,
+							return -1);
+				}
+
+				memcpy(skb->data + (skb->size - r_bytes), data + t_bytes, r_bytes);
+				return false;
+			}
+
+			break;
+		}
+
+		t_bytes += n;
+		r_bytes -= n;
+	}
+
+	return true;
+}
+
+static bool do_write_queue(struct conn *conn)
+{
+	int t_bytes = 0, r_bytes, n;
+	struct sk_buff *skb;
+
+	if (unlikely(!conn || !conn->wb.data))
+		return true;
+
+	skb = &conn->wb;
+	r_bytes = skb->size;
+	while (t_bytes < skb->size) {
+		do
+			n = send(conn->fd, skb->data + t_bytes, r_bytes, 0);
+		while (n == -1 && s_error == s_EINTR);
+		if (n == -1) {
+			if (IsBlocking() && r_bytes > 0) {
+				/* Not everything has been set yet...  Store for next.  */
+				memmove(skb->data, skb->data + t_bytes, r_bytes);
+				skb->size = r_bytes;
+				return false;
+			}
+			break;
+		}
+
+		t_bytes += n;
+		r_bytes -= n;
+	}
+
+	skb->size = 0;
+	free(skb->data);
+	skb->data = NULL;
+
+	return true;
+}
+
+static __init __unused void __sock_startup(void)
+{
+#ifdef _WIN32
+	/* Initialise windows sockets */
 	WSADATA wsa;
 	if (0 != WSAStartup(MAKEWORD(2, 2), &wsa)) {
 		WSACleanup();
-		eprintf("WSAStartup() failed\n");
-		return NULL;
+		eprintf("WSAStartup(2, 2) failed\n");
+		/* We shall abort after an error like this has occured,
+		 * the API won't work at all.  */
+		abort();
+	}
+#endif
+
+	/* Initialise polling  */
+	io_events = pollev_init();
+	if (!io_events) {
+		/* Unstoppable error, we have to abort.
+		 * Polling won't work */
+		eprintf("%s:%d: %s: initialising input and output events has failed due to OOM (Out of memory!)\n",
+				__FILE__, __LINE__, __func__);
+		abort();
 	}
 }
 
-static __exit __unused void __cleanup(void)
+static __exit __unused void __sock_cleanup(void)
 {
-	is_initialized = false;
+#ifdef _WIN32
 	WSACleanup();
-}
 #endif
-
-#if (EAGAIN == EWOULDBLOCK)
-static __inline __const bool IsBlocking(void)
-{
-	return errno == EWOULDBLOCK;
-}
-#else
-static __inline __const bool IsBlocking(void)
-{
-	return errno == EWOULDBLOCK || errno == EAGAIN;
-}
-#endif
-#define IsAvail(sops, func) !!(sops)->func
-#define callop(sops, func, ...) (sops)->func (__VA_ARGS__)
-
-/* Boring, polling specific functions  */
-extern struct pollev * pollev_init(void);
-extern void                 pollev_deinit(struct pollev *);
-extern void                 pollev_add(struct pollev *, int, int);
-extern void                 pollev_del(struct pollev *, int);
-extern int                  pollev_poll(struct pollev *);
-extern int                  pollev_active(struct pollev *, int);
-extern uint32_t             pollev_revent(struct pollev *, int);
-
-static void add_connection(struct listener *socket, struct conn *conn)
-{
-	pthread_mutex_lock(&socket->conn_lock);
-
-	list_add_tail(&socket->children, &conn->node);
-	++socket->num_connections;
-
-	pthread_mutex_unlock(&socket->conn_lock);
+	if (io_events)
+		pollev_deinit(io_events);
 }
 
-static void rm_connection(struct listener *socket, struct conn *conn)
-{
-	pthread_mutex_lock(&socket->conn_lock);
-
-	list_del_from(&socket->children, &conn->node);
-	--socket->num_connections;
-
-	pthread_mutex_unlock(&socket->conn_lock);
-}
-
-static __inline void *skb_put(struct sk_buff *skb, int len)
-{
-	char *tmp;
-
-	xrealloc(skb->data, skb->data,
-			(skb->size + len) * sizeof(char), return NULL);
-	tmp = &((char *)skb->data)[skb->size];
-	skb->size += len;
-	return tmp;
-}
-
-static struct addrinfo *net_lookup(
-		const char *hostname,
-		const char *service,
-		int family,
-		int socktype
-)
+static struct addrinfo *
+net_lookup(const char *node, const char *service,
+		int family, int socktype)
 {
 	struct addrinfo hints;
 	struct addrinfo *res;
@@ -126,7 +208,7 @@ static struct addrinfo *net_lookup(
 	hints.ai_flags = 0;
 	hints.ai_protocol = 0;
 
-	if (getaddrinfo(hostname, service, &hints, &res) != 0)
+	if (getaddrinfo(node, service, &hints, &res) != 0)
 		return NULL;
 
 	return res;
@@ -160,7 +242,7 @@ static void remove_fd(
 		unsigned int i
 )
 {
-	memmove(pfd + i, pfd + i + 1, (*num - i - 1) * sizeof(pfd[0]));
+	memmove(pfd  + i, pfd  + i + 1, (*num - i - 1) * sizeof(pfd [0]));
 	memmove(addr + i, addr + i + 1, (*num - i - 1) * sizeof(addr[0]));
 	memmove(slen + i, slen + i + 1, (*num - i - 1) * sizeof(slen[0]));
 	(*num)--;
@@ -168,7 +250,7 @@ static void remove_fd(
 
 static int net_connect(const struct addrinfo *addrinfo)
 {
-	int sockfd = -1, saved_errno;
+	int sockfd = -1, saved_error;
 	unsigned int i, num;
 	const struct addrinfo *ipv4 = NULL, *ipv6 = NULL;
 	const struct addrinfo *addr[MAX_PROTOS];
@@ -194,7 +276,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 		addr[num] = ipv6;
 		slen[num] = sizeof(struct sockaddr_in6);
 		pfd[num].fd = socket(AF_INET6, ipv6->ai_socktype,
-		                     ipv6->ai_protocol);
+				     ipv6->ai_protocol);
 		if (pfd[num].fd != -1)
 			num++;
 	}
@@ -203,7 +285,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 		addr[num] = ipv4;
 		slen[num] = sizeof(struct sockaddr_in);
 		pfd[num].fd = socket(AF_INET, ipv4->ai_socktype,
-		                     ipv4->ai_protocol);
+				     ipv4->ai_protocol);
 		if (pfd[num].fd != -1)
 			num++;
 	}
@@ -217,7 +299,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 		if (connect(pfd[i].fd, addr[i]->ai_addr, slen[i]) == 0)
 			goto got_one;
 
-		if (errno != EINPROGRESS) {
+		if (s_error != s_EINPROGRESS) {
 			/* Remove dead one. */
 			remove_fd(pfd, addr, slen, &num, i--);
 		}
@@ -236,7 +318,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 				goto got_one;
 
 			/* Remove dead one. */
-			errno = err;
+			s_seterror(err);
 			remove_fd(pfd, addr, slen, &num, i--);
 		}
 	}
@@ -245,463 +327,286 @@ got_one:
 	sockfd = pfd[i].fd;
 
 out:
-	saved_errno = errno;
+	saved_error = s_error;
 	for (i = 0; i < num; i++)
 		if (pfd[i].fd != sockfd)
-			close(pfd[i].fd);
-	errno = saved_errno;
+			s_close(pfd[i].fd);
+	s_seterror(saved_error);
 	return sockfd;
 }
 
-static bool __poll_on_conn(struct conn *conn, uint32_t flags)
+bool new_listener(const char *service,
+		bool (*fn) (struct conn *, void *arg),
+		void *arg)
 {
-	if (unlikely(!conn))
+	int reuse_addr;
+	struct addrinfo *addr;
+	struct listener *ret;
+	int fd;
+
+	addr = net_lookup(NULL, service, AF_UNSPEC, SOCK_STREAM);
+	if (!addr)
 		return false;
 
-	conn->last_active = time(NULL);
-	if (flags & EVENT_WRITE && conn->wbuff.size > 0) {
-		int len;
-
-		errno = 0;
-		do
-			len = send(conn->fd, conn->wbuff.data, conn->wbuff.size, 0);
-		while (len == -1 && errno == EINTR);
-		if ((len < 0 || len != conn->wbuff.size) && !IsBlocking())
-			__unreachable();
-		else if (IsAvail(&conn->ops, write)) {
-			callop(&conn->ops, write, conn, &conn->wbuff);
-			free(conn->wbuff.data);
-			conn->wbuff.data = NULL;
-			conn->wbuff.size = 0;
-		}
+	fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+	if (fd < 0) {
+		freeaddrinfo(addr);
+		return false;
 	}
 
-	if (flags & EVENT_READ) {
-		bool err = !socket_read(conn, NULL, socket_get_read_size(conn));
-		if (err) {
-			if (IsBlocking())
-				return true;
-#ifdef _DEBUG_SOCKET
-			eprintf("A wild error occured during read()\n");
-#endif
-			return false;
-		}
+	set_nonblock(fd);
+	reuse_addr = 1; /* ON */
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0
+	    || bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
+	    || listen(fd, 2048) != 0) {
+		freeaddrinfo(addr);
+		s_close(fd);
+		return false;
 	}
+	freeaddrinfo(addr);
 
+	xmalloc(ret, sizeof(*ret), return false);
+	list_add_tail(&listeners, &ret->node);
+	pollev_add(io_events, fd, IO_READ);
+
+	ret->fd  = fd;
+	ret->fn  = fn;
+	ret->arg = arg;
 	return true;
 }
 
-static void *poll_on_conn(void *client)
+bool new_conn(const char *node, const char *service,
+		bool (*fn) (struct conn *, void *arg),
+		void *arg)
 {
-	struct conn *conn = client;
-	void *events;
-	int i;
+	struct addrinfo *addr;
+	struct conn *conn;
 
-	events = pollev_init();
-	if (!events)
-		return NULL;
+	addr = net_lookup(node, service, AF_UNSPEC, SOCK_STREAM);
+	if (!addr)
+		return false;
 
-	pollev_add(events, conn->fd, EVENT_READ | EVENT_WRITE);
-	while (1) {
-		int ret = pollev_poll(events);
-		for (i = 0; i < ret; i++) {
-			if (pollev_active(events, i) == conn->fd
-			    && !__poll_on_conn(conn, pollev_revent(events, i))) {
-				pollev_deinit(events);
-				pthread_exit(NULL);
-			}
-		}
+	conn = new_conn_fd(net_connect(addr), fn, arg);
+	if (conn) {
+		conn->sa = *addr->ai_addr;
+		conn->sa_len = addr->ai_addrlen;
 	}
 
-	__unreachable();
+	freeaddrinfo(addr);
+	return !!conn;
 }
 
-static void *poll_on_listener(void *_socket)
+bool free_conn(struct conn *conn)
 {
-	struct listener *socket = _socket;
-	struct sockaddr in_addr;
-	socklen_t in_len = sizeof(in_addr);
-	int in_fd;
-	uint32_t bits;
-	int i, cfd, nfds;
-	struct conn *conn = NULL;
+	bool retval = false;
+	if (unlikely(!conn))
+		return retval;
 
-	assert(socket);
-	while (1) {
-		nfds = pollev_poll(socket->events);
-		if (nfds < 0) {
-#ifdef _DEBUG_SOCKET
-			eprintf("poll_on_listener(): pollev_poll() returned a negative result, is the server "
-					" socket closed?\n");
-#endif
-			pthread_exit(NULL);
-		}
+	list_del(&conn->node);
+	pollev_del(io_events, conn->fd);
+	if (s_close(conn->fd) == 0)
+		retval = true;
 
-		for (i = 0; i < nfds; i++) {
-			cfd = pollev_active(socket->events, i);
-			bits = pollev_revent(socket->events, i);
-			if (cfd != socket->fd) {
-				list_for_each(&socket->children, conn, node) {
-					if (conn->fd == cfd  && !__poll_on_conn(conn, bits)) {
-						rm_connection(socket, conn);
-						conn_free(conn);
-					}
-				}
-				continue;
-			}
-
-			if (!(bits & EVENT_READ)) {
-#ifdef _DEBUG_SOCKET
-				eprintf("poll_on_listener(): bits do not contain EVENT_READ on the server socket\n");
-#endif
-				pthread_exit(NULL);
-			}
-
-			while (1) {
-				in_fd = accept(socket->fd, &in_addr, &in_len);
-				if (in_fd == -1) {
-					if (IsBlocking())
-						break;
-#ifdef _DEBUG_SOCKET
-					else
-						eprintf("an error occured during accept(): %d(%s)\n", errno, strerror(errno));
-#endif
-					continue;
-				}
-
-				conn = conn_create(in_fd);
-				if (!conn) {
-					close(in_fd);
-					continue;
-				}
-
-				if (!set_nonblock(conn->fd) || !socket_set_read_size(conn, 2048)) {
-					close(conn->fd);
-					free(conn);
-					continue;
-				}
-
-				conn->last_active = time(NULL);
-				getnameinfo(&in_addr, in_len,
-					conn->host, sizeof conn->host,
-					conn->port, sizeof conn->port,
-					NI_NUMERICHOST | NI_NUMERICSERV);
-				/* FIXME: should this really be gethostname() ?_? */
-				gethostname(conn->remote, sizeof conn->remote);
-				if (likely(socket->on_accept)) {
-					(*socket->on_accept) (socket, conn);
-					if (IsAvail(&conn->ops, connect))
-						callop(&conn->ops, connect, conn);
-				}
-
-				pollev_add(socket->events, conn->fd, EVENT_READ | EVENT_WRITE);
-				add_connection(socket, conn);
-			}
-		}
-	}
-
-	__unreachable();
+	free(conn);
+	return retval;
 }
 
-struct listener *socket_create(void (*on_accept) (struct listener *, struct conn *))
-{
-	struct listener *ret;
-	xmalloc(ret, sizeof(struct listener), return NULL);
-
-	ret->events = pollev_init();
-	if (!ret->events) {
-		free(ret);
-		return NULL;
-	}
-
-	ret->on_accept = on_accept;
-	ret->fd = -1;
-	return ret;
-}
-
-struct conn *conn_create(int fd)
+struct conn *new_conn_fd(int fd,
+		bool (*fn) (struct conn *, void *arg),
+		void *arg)
 {
 	struct conn *ret;
+	if (unlikely(fd < 0))
+		return NULL;
 
 	xmalloc(ret, sizeof(*ret), return NULL);
-	ret->fd = fd;
+	ret->fd    = fd;
+	ret->fn    = fn;
+	ret->farg  = arg;
+	ret->in_progress = true;
 
-	ret->wbuff.size = 0;
-	ret->wbuff.data = NULL;
+	list_add_tail(&conns, &ret->node);
+	pollev_add(io_events, ret->fd, IO_READ | IO_WRITE);
 	return ret;
 }
 
-int socket_connect(struct conn *conn, const char *addr, const char *service)
+bool conn_read(struct conn *conn, void *data, size_t *len)
 {
-	struct addrinfo *address;
-	pthread_t thread;
-	int ret;
-
-	address = net_lookup(addr, service, AF_UNSPEC, SOCK_STREAM);
-	if (!address)
-		return -1;
-
-	if ((conn->fd = net_connect(address)) < 0) {
-		freeaddrinfo(address);
-		return -1;
-	}
-
-	if (!socket_set_read_size(conn, 2048)) {
-		freeaddrinfo(address);
-		return -1;
-	}
-
-	getnameinfo(address->ai_addr, address->ai_addrlen,
-		conn->remote, sizeof conn->remote,
-		conn->port, sizeof conn->port,
-		NI_NUMERICHOST | NI_NUMERICSERV);
-	/* FIXME: Should this really be gethostname() ?_? */
-	gethostname(conn->host, sizeof conn->host);
-	if (IsAvail(&conn->ops, connect))
-		callop(&conn->ops, connect, conn);
-
-	if ((ret = pthread_create(&thread, NULL, poll_on_conn, (void *)conn)) != 0)
-		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
-
-	freeaddrinfo(address);
-	return ret;
-}
-
-int socket_listen(struct listener *sock, const char *address, const char *service, long max_conns)
-{
-	int reuse_addr = 1;
-	pthread_t thread;
-	int ret = -1;
-	struct addrinfo *addr;
-
-	if (!sock)
-		return -1;
-
-	addr = net_lookup(address, service, AF_UNSPEC, SOCK_STREAM);
-	if (!addr)
-		return -1;
-
-	if (sock->fd < 0)
-		sock->fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (sock->fd < 0) {
-		freeaddrinfo(addr);
-		return -1;
-	}
-
-	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0) {
-		freeaddrinfo(addr);
-		close(sock->fd);
-		return -1;
-	}
-
-	if (bind(sock->fd, addr->ai_addr, addr->ai_addrlen) == -1
-			|| listen(sock->fd, max_conns) == -1
-			|| !set_nonblock(sock->fd)) {
-		freeaddrinfo(addr);
-		close(sock->fd);
-		return -1;
-	}
-
-	list_head_init(&sock->children);
-	if ((ret = pthread_create(&thread, NULL, poll_on_listener, (void *)sock)) != 0)
-		eprintf("failed to create thread (%d): %s\n", ret, strerror(ret));
-
-	pollev_add(sock->events, sock->fd, EVENT_READ);
-	freeaddrinfo(addr);
-	return ret;
-}
-
-bool socket_read(struct conn *conn, struct sk_buff *buff, size_t size)
-{
-	char *buffer;
 	ssize_t count;
-
 	if (unlikely(!conn))
 		return false;
 
-	if (!size)
-		size = socket_get_read_size(conn);
-
-	buffer = calloc(size + 1, sizeof(char));
-	if (!buffer)
-		return false;
-
-	errno = 0;
+	s_seterror(0);
 	do
-		count = recv(conn->fd, buffer, size, 0);
-	while (count == -1 && errno == EINTR);
-	if (count == -1) {
-		if (IsBlocking()) {
-			free(buffer);
-			return false;
-		}
-	} else if (count == 0) {
-		free(buffer);
-		return false;
-	}
-	buffer[count + 1] = '\0';
-
-	struct sk_buff on_stack = {
-		.data = buffer,
-		.size = count
-	};
-	if (buff)
-		*buff = on_stack;
-
-	if (IsAvail(&conn->ops, read))
-		callop(&conn->ops, read, conn, &on_stack);
-
-	if (buffer) free(buffer);
-	return true;
+		count = recv(conn->fd, data, *len, 0);
+	while (count == -1 && s_error == s_EINTR);
+	*len = count;
+	return !(count < 0 && !IsBlocking());
 }
 
-int socket_write(struct conn *conn, const void *data, size_t len)
+bool conn_write(struct conn *conn, const void *data, size_t len)
 {
-	int sent;
-	size_t i;
-
-	if (unlikely(!conn || conn->fd < 0 || !data))
-		return -EINVAL;
-
-	errno = 0;
-	do
-		sent = send(conn->fd, data, len, 0);
-	while (sent == -1 && errno == EINTR);
-	if (sent < 0) {
-#ifdef _DEBUG_SOCKET
-		eprintf("send(): returned %d, errno is %d, estring is %s\n", sent,
-		        errno, strerror(errno));
-#endif
-		return -errno;
-	}
-
-	struct sk_buff on_stack = {
-		.data = (void *)data,
-		.size = len
-	};
-	if (IsAvail(&conn->ops, write))
-		callop(&conn->ops, write, conn, &on_stack);
-	if (sent != len) {
-		memcpy(skb_put(&conn->wbuff, len - sent), &((char *)data)[sent], len - sent);
-#ifdef _DEBUG_SOCKET
-		eprintf("Sent: %d size: %d missing: %d\n\tto be sent: %s\n",
-				sent, len, len - sent, &((char *)conn->wbuff.data)[conn->wbuff.size]);
-#endif
-	}
-	return sent;
+	if (unlikely(!conn))
+		return false;
+	return do_write(conn, data, len);
 }
 
-int socket_writestr(struct conn *conn, const char *fmt, ...)
+bool conn_writestr(struct conn *conn, const char *fmt, ...)
 {
 	char *ptr;
 	va_list ap;
 	int len;
+	if (unlikely(!conn))
+		return false;
 
 	va_start(ap, fmt);
 	len = vasprintf(&ptr, fmt, ap);
 	va_end(ap);
 
-	if (!ptr || len < 0)
-		return -ENOMEM;
-	return socket_write(conn, ptr, len);
+	return ptr && do_write(conn, ptr, len);
 }
 
-bool socket_set_read_size(struct conn *conn, int size)
+bool conn_next(struct conn *c,
+		bool (*next) (struct conn *, void *arg),
+		void *arg)
 {
-	if (unlikely(!conn))
+	if (unlikely(!c))
 		return false;
 
-	if (setsockopt(conn->fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) != 0) {
-#ifdef _DEBUG_SOCKET
-		eprintf("socket_set_read_size(%p, %d): failed because setsockopt() returned -1, the errno was: %d,"
-		        " the error string is: %s\n",
-		        conn, size, errno, strerror(errno));
-#endif
-		return false;
-	}
-
+	c->next = next;
+	c->argp = arg;
 	return true;
 }
 
-int socket_get_read_size(struct conn *conn)
-{
-	int size = -1;
-	socklen_t slen = sizeof(size);
-
-	if (getsockopt(conn->fd, SOL_SOCKET, SO_RCVBUF, &size, &slen) != 0) {
-#ifdef _DEBUG_SOCKET
-		eprintf("socket_get_read_size(%p, %d): failed because getsockopt() returned -1, the errno was: %d,"
-		        " the error string is: %s\n",
-		        conn, size, errno, strerror(errno));
-#endif
-		return -1;
-	}
-
-	return size;
-}
-
-bool socket_set_send_size(struct conn *conn, int size)
+bool conn_getopt(struct conn *conn, int optname, void *optval,
+		  int *optlen)
 {
 	if (unlikely(!conn))
 		return false;
+	return getsockopt(conn->fd, SOL_SOCKET, optname,
+			   optval, (socklen_t *)optlen) == 0;
+}
 
-	if (setsockopt(conn->fd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(int)) != 0) {
-#ifdef _DEBUG_SOCKET
-		eprintf("socket_set_send_size(%p, %d): failed because setsockopt() returned -1, the errno was: %d,"
-		        " the error string is: %s\n",
-		        conn, size, errno, strerror(errno));
-#endif
+bool conn_setopt(struct conn *conn, int optname, const void *optval,
+		  int optlen)
+{
+	if (unlikely(!conn))
 		return false;
-	}
-
-	return true;
+	return setsockopt(conn->fd, SOL_SOCKET, optname,
+			   optval, (socklen_t)optlen) == 0;
 }
 
-int socket_get_send_size(struct conn *conn)
+bool conn_getnameinfo(struct conn *conn,
+		       char *host, size_t hostlen,
+		       char *serv, size_t servlen,
+		       bool numeric_host,
+		       bool numeric_serv)
 {
-	int size = -1;
-	socklen_t slen = sizeof(size);
+	int flags = 0;
+	if (unlikely(!conn))
+		return false;
+	if (numeric_host)
+		flags |= NI_NUMERICHOST;
+	if (numeric_serv)
+		flags |= NI_NUMERICSERV;
+	return getnameinfo((const struct sockaddr *)&conn->sa, conn->sa_len,
+			    host, hostlen,
+			    serv, servlen,
+			    flags) == 0;
+}
 
-	if (getsockopt(conn->fd, SOL_SOCKET, SO_SNDBUF, &size, &slen) != 0) {
+void *conn_loop(void)
+{
+	struct conn *conn;
+	struct listener *li;
+	while (1) {
+		int nfds, i;
+
+		nfds = pollev_poll(io_events);
+		if (nfds < 0)
+			continue;
+
+		for (i = 0; i < nfds; ++i) {
+			int fd, revent;
+
+			fd = pollev_active(io_events, i);
+			revent = pollev_revent(io_events, i);
+			if (!revent)
+				continue;
+
+			if ((li = find_listener(fd))) {
+				if (!(revent & IO_READ)) {
+					list_del(&li->node);
+					pollev_del(io_events, li->fd);
+					s_close(li->fd);
+					free(li);
+					continue;
+				}
+
+				while (1) {
+					struct sockaddr in_addr;
+					socklen_t in_len;
+					int in_fd;
+
+					in_len = sizeof(in_addr);
+					s_seterror(0);
+					do
+						in_fd = accept(li->fd, &in_addr, &in_len);
+					while (in_fd == -1 && s_error == s_EINTR);
+					if (in_fd == -1) {
+						if (IsBlocking())
+							break;
+						continue;
+					}
+
+					set_nonblock(in_fd);
+					conn = new_conn_fd(in_fd, NULL, NULL);
+					if (!conn)
+						break;
+					conn->sa = in_addr;
+					conn->sa_len = in_len;
+					if (likely(li->fn) && !li->fn(conn, li->arg))
+						assert(free_conn(conn));
+				}
+			} else if ((conn = find_conn(fd))) {
+				if (revent & IO_WRITE) {
+					if (conn->in_progress) {
+						int err = 0;
+						socklen_t errlen = sizeof(err);
+
+						if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == 0
+						    && err == 0) {
+							conn->in_progress = false;
+							if (conn->fn && !conn->fn(conn, conn->farg)) {
+								assert(free_conn(conn));
+								continue;
+							}
+						} else {
+							/* Disconnected?  */
+							assert(free_conn(conn));
+							continue;
+						}
+					} else if (conn->wb.data != NULL) {
 #ifdef _DEBUG_SOCKET
-		eprintf("socket_get_send_size(%p, %d): failed because getsockopt() returned -1, the errno was: %d,"
-		        " the error string is: %s\n",
-		        conn, size, errno, strerror(errno));
+						eprintf("sending incomplete data...\n");
 #endif
-		return -1;
+						if (!do_write_queue(conn)) {
+							assert(free_conn(conn));
+							continue;
+						}
+					} else
+						goto call_next;
+				}
+
+				if (revent & IO_READ) {
+call_next:
+					if (conn->next && !conn->next(conn, conn->argp))
+						assert(free_conn(conn));
+				}
+			}
+		}
 	}
 
-	return size;
-}
-
-void socket_free(struct listener *socket)
-{
-	struct conn *conn, *next;
-	if (!socket)
-		return;
-
-	list_for_each_safe(&socket->children, conn, next, node) {
-		if (conn->fd > 0)
-			close(conn->fd);
-		rm_connection(socket, conn);
-		free(conn);
-	}
-
-	if (socket->events)
-		pollev_deinit(socket->events);
-	pthread_mutex_destroy(&socket->conn_lock);
-	free(socket);
-}
-
-void conn_free(struct conn *conn)
-{
-	if (unlikely(!conn || conn->fd < 0))
-		return;
-
-	if (IsAvail(&conn->ops, disconnect))
-		callop(&conn->ops, disconnect, conn);
-
-	close(conn->fd);
-	free(conn);
+	__builtin_unreachable ();
 }
 

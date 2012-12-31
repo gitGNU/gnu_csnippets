@@ -1,67 +1,54 @@
 #include <csnippets/socket.h>
 
-#include <signal.h>
+#define BUFFER_SIZE 1024
 
-static struct conn *conn = NULL;
+struct buf {
+	char bytes[BUFFER_SIZE];
+	size_t used;
+};
 
-static void on_read(struct conn *s, const struct sk_buff *buff)
+static bool echo_read(struct conn *conn, struct buf *buf);
+static bool echo_write(struct conn *conn, struct buf *buf)
 {
-    printf("[%d]: %s", s->fd, (char *)buff->data);
+	if (!conn_write(conn, buf->bytes, buf->used)) {
+		free(buf);
+		return false;
+	}
+
+	printf("%*s\n", buf->used, buf->bytes);
+	/* Clear the buffer.  */
+	memset(buf->bytes, '\0', sizeof(buf->bytes));
+	return conn_next(conn, echo_read, buf);
 }
 
-static void on_write(struct conn *s, const struct sk_buff *buff)
+static bool echo_read(struct conn *conn, struct buf *buf)
 {
-    eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
+	buf->used = BUFFER_SIZE;
+	if (!conn_read(conn, buf->bytes, &buf->used)) {
+		free(buf);
+		return false;
+	}
+
+	printf("%*s\n", buf->used, buf->bytes);
+	return conn_next(conn, echo_write, buf);
 }
 
-static void on_disconnect(struct conn *s)
+static bool echo_start(struct conn *conn, void *unused)
 {
-    printf("%s disconnected\n", s->host);
-    exit(EXIT_SUCCESS);
-}
+	struct buf *buf = malloc(sizeof(*buf));
+	if (!buf)
+		return false;
 
-static void on_connect(struct conn *s)
-{
-    printf("Connected to %s:%s\n", s->remote, s->port);
-}
-
-static void __noreturn signal_handle(int sig)
-{
-    conn_free(conn);
-    printf("Terminated\n");
-    exit(EXIT_SUCCESS);
+	memset(buf->bytes, '\0', sizeof(buf->bytes));
+	return conn_next(conn, echo_read, buf);
 }
 
 int main(int argc, char **argv)
 {
-    int err;
-    struct sock_operations sops = {
-        .write        = on_write,
-        .read         = on_read,
-        .connect      = on_connect,
-        .disconnect   = on_disconnect
-    };
+	if (!new_conn(argv[1], argv[2], echo_start, NULL))
+		__builtin_abort ();
 
-
-    conn = conn_create(-1);
-    if (!conn)
-        return 1;
-
-    conn->ops = sops;
-    err = socket_connect(conn, argc > 1 ? argv[1] : "127.0.0.1",
-                argc > 2 ? argv[2] : "1337");
-    if (err != 0) {
-        perror("socket_connect()");
-        return err;
-    }
-
-    signal(SIGINT, signal_handle);
-    signal(SIGTERM, signal_handle);
-
-    char buffer[1024];
-    while (fgets(buffer, sizeof buffer, stdin))
-        socket_writestr(conn, buffer);
-
-    return 0;
+	conn_loop ();
+	return 0;
 }
 

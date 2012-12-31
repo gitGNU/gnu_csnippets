@@ -1,80 +1,64 @@
 #include <csnippets/socket.h>
+#include <netdb.h> /* for NI_MAXHOST... */
 
-#include <signal.h>
-#include <unistd.h>
+#define BUFFER_SIZE 1024
 
-static struct listener *socket = NULL;  /* global for signal */
-
-/**
- * Callbacks, self-explained
- */
-
-static void on_read(struct conn *s, const struct sk_buff *buff)
-{
-    eprintf("(read)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
-}
-
-static void on_write(struct conn *s, const struct sk_buff *buff)
-{
-    eprintf("(write)[%d][%zd]: %s\n", s->fd, buff->size, (char *)buff->data);
-}
-
-static void on_disconnect(struct conn *s)
-{
-    eprintf("%s disconnected\n", s->host);
-}
-
-static void on_connect(struct conn *s)
-{
-    socket_writestr(s, "hi %s\n", s->host);
-}
-
-static struct sock_operations sops = {
-    .write        = on_write,
-    .read         = on_read,
-    .connect      = on_connect,
-    .disconnect   = on_disconnect
+struct buf {
+	char bytes[BUFFER_SIZE];
+	size_t used;
 };
 
-static void on_accept(struct listener *s, struct conn *n)
+static bool echo_read(struct conn *conn, struct buf *buf);
+static bool echo_write(struct conn *conn, struct buf *buf)
 {
-    n->ops = sops;
-    eprintf("Accepted connection from %s\n", n->host);
+	if (!conn_write(conn, buf->bytes, buf->used)) {
+		free(buf);
+		return false;
+	}
+
+	printf("%*s\n", buf->used, buf->bytes);
+	/* Clear the buffer.  */
+	memset(buf->bytes, '\0', sizeof(buf->bytes));
+	return conn_next(conn, echo_read, buf);
 }
 
-static void __noreturn signal_handle(int sig)
+static bool echo_read(struct conn *conn, struct buf *buf)
 {
-    socket_free(socket);
-    eprintf("Terminated\n");
-    exit(EXIT_SUCCESS);
+	buf->used = BUFFER_SIZE;
+	if (!conn_read(conn, buf->bytes, &buf->used)) {
+		free(buf);
+		return false;
+	}
+
+	printf("%*s\n", buf->used, buf->bytes);
+	return conn_next(conn, echo_write, buf);
 }
 
-int main(int argc, char **argv)
+static bool echo_start(struct conn *conn, void *unused)
 {
-    int err;
+	char host[NI_MAXHOST], serv[NI_MAXSERV];
+	struct buf *buf = malloc(sizeof(*buf));
+	if (!buf)
+		return false;
+	if (!conn_getnameinfo(conn,
+			       host, sizeof host,
+			       serv, sizeof serv,
+			       false, false))
+		return false;
 
-    socket = socket_create(on_accept);
-    if (!socket)
-        return 1;
+	printf("New connection (%s:%s), sending hello world\n",
+			host, serv);
+	assert(conn_writestr(conn, "Hello world!\n"));
+	memset(buf->bytes, '\0', sizeof(buf->bytes));
+	return conn_next(conn, echo_read, buf);
+}
 
-    err = socket_listen(socket, argc > 1 ? argv[1] : NULL,
-                argc > 2 ? argv[2] : "1337",
-                argc > 3 ? atoi(argv[3]) : 10000);
-    if (err) {
-        perror("socket_listen()");
-        return 1;
-    }
+int main(int argc, char *argv[])
+{
+	if (!new_listener(argv[1], echo_start, NULL))
+		__builtin_abort ();
 
-    signal(SIGINT, signal_handle);
-    signal(SIGTERM, signal_handle);
-    while (1) {
-        sleep(5);
-	pthread_mutex_lock(&socket->conn_lock);
-        eprintf("%d connections ATM\n", socket->num_connections);
-	pthread_mutex_unlock(&socket->conn_lock);
-    }
-
-    socket_free(socket);
-    return 0;
+	conn_loop();
+	return 0;
 }
 

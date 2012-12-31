@@ -24,10 +24,6 @@
 #error "Epoll requires Linux"
 #endif
 
-#ifndef MAX_EVENTS
-#define MAX_EVENTS 1024
-#endif
-
 #include <internal/socket_compat.h>
 
 #include <csnippets/io_poll.h>
@@ -38,6 +34,7 @@
 
 struct pollev {
 	struct epoll_event *events;
+	size_t curr_size;
 	int epoll_fd;
 };
 
@@ -54,28 +51,33 @@ struct pollev *pollev_init(void)
 		return NULL;
 	}
 
-	xcalloc(ev->events, MAX_EVENTS, sizeof(struct epoll_event),
+	ev->curr_size = 1024;
+	xcalloc(ev->events, ev->curr_size, sizeof(struct epoll_event),
 			free(ev); return NULL);
 	return ev;
 }
 
-void pollev_deinit(struct pollev *evs)
+void pollev_deinit(struct pollev *pev)
 {
-	if (unlikely(!evs))
+	if (unlikely(!pev))
 		return;
 
-	close(evs->epoll_fd);
-	free(evs->events);
-	free(evs);
+	close(pev->epoll_fd);
+	free(pev->events);
+	free(pev);
 }
 
-void pollev_add(struct pollev *evs, int fd, int bits)
+void pollev_add(struct pollev *pev, int fd, int bits)
 {
 	struct epoll_event ev;
-	if (unlikely(!evs))
+	if (unlikely(!pev))
 		return;
 
-	ev.events = EPOLLPRI;
+	if (fd >= pev->curr_size)
+		alloc_grow(pev->events, (pev->curr_size *= 2) * sizeof(struct epoll_event),
+			    pev->curr_size /= 2; return);
+
+	ev.events = EPOLLET | EPOLLPRI;
 	if (bits & IO_READ)
 		ev.events |= EPOLLIN;
 	if (bits & IO_WRITE)
@@ -83,30 +85,30 @@ void pollev_add(struct pollev *evs, int fd, int bits)
 
 	memset(&ev.data, 0, sizeof(ev.data));
 	ev.data.fd = fd;
-	if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_ADD, fd, &ev) < 0)
+	if (epoll_ctl(pev->epoll_fd, EPOLL_CTL_ADD, fd, &ev) < 0)
 		eprintf("pollev_add(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, errno, strerror(errno));
 }
 
-void pollev_del(struct pollev *evs, int fd)
+void pollev_del(struct pollev *pev, int fd)
 {
-	if (unlikely(!evs))
+	if (unlikely(!pev))
 		return;
 
-	if (epoll_ctl(evs->epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
+	if (epoll_ctl(pev->epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
 		eprintf("pollev_del(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, s_error, strerror(s_error));
 }
 
-int pollev_poll(struct pollev *evs)
+int pollev_poll(struct pollev *pev)
 {
 	int n;
-	if (unlikely(!evs))
+	if (unlikely(!pev))
 		return -1;
 
 	s_seterror(0);
 	do
-		n = epoll_wait(evs->epoll_fd, evs->events, MAX_EVENTS, -1);
+		n = epoll_wait(pev->epoll_fd, pev->events, pev->curr_size, -1);
 	while (n == -1 && errno == s_EINTR);
 	return n;
 }
@@ -116,21 +118,16 @@ uint32_t pollev_revent(struct pollev *ev, int index)
 	uint32_t events = ev->events[index].events;
 	uint32_t r = 0;
 
-	if (unlikely(events & EPOLLHUP || events & EPOLLERR)) {
-		r |= IO_ERR;
-		return r;
-	}
-
 	if (events & EPOLLIN)
-		r |= IO_READ;
+		r = IO_READ;
 	if (events & EPOLLOUT)
 		r |= IO_WRITE;
 	return r;
 }
 
-__inline __const int pollev_active(struct pollev *evs, int index)
+__inline __const int pollev_active(struct pollev *pev, int index)
 {
-	return evs->events[index].data.fd;
+	return pev->events[index].data.fd;
 }
 
 #endif

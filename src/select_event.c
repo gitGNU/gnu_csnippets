@@ -41,6 +41,7 @@ typedef struct fd_select {
 
 struct pollev {
 	size_t maxfd;
+	size_t curr_size;
 	fd_select_t fds[MAX_EVENTS], **events;
 };
 
@@ -49,7 +50,8 @@ struct pollev *pollev_init(void)
 	struct pollev *ev;
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
-	xcalloc(ev->events, MAX_EVENTS, sizeof(fd_select_t *),
+	ev->curr_size = MAX_EVENTS;
+	xcalloc(ev->events, ev->curr_size, sizeof(fd_select_t *),
 			free(ev); return NULL);
 	return ev;
 }
@@ -60,29 +62,29 @@ void pollev_deinit(struct pollev *p)
 	free(p);
 }
 
-void pollev_add(struct pollev *evs, int fd, int bits)
+void pollev_add(struct pollev *pev, int fd, int bits)
 {
-	if (unlikely(!evs))
+	if (unlikely(!pev))
 		return;
 
-	if (fd > MAX_EVENTS) {
+	if (fd >= pev->curr_size) {
 #ifdef _DEBUG_SOCKET
-		eprintf("pollev_add(): fd %d is out of range\n", fd);
+		eprintf("pollev_add(): fd %d is out of range, reallocating...\n", fd);
 #endif
-		return;
+		alloc_grow(pev->events, (evs->curr_size *= 2) * sizeof(struct epoll_event),
+			    pev->curr_size /= 2; return);
 	}
 
 	if (bits & IO_READ)
-		evs->fds[fd].read |= 1;
+		pev->fds[fd].read |= 1;
 	if (bits & IO_WRITE)
-		evs->fds[fd].write |= 1;
-	evs->fds[fd].fd = fd;
+		pev->fds[fd].write |= 1;
+	pev->fds[fd].fd = fd;
 }
 
-void pollev_del(struct pollev *p, int fd)
+void pollev_del(struct pollev *pev, int fd)
 {
-	struct pollev *evs = (struct pollev *)p;
-	if (unlikely(!evs))
+	if (unlikely(!pev))
 		return;
 
 	if (fd > MAX_EVENTS) {
@@ -92,11 +94,11 @@ void pollev_del(struct pollev *p, int fd)
 		return;
 	}
 
-	evs->fds[fd].read = 0;
-	evs->fds[fd].write = 0;
+	pev->fds[fd].read = 0;
+	pev->fds[fd].write = 0;
 }
 
-int pollev_poll(struct pollev *evs)
+int pollev_poll(struct pollev *pev)
 {
 	int fd, i, maxfd, numfds;
 	fd_set rfds, wfds, efds;
@@ -106,11 +108,11 @@ int pollev_poll(struct pollev *evs)
 	FD_ZERO(&efds);
 
 	for (fd = 0, maxfd = 0; fd < MAX_EVENTS; ++fd) {
-		if (evs->fds[fd].read)
+		if (pev->fds[fd].read)
 			FD_SET(fd, &rfds);
-		if (evs->fds[fd].write)
+		if (pev->fds[fd].write)
 			FD_SET(fd, &wfds);
-		if (evs->fds[fd].read || evs->fds[fd].write) {
+		if (pev->fds[fd].read || evs->fds[fd].write) {
 			FD_SET(fd, &efds);
 			if (fd > maxfd)
 				maxfd = fd;
@@ -133,38 +135,38 @@ int pollev_poll(struct pollev *evs)
 		}
 
 		if (FD_ISSET(fd, &rfds))
-			evs->fds[fd].read |= 2;
+			pev->fds[fd].read |= 2;
 		else
-			evs->fds[fd].read &= 1;
+			pev->fds[fd].read &= 1;
 		if (FD_ISSET(fd, &wfds))
-			evs->fds[fd].write |= 2;
+			pev->fds[fd].write |= 2;
 		else
-			evs->fds[fd].write &= 1;
+			pev->fds[fd].write &= 1;
 	}
 
 	for (fd = 0, i = 0; fd <= maxfd; ++fd)
 		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds))
-			evs->events[i++] = &evs->fds[fd];
+			pev->events[i++] = &evs->fds[fd];
 	return i;
 }
 
-__inline __const int pollev_active(struct pollev *evs, int index)
+__inline __const int pollev_active(struct pollev *pev, int index)
 {
-	return evs->events[index]->fd;
+	return pev->events[index]->fd;
 }
 
-uint32_t pollev_revent(struct pollev *evs, int index)
+uint32_t pollev_revent(struct pollev *pev, int index)
 {
-	int fd = evs->events[index]->fd;
+	int fd = pev->events[index]->fd;
 	uint32_t r = 0;
 
-	if (evs->fds[fd].read & 0x02)
+	if (pev->fds[fd].read & 0x02)
 		r = IO_READ;
-	if (evs->fds[fd].write & 0x02)
+	if (pev->fds[fd].write & 0x02)
 		r |= IO_WRITE;
 
-	evs->fds[fd].read &= 0x01;
-	evs->fds[fd].write &= 0x01;
+	pev->fds[fd].read &= 0x01;
+	pev->fds[fd].write &= 0x01;
 	return r;
 }
 
