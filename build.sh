@@ -24,11 +24,19 @@ buildopt=
 clean_before_build=no
 # Are we cross-compiling?
 cross_build=no
+# build type (Release with debug info, debug only, release only)
+# Release with debug info (This is what we fallback to in cmake, if noone specified).
+# Valid ones are:
+#    Debug,
+#    RelWithDebInfo
+#    Release
+build_type=RelWithDebInfo
 
+buildopt="$buildopt -DCMAKE_BUILD_TYPE=$build_type"
 # If this is the GIT version, define build commit and revision.
-# Otherwise, don't do anything.  We might need the
-# gen-version.sh script instead of all this magic, this will help
-# get the tag name and version associated.
+# We might need the gen-version.sh script instead of all this magic,
+# this will help get the tag name and version associated.
+#
 # Or alternatively, we could write an else case here, and
 # define those strings to something informative.
 #
