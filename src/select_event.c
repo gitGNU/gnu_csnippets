@@ -71,7 +71,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 #ifdef _DEBUG_SOCKET
 		eprintf("pollev_add(): fd %d is out of range, reallocating...\n", fd);
 #endif
-		alloc_grow(pev->events, (evs->curr_size *= 2) * sizeof(struct epoll_event),
+		alloc_grow(pev->events, (pev->curr_size *= 2) * sizeof(fd_select_t *),
 			    pev->curr_size /= 2; return);
 	}
 
@@ -112,7 +112,7 @@ int pollev_poll(struct pollev *pev)
 			FD_SET(fd, &rfds);
 		if (pev->fds[fd].write)
 			FD_SET(fd, &wfds);
-		if (pev->fds[fd].read || evs->fds[fd].write) {
+		if (pev->fds[fd].read || pev->fds[fd].write) {
 			FD_SET(fd, &efds);
 			if (fd > maxfd)
 				maxfd = fd;
@@ -146,7 +146,7 @@ int pollev_poll(struct pollev *pev)
 
 	for (fd = 0, i = 0; fd <= maxfd; ++fd)
 		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds))
-			pev->events[i++] = &evs->fds[fd];
+			pev->events[i++] = &pev->fds[fd];
 	return i;
 }
 
