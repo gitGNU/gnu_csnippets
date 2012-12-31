@@ -67,6 +67,24 @@ bool conn_next(struct conn *,
 		bool (*next) (struct conn *, void *arg),
 		void *arg);
 
+/* Similar to setsockopt but for boolean values,
+ * Saves a bit of writing for boolean options, when doing something
+ * like that:
+ *
+ * \code
+ *	int on = 1;
+ *
+ *	if (!conn_setopt(conn, SO_KEEPALIVE, &on, sizeof(on)))
+ *		...
+ * \endcode
+ */
+#define conn_setopt_bool(conn, optname, enable)					\
+	__extension__ ({							\
+		int __enable = !!(enable);					\
+		assert(conn_setopt(conn, optname, &(__enable), sizeof(int)));	\
+		__enable;							\
+	})
+
 /* Wrappers for set/getsockopt().  */
 bool conn_getopt(struct conn *, int optname, void *optval,
 		  int *optlen);
