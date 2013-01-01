@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Allan Ference <f.fallen45@gmail.com>
+ * Copyright (c) 2012 Ahmed Samy <f.fallen45@gmail.com>
  *
  * The first few static net_* functions are borrowed from ccan/net.
  *
@@ -399,6 +399,7 @@ bool new_conn(const char *node, const char *service,
 bool free_conn(struct conn *conn)
 {
 	bool retval = false;
+	printf("kef\n");
 	if (unlikely(!conn))
 		return retval;
 
@@ -546,10 +547,9 @@ void *conn_loop(void)
 
 				while (1) {
 					struct sockaddr in_addr;
-					socklen_t in_len;
+					socklen_t in_len = sizeof(in_addr);
 					int in_fd;
 
-					in_len = sizeof(in_addr);
 					s_seterror(0);
 					do
 						in_fd = accept(li->fd, &in_addr, &in_len);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Allan Ference <f.fallen45@gmail.com>
+ * Copyright (c) 2012 Ahmed Samy <f.fallen45@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -62,10 +62,6 @@ struct pollev *pollev_init(void)
 
 void pollev_deinit(struct pollev *p)
 {
-	int i;
-
-	for (i = 0; i < p->curr_size; i++)
-		free(p->events[i]);
 	free(p->events);
 	free(p);
 }
@@ -118,15 +114,15 @@ int pollev_poll(struct pollev *pev, int timeout)
 
 	assert(timeout > 0 && "Would divide by a zero");
 	memset(&tv, 0, sizeof(tv));
-	tv.tv_sec = timeout / 1000;
+	tv.tv_sec  = timeout / 1000;
 	tv.tv_usec = (timeout % 1000) * 1000;
+
 	for (fd = 0, maxfd = 0; fd < MAX_EVENTS; fd++) {
-		if (pev->fds[fd].read) {
+		if (pev->fds[fd].read)
 			FD_SET(fd, &rfds);
-			printf("%d\n", fd);
-		}
 		if (pev->fds[fd].write)
 			FD_SET(fd, &wfds);
+
 		if (pev->fds[fd].read || pev->fds[fd].write) {
 			FD_SET(fd, &efds);
 			if (fd > maxfd)
@@ -134,20 +130,13 @@ int pollev_poll(struct pollev *pev, int timeout)
 		}
 	}
 
-	s_seterror(0);
-	do
-		numfds = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
-	while (numfds < 0 && s_error == s_EINTR);
+	numfds = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
 	if (numfds < 0)
 		return numfds;
 
 	for (fd = 0; fd <= maxfd; fd++) {
-		if (FD_ISSET(fd, &efds)) {
-#ifdef _DEBUG_POLLEV
-			eprintf("XXX ignoring fd %d with OOB data\n", fd);
-#endif
+		if (FD_ISSET(fd, &efds))
 			continue;
-		}
 
 		if (FD_ISSET(fd, &rfds))
 			pev->fds[fd].read |= 2;
