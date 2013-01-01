@@ -42,6 +42,9 @@
 #define eprintf(str, args...)	dolog(str, ##args)
 #define edebug(str, args...)	dolog(__func__ str, ##args)
 
+/* Initialize log file.  */
+extern void log_init(void);
+
 /* error_nret() - Log a formatted string.
  *
  * NOTE: This function doesn't return, that means the program will

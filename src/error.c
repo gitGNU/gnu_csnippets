@@ -26,7 +26,7 @@
  * or other libc, this one is from GLIBC (GNU libc).
  */
 extern char *program_invocation_short_name;
-static int verbose = 1;
+static int verbose = 0;
 
 /* A short name instead of a longass one.  */
 #define prog	program_invocation_short_name
@@ -36,9 +36,10 @@ static int verbose = 1;
 		fprintf(stdout, _(s), ##args); \
 } while(0)
 
-static void __attribute__((constructor)) log_init(void)
+void log_init(void)
 {
 	(void) freopen(LOG_FILE, "w", stderr);
+	verbose = 1;
 }
 
 void __noreturn error_nret(const char *str, ...)
