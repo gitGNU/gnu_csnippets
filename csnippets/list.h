@@ -1,4 +1,6 @@
 /*
+ * Hacked off ccan/list
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -104,7 +106,7 @@ struct list_head *list_check(const struct list_head *h, const char *abortstr);
 struct list_node *list_check_node(const struct list_node *n,
                                   const char *abortstr);
 
-#ifdef __debug_list
+#ifdef _DEBUG_LIST
 #define list_debug(h) list_check((h), __func__)
 #define list_debug_node(n) list_check_node((n), __func__)
 #else
@@ -233,7 +235,7 @@ static inline void list_del(struct list_node *n)
 	(void)list_debug_node(n);
 	n->next->prev = n->prev;
 	n->prev->next = n->next;
-#ifdef __debug_list
+#ifdef _DEBUG_LIST
 	/* Catch use-after-del. */
 	n->next = n->prev = NULL;
 #endif
@@ -255,14 +257,14 @@ static inline void list_del(struct list_node *n)
  */
 static inline void list_del_from(struct list_head *h, struct list_node *n)
 {
-#ifdef __debug_list
+#ifdef _DEBUG_LIST
 	{
 		/* Thorough check: make sure it was in list! */
 		struct list_node *i;
 		for (i = h->n.next; i != n; i = i->next)
 			assert(i != &h->n);
 	}
-#endif /* __debug_list */
+#endif /* _DEBUG_LIST */
 
 	/* Quick test that catches a surprising number of bugs. */
 	assert(!list_empty(h));

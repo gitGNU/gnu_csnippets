@@ -85,23 +85,23 @@ static struct listener *find_listener(int fd)
 
 static bool do_write(struct conn *conn, const void *data, size_t len)
 {
-	int t_bytes = 0, r_bytes, n;
+	int t_bytes = 0, r_bytes, n = -1;
 	struct sk_buff *skb;
 	if (unlikely(!conn))
 		return false;
 
 	r_bytes = len;
 	skb = &conn->wb;
+
+	might_bug();
 	while (t_bytes < len) {
 		if (!skb->data)
 			do
 				n = send(conn->fd, data + t_bytes, r_bytes, 0);
 			while (n == -1 && s_error == s_EINTR);
-		else
-			n = -2;
 
 		if (n < 0) {
-			if ((IsBlocking() && r_bytes > 0) || n == -2) {
+			if ((IsBlocking() && r_bytes > 0) || skb->data) {
 				if (!skb->data) {
 					skb->size = r_bytes + 128;
 					xmalloc(skb->data, sizeof(char) * skb->size,
@@ -142,7 +142,7 @@ static bool do_write_queue(struct conn *conn)
 		while (n == -1 && s_error == s_EINTR);
 		if (n == -1) {
 			if (IsBlocking() && r_bytes > 0) {
-				/* Not everything has been set yet...  Store for next.  */
+				/* Not everything has been sent yet...  Store for next.  */
 				memmove(skb->data, skb->data + t_bytes, r_bytes);
 				skb->size = r_bytes;
 				return false;
@@ -591,7 +591,7 @@ void *conn_loop(void)
 #ifdef _DEBUG_SOCKET
 						eprintf("sending incomplete data...\n");
 #endif
-						if (!do_write_queue(conn)) {
+						if (!do_write_queue(conn) && !IsBlocking()) {
 							assert(free_conn(conn));
 							continue;
 						}

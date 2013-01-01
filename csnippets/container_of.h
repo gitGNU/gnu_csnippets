@@ -1,4 +1,6 @@
-/* Licensed under CCO, see LICENSE.COO */
+/* Licensed under CCO, see LICENSE.COO
+ * Hacked off ccan/container_of.
+ */
 #ifndef _CONTAINER_OF_H
 #define _CONTAINER_OF_H
 /**
