@@ -100,9 +100,9 @@ int module_load(const char *file, struct module **mod,
 				continue;
 
 			xrealloc(symbols, symbols, (symbol_count + 1) * sizeof(char *),
-			         err = -ENOMEM; goto cleanup);
+			          err = -ENOMEM; goto cleanup);
 			xmalloc(symbols[symbol_count], strlen(func_name) + 1,
-			        err = -ENOMEM; goto cleanup);
+			          err = -ENOMEM; goto cleanup);
 
 			strcpy(symbols[symbol_count], func_name);
 			++symbol_count;
@@ -179,7 +179,7 @@ int modules_load(const char *dir, struct module_list **modules,
 
 	so_count = scandir(dir, &so_list, filter, NULL);
 	if (so_count < 0)
-		return -1;
+		return -errno;
 
 	xmalloc(mods, sizeof(*mods), return 0);
 	list_head_init(&mods->children);
@@ -201,6 +201,8 @@ int modules_load(const char *dir, struct module_list **modules,
 	return 0;
 }
 
+#endif    /* defined(__unix__) || (defined(__APPLE__) && defined(__MACH__) */
+
 void module_cleanup(struct module *module)
 {
 	struct module_symbol *symbol, *next;
@@ -213,11 +215,11 @@ void module_cleanup(struct module *module)
 		free(symbol);
 	}
 
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 	dlclose(module->handle);
+#endif
 	free(module);
 }
-
-#endif    /* defined(__unix__) || (defined(__APPLE__) && defined(__MACH__) */
 
 void modules_cleanup(struct module_list *modules)
 {
