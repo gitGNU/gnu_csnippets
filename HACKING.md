@@ -27,8 +27,8 @@ Nested if statements can be confusing, so seperate each condition in a new line:
 if (foo) {
 	bar();
 	if (baz && whatever
-		(|| whatsoever
-		 && lol) {
+	    (|| whatsoever
+	      && lol) {
 		... some interesting code ...	 
 	}
 ```
