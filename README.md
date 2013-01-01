@@ -9,7 +9,7 @@ CSnippets can be used as static library, jump to Installation for more informati
 Current modules implemented:
 
      1. Asynchronous Tasks
-     2. Asynchronous Events
+     2. Asynchronous Events (This depends on Tasks to function)
      3. Asynchronous sockets (with epoll and select support)
      4. Dynamic Library Loading (currently works for Linux, it can load .so files and get callable function address)
      5. Dyanmic Stack (This can be used as standalone header see the comments in csnippets/stack.h)

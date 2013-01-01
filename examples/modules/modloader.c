@@ -1,5 +1,10 @@
 #include <csnippets/module.h>
 
+static bool filter(const char *s)
+{
+	return strcmp(s, "module_") == 0;
+}
+
 int main(int argc, char **argv)
 {
 	struct module_list *mlist;
@@ -7,9 +12,9 @@ int main(int argc, char **argv)
 	struct module_symbol *symbol;
 	int ret;
 
-	ret = modules_load(".", &mlist, NULL);
+	ret = modules_load(".", &mlist, filter);
 	if (ret)
-		fatal("failed to load modules %s.\n", strerror(errno));
+		fatal("failed to load modules %s.\n", strerror(-ret));
 
 	list_for_each(&mlist->children, module, node) {
 		list_for_each(&module->children, symbol, node) {

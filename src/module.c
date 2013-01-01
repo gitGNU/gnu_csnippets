@@ -31,13 +31,14 @@
 #include <ctype.h>
 #include <errno.h>
 
-static inline __const int filter(const struct dirent *dir)
+static __inline __const int filter(const struct dirent *dir)
 {
 	const char *name = dir->d_name;
 	return strlen(name) > 3 ? !strcmp(name + strlen(name) - 3, ".so") : 0;
 }
 
-int module_load(const char *file, struct module **mod, const char *start_name)
+int module_load(const char *file, struct module **mod,
+		bool (*filter) (const char *))
 {
 	FILE *fp;
 	struct module *module = NULL;
@@ -95,7 +96,7 @@ int module_load(const char *file, struct module **mod, const char *start_name)
 				continue;
 
 			char *func_name = buffer + shdr[symbol_loc].sh_offset + sym[j].st_name;
-			if (start_name && !strstr(func_name, start_name))
+			if (filter && !filter(func_name))
 				continue;
 
 			xrealloc(symbols, symbols, (symbol_count + 1) * sizeof(char *),
@@ -168,7 +169,7 @@ cleanup:
 }
 
 int modules_load(const char *dir, struct module_list **modules,
-                 const char *start_name)
+                 bool (*filterp) (const char *))
 {
 	int so_count = 0;
 	int ret = 0;
@@ -183,8 +184,7 @@ int modules_load(const char *dir, struct module_list **modules,
 	xmalloc(mods, sizeof(*mods), return 0);
 	list_head_init(&mods->children);
 	while (so_count--) {
-		if ((ret = module_load(so_list[so_count]->d_name, &mod,
-						start_name) != 0)) {
+		if ((ret = module_load(so_list[so_count]->d_name, &mod, filterp) != 0)) {
 #ifdef _DEBUG_MODULES
 			warning("failed to load module: %s (%d)\n", so_list[so_count]->d_name, ret);
 #endif
