@@ -75,7 +75,8 @@ _make() {
 
 debugging=no
 run_after=no
-while getopts scbgrh name
+install=no
+while getopts scbgrhi name
 do
 	case $name in
 	s)	buildopt="$buildopt -DUSE_SELECT_HANDLER=ON" ;;
@@ -83,6 +84,7 @@ do
 	b)	cross_build=yes ;;
 	g)	debugging=yes ;;
 	r)	run_after=yes ;;
+	i)	install=yes ;;
 	?|-h)	printf "Usage %s: [-s -c -b -g -r]\n" $0
 		printf "%s: run me with:\n" $0
 		printf "	%s -s to use select interface\n"	$0
@@ -127,7 +129,12 @@ if [ "$clean_before_build" = "yes" ]; then
 	$MAKE clean
 fi
 
-_make
+if [ "$install" = "yes" ]; then
+	sudo $MAKE all install -j$MAKEOPT
+else
+	_make
+fi
+
 if [ "$run_after" = "yes" ]; then
 	if [ "$debugging" = "yes" ]; then
 		run $DBG
