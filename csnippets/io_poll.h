@@ -34,6 +34,7 @@ struct pollev;
  * The members differ for each one.
  */
 struct pollev *pollev_init(void);
+
 /**
  * pollev_deinit() - deinitialize and free memory
  *
@@ -43,24 +44,17 @@ struct pollev *pollev_init(void);
  * manual page.
  */
 void pollev_deinit(struct pollev *);
-/**
- * pollev_add() - add a file descriptor
- *
- * Add file descriptor @fd of IO bits to the poll
- * queue.
+
+/* Add file descriptor @fd of IO bits to the poll queue.
  *
  * Bits should be something like:
  *	IO_READ | IO_WRITE or just one of them.
- *
- * We don't check if the file descriptor is valid.
  */
 void pollev_add(struct pollev *, int fd, int bits);
-/**
- * pollev_del() - delete a file descriptor
- *
- * Delete @fd from the poll queue.
- */
+
+/* Delete @fd from the poll queue. */
 void pollev_del(struct pollev *, int fd);
+
 /**
  * pollev_poll() - poll on every file descriptor added.
  *
@@ -87,6 +81,7 @@ void pollev_del(struct pollev *, int fd);
  *	}
  */
 int pollev_poll(struct pollev *, int timeout);
+
 /**
  * pollev_active() - get the current active file descriptor
  *
@@ -95,6 +90,7 @@ int pollev_poll(struct pollev *, int timeout);
  * See pollev_poll() for more information.
  */
 int pollev_active(struct pollev *, int index);
+
 /**
  * pollev_revent() - get the returned events
  *
