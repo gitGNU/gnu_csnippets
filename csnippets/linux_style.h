@@ -17,6 +17,7 @@
 	__attribute__((format(__printf__, nfmt, narg)))
 #define __const         __attribute__((const))
 #define __unused        __attribute__((unused))
+#define __used		__attribute__((used))
 #define __init          __attribute__((constructor))
 #define __exit          __attribute__((destructor))
 #define GCC_VERSION (__GNUC__ * 10000 \

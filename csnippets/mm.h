@@ -13,7 +13,10 @@
 #endif
 
 #define xfree(p) do { if (p) free(p); p = NULL; } while (0)
-#define __alloc_failure(s) do { warning("failed to allocate %ld bytes\n", (long) s); } while(0)
+#define __alloc_failure(s) do { \
+	warning("%s(%s:%d) failed to allocate %ld bytes\n", \
+			__func__, __FILE__, __LINE__, (long) s); \
+} while(0)
 #define xmalloc(p, s, action) do {  \
 	p = calloc(1, s); \
 	if (__check(!p)) { \

@@ -75,7 +75,7 @@ void pollev_del(struct pollev *, int fd);
  *	int nfds, i;
  *	...
  *
- *	nfds = pollev_poll(events);
+ *	nfds = pollev_poll(events, 1000);
  *	for (i = 0; i < nfds; i++) {
  *		int revents, fd;
  *
@@ -86,7 +86,7 @@ void pollev_del(struct pollev *, int fd);
  *			...
  *	}
  */
-int pollev_poll(struct pollev *);
+int pollev_poll(struct pollev *, int timeout);
 /**
  * pollev_active() - get the current active file descriptor
  *

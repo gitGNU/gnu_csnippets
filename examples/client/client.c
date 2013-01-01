@@ -45,8 +45,10 @@ static bool echo_start(struct conn *conn, void *unused)
 
 int main(int argc, char **argv)
 {
-	if (!new_conn(argv[1], argv[2], echo_start, NULL))
-		__builtin_abort ();
+	if (!new_conn(argv[1], argv[2], echo_start, NULL)) {
+		perror("new_conn()");
+		abort();
+	}
 
 	conn_loop ();
 	return 0;

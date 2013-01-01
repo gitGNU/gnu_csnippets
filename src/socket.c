@@ -161,7 +161,7 @@ static bool do_write_queue(struct conn *conn)
 	return true;
 }
 
-static __init __unused void __sock_startup(void)
+static __init __used void __sock_startup(void)
 {
 #ifdef _WIN32
 	/* Initialise windows sockets */
@@ -186,7 +186,7 @@ static __init __unused void __sock_startup(void)
 	}
 }
 
-static __exit __unused void __sock_cleanup(void)
+static __exit __used void __sock_cleanup(void)
 {
 #ifdef _WIN32
 	WSACleanup();
@@ -522,7 +522,8 @@ void *conn_loop(void)
 	while (1) {
 		int nfds, i;
 
-		nfds = pollev_poll(io_events);
+		/* 1 second time out  */
+		nfds = pollev_poll(io_events, 1000);
 		if (nfds < 0)
 			continue;
 
@@ -586,7 +587,7 @@ void *conn_loop(void)
 							assert(free_conn(conn));
 							continue;
 						}
-					} else if (conn->wb.data != NULL) {
+					} else if (conn->wb.data) {
 #ifdef _DEBUG_SOCKET
 						eprintf("sending incomplete data...\n");
 #endif
@@ -594,15 +595,13 @@ void *conn_loop(void)
 							assert(free_conn(conn));
 							continue;
 						}
-					} else
-						goto call_next;
+					}
 				}
 
-				if (revent & IO_READ) {
-call_next:
-					if (conn->next && !conn->next(conn, conn->argp))
-						assert(free_conn(conn));
-				}
+				if (conn->next && !conn->next(conn, conn->argp))
+					assert(free_conn(conn));
+				conn->next = NULL;
+				conn->argp = NULL;
 			}
 		}
 	}

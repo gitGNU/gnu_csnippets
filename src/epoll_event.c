@@ -44,7 +44,7 @@ struct pollev *pollev_init(void)
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
 	if ((ev->epoll_fd = epoll_create1(0)) < 0) {
-#ifdef _DEBUG_SOCKET
+#ifdef _DEBUG_POLLEV
 		perror("epoll_create1");
 #endif
 		free(ev);
@@ -100,7 +100,7 @@ void pollev_del(struct pollev *pev, int fd)
 		        fd, s_error, strerror(s_error));
 }
 
-int pollev_poll(struct pollev *pev)
+int pollev_poll(struct pollev *pev, int timeout)
 {
 	int n;
 	if (unlikely(!pev))
@@ -108,7 +108,8 @@ int pollev_poll(struct pollev *pev)
 
 	s_seterror(0);
 	do
-		n = epoll_wait(pev->epoll_fd, pev->events, pev->curr_size, -1);
+		n = epoll_wait(pev->epoll_fd, pev->events, pev->curr_size,
+				timeout);
 	while (n == -1 && errno == s_EINTR);
 	return n;
 }

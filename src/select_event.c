@@ -24,11 +24,13 @@
 #include <internal/socket_compat.h>
 #include <csnippets/io_poll.h>
 #include <csnippets/socket.h>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #else
 #include <sys/time.h>
 #endif
+
 #ifndef MAX_EVENTS
 #define MAX_EVENTS 1024
 #endif
@@ -42,7 +44,8 @@ typedef struct fd_select {
 struct pollev {
 	size_t maxfd;
 	size_t curr_size;
-	fd_select_t fds[MAX_EVENTS], **events;
+	fd_select_t fds[MAX_EVENTS];
+	fd_select_t **events;        /* Pointer to fds  */
 };
 
 struct pollev *pollev_init(void)
@@ -53,26 +56,31 @@ struct pollev *pollev_init(void)
 	ev->curr_size = MAX_EVENTS;
 	xcalloc(ev->events, ev->curr_size, sizeof(fd_select_t *),
 			free(ev); return NULL);
+	memset(ev->fds, 0, sizeof(ev->fds));
 	return ev;
 }
 
 void pollev_deinit(struct pollev *p)
 {
+	int i;
+
+	for (i = 0; i < p->curr_size; i++)
+		free(p->events[i]);
 	free(p->events);
 	free(p);
 }
 
 void pollev_add(struct pollev *pev, int fd, int bits)
 {
-	if (unlikely(!pev))
+	if (unlikely(!pev || fd < 0))
 		return;
 
 	if (fd >= pev->curr_size) {
-#ifdef _DEBUG_SOCKET
+#ifdef _DEBUG_POLLEV
 		eprintf("pollev_add(): fd %d is out of range, reallocating...\n", fd);
 #endif
-		alloc_grow(pev->events, (pev->curr_size *= 2) * sizeof(fd_select_t *),
-			    pev->curr_size /= 2; return);
+		alloc_grow(pev->events, (pev->curr_size *= 2) * sizeof(pev->events[0]),
+				pev->curr_size /= 2; return);
 	}
 
 	if (bits & IO_READ)
@@ -87,9 +95,9 @@ void pollev_del(struct pollev *pev, int fd)
 	if (unlikely(!pev))
 		return;
 
-	if (fd > MAX_EVENTS) {
-#ifdef _DEBUG_SOCKET
-		eprintf("pollev_del(): fd %d is out of range\n", fd);
+	if (fd > pev->curr_size) {
+#ifdef _DEBUG_POLLEV
+		eprintf("pollev_del(): fd %d is out of range (would overflow)\n", fd);
 #endif
 		return;
 	}
@@ -98,18 +106,25 @@ void pollev_del(struct pollev *pev, int fd)
 	pev->fds[fd].write = 0;
 }
 
-int pollev_poll(struct pollev *pev)
+int pollev_poll(struct pollev *pev, int timeout)
 {
 	int fd, i, maxfd, numfds;
-	fd_set rfds, wfds, efds;
+	static fd_set rfds, wfds, efds;
+	static struct timeval tv;
 
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 	FD_ZERO(&efds);
 
-	for (fd = 0, maxfd = 0; fd < MAX_EVENTS; ++fd) {
-		if (pev->fds[fd].read)
+	assert(timeout > 0 && "Would divide by a zero");
+	memset(&tv, 0, sizeof(tv));
+	tv.tv_sec = timeout / 1000;
+	tv.tv_usec = (timeout % 1000) * 1000;
+	for (fd = 0, maxfd = 0; fd < MAX_EVENTS; fd++) {
+		if (pev->fds[fd].read) {
 			FD_SET(fd, &rfds);
+			printf("%d\n", fd);
+		}
 		if (pev->fds[fd].write)
 			FD_SET(fd, &wfds);
 		if (pev->fds[fd].read || pev->fds[fd].write) {
@@ -121,14 +136,14 @@ int pollev_poll(struct pollev *pev)
 
 	s_seterror(0);
 	do
-		numfds = select(maxfd + 1, &rfds, &wfds, &efds, NULL);
-	while (numfds < 0 && errno == s_EINTR);
-	if (numfds == -1)
-		return -1;
+		numfds = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
+	while (numfds < 0 && s_error == s_EINTR);
+	if (numfds < 0)
+		return numfds;
 
-	for (fd = 0; fd <= maxfd; ++fd) {
+	for (fd = 0; fd <= maxfd; fd++) {
 		if (FD_ISSET(fd, &efds)) {
-#ifdef _DEBUG_SOCKET
+#ifdef _DEBUG_POLLEV
 			eprintf("XXX ignoring fd %d with OOB data\n", fd);
 #endif
 			continue;
@@ -144,6 +159,8 @@ int pollev_poll(struct pollev *pev)
 			pev->fds[fd].write &= 1;
 	}
 
+	/* Create the events array so that we keep compatibility
+	 * with other interfaces.  */
 	for (fd = 0, i = 0; fd <= maxfd; ++fd)
 		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds))
 			pev->events[i++] = &pev->fds[fd];
@@ -157,11 +174,11 @@ __inline __const int pollev_active(struct pollev *pev, int index)
 
 uint32_t pollev_revent(struct pollev *pev, int index)
 {
-	int fd = pev->events[index]->fd;
 	uint32_t r = 0;
+	int fd = pev->events[index]->fd;
 
 	if (pev->fds[fd].read & 0x02)
-		r = IO_READ;
+		r |= IO_READ;
 	if (pev->fds[fd].write & 0x02)
 		r |= IO_WRITE;
 
