@@ -136,6 +136,8 @@ static bool do_write_queue(struct conn *conn)
 
 	skb = &conn->wb;
 	r_bytes = skb->size;
+
+	might_bug();
 	while (t_bytes < skb->size) {
 		do
 			n = send(conn->fd, skb->data + t_bytes, r_bytes, 0);

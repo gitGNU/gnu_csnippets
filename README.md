@@ -4,7 +4,7 @@
 
 A nice snippets of C code that's meant to take part of other software.
 
-CSnippets can be used as static library, jump to Installation for more information.
+CSnippets can be used as static/shared library, jump to Installation for more information.
 
 Current modules implemented:
 
@@ -78,6 +78,10 @@ make
 To install with a custom prefix (other than /usr/local):
 ```sh
 cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/usr
+```
+To build a shared library use:
+```sh
+cmake .. -DUSE_STATIC_LIBS=OFF
 ```
 
 Variables (i.e where the .a and headers go etc):
