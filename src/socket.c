@@ -481,6 +481,15 @@ bool conn_next(struct conn *c,
 	return true;
 }
 
+void next_break(struct conn *conn, void *arg)
+{
+	if (unlikely(!conn))
+		return;
+
+	conn->argp = arg;
+	s_close(conn->fd);
+}
+
 bool conn_getopt(struct conn *conn, int optname, void *optval,
 		  int *optlen)
 {

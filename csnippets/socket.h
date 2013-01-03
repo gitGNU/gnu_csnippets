@@ -67,6 +67,9 @@ bool conn_next(struct conn *,
 		bool (*next) (struct conn *, void *arg),
 		void *arg);
 
+/* Close the connection, calling the next callback with the argument.  */
+void next_close(struct conn *, void *arg);
+
 /* Similar to setsockopt but for boolean values,
  * Saves a bit of writing for boolean options, when doing something
  * like that:
