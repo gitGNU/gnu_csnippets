@@ -9,6 +9,12 @@ struct buf {
 };
 
 static bool echo_read(struct conn *conn, struct buf *buf);
+static bool echo_close(struct conn *conn, struct buf *buf)
+{
+	free(buf);
+	return true;
+}
+
 static bool echo_write(struct conn *conn, struct buf *buf)
 {
 	if (!conn_write(conn, buf->bytes, buf->used)) {
@@ -16,10 +22,9 @@ static bool echo_write(struct conn *conn, struct buf *buf)
 		return false;
 	}
 
-	printf("%*s\n", buf->used, buf->bytes);
-	/* Clear the buffer.  */
-	memset(buf->bytes, '\0', sizeof(buf->bytes));
-	return conn_next(conn, echo_read, buf);
+	conn_next(conn, echo_close, NULL);
+	next_close(conn, buf);
+	return true;
 }
 
 static bool echo_read(struct conn *conn, struct buf *buf)
@@ -36,20 +41,10 @@ static bool echo_read(struct conn *conn, struct buf *buf)
 
 static bool echo_start(struct conn *conn, void *unused)
 {
-	char host[NI_MAXHOST], serv[NI_MAXSERV];
 	struct buf *buf = malloc(sizeof(*buf));
 	if (!buf)
 		return false;
-	if (!conn_getnameinfo(conn,
-			       host, sizeof host,
-			       serv, sizeof serv,
-			       false, false))
-		return false;
 
-	printf("New connection (%s:%s), sending hello world\n",
-			host, serv);
-	assert(conn_writestr(conn, "Hello world!\n"));
-	memset(buf->bytes, '\0', sizeof(buf->bytes));
 	return conn_next(conn, echo_read, buf);
 }
 

@@ -41,7 +41,11 @@
 #define warning(str, args...)	dolog(LOG_WARNING str, ##args)
 #define eprintf(str, args...)	dolog(str, ##args)
 #define edebug(str, args...)	dolog(__func__ str, ##args)
-#define might_bug()		dolog(LOG_WARNING " %s is untested and might behave incorrectly, please report any bugs you encounter\n", __func__)
+#ifdef _DEBUG
+#define might_bug()		dolog(LOG_WARNING " %s is not well-tested and might behave incorrectly, please report any bugs you encounter\n", __func__)
+#else
+#define might_bug()
+#endif
 
 /* Initialize log file.  */
 extern void log_init(void);

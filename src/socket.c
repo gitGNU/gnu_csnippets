@@ -401,7 +401,6 @@ bool new_conn(const char *node, const char *service,
 bool free_conn(struct conn *conn)
 {
 	bool retval = false;
-	printf("kef\n");
 	if (unlikely(!conn))
 		return retval;
 
@@ -459,6 +458,7 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
 	char *ptr;
 	va_list ap;
 	int len;
+	bool ret;
 	if (unlikely(!conn))
 		return false;
 
@@ -466,7 +466,11 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
 	len = vasprintf(&ptr, fmt, ap);
 	va_end(ap);
 
-	return ptr && do_write(conn, ptr, len);
+	if (!ptr)
+		return false;
+	ret = do_write(conn, ptr, len);
+	free(ptr);
+	return ret;
 }
 
 bool conn_next(struct conn *c,
@@ -481,13 +485,14 @@ bool conn_next(struct conn *c,
 	return true;
 }
 
-void next_break(struct conn *conn, void *arg)
+void next_close(struct conn *conn, void *arg)
 {
 	if (unlikely(!conn))
 		return;
 
-	conn->argp = arg;
-	s_close(conn->fd);
+	if (conn->next)
+		conn->next(conn, arg);
+	assert(free_conn(conn));
 }
 
 bool conn_getopt(struct conn *conn, int optname, void *optval,
@@ -606,13 +611,10 @@ void *conn_loop(void)
 							assert(free_conn(conn));
 							continue;
 						}
-					}
-				}
-
-				if (conn->next && !conn->next(conn, conn->argp))
+					} else if (conn->next && !conn->next(conn, conn->argp))
+						assert(free_conn(conn));
+				} else if (conn->next && !conn->next(conn, conn->argp))
 					assert(free_conn(conn));
-				conn->next = NULL;
-				conn->argp = NULL;
 			}
 		}
 	}

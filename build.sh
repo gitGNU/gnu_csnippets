@@ -43,8 +43,7 @@ buildopt="$buildopt -DCMAKE_BUILD_TYPE=$build_type"
 # Those are intended for feature-checking in the near future.
 if [ -d .git ]; then
 	really_inside=yes
-	git --help >/dev/null  # Is GIT actually installed at this site?
-	test $? -eq 0 || really_inside=no
+	git --help >/dev/null || really_inside=no # Is GIT actually installed at this site?
 	if [ "$really_inside" = "yes" ]; then
 		buildopt="$buildopt -DBUILD_COMMIT=`git describe --dirty --always` \
 			   -DBUILD_REVISION=`git rev-list --all | wc -l`"
@@ -120,6 +119,10 @@ fi
 
 mkdir -p build
 cd build
+
+if [ "$debugging" = "yes" ]; then
+	buildopt="$buildopt -DCMAKE_BUILD_TYPE=Debug"
+fi
 
 echo Generating Makefile with $buildopt
 cmake .. $buildopt || exit

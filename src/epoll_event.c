@@ -30,7 +30,6 @@
 #include <csnippets/socket.h>
 
 #include <sys/epoll.h>
-#include <unistd.h>   /* close() */
 
 struct pollev {
 	struct epoll_event *events;
@@ -110,7 +109,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 	do
 		n = epoll_wait(pev->epoll_fd, pev->events, pev->curr_size,
 				timeout);
-	while (n == -1 && errno == s_EINTR);
+	while (n == -1 && s_error == s_EINTR);
 	return n;
 }
 

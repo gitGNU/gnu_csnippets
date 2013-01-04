@@ -130,7 +130,9 @@ int pollev_poll(struct pollev *pev, int timeout)
 		}
 	}
 
-	numfds = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
+	do
+		numfds = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
+	while (numfds < 0 && s_error == s_EINTR);
 	if (numfds < 0)
 		return numfds;
 
@@ -158,6 +160,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 
 __inline __const int pollev_active(struct pollev *pev, int index)
 {
+	assert(unlikely(index >= 0 && pev->curr_size >= index));
 	return pev->events[index]->fd;
 }
 
