@@ -32,7 +32,7 @@
 /* Forward declare conn, internal usage only.  */
 struct conn;
 
-/* Creates a listener and polls on it for any incoming connections.  */
+/* Creates a listener and adds it to the poll queue.  */
 bool new_listener(const char *service,
 		bool (*fn) (struct conn *, void *arg),
 		void *arg);
@@ -80,6 +80,10 @@ void next_close(struct conn *, void *arg);
  *	if (!conn_setopt(conn, SO_KEEPALIVE, &on, sizeof(on)))
  *		...
  * \endcode
+ *
+ * Instead:
+ *	if (!conn_setopt_bool(conn, SO_KEEPALIVE, true))
+ *		...
  */
 #define conn_setopt_bool(conn, optname, enable)					\
 	__extension__ ({							\

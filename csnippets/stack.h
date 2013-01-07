@@ -122,26 +122,19 @@ static inline bool stack_grow(struct stack *s, int new_size)
  * \returns -1 on failure or pos of where the item is placed.
  * \sa stack_pop(), stack_top(), stack_remove().
  */
-static inline int stack_push(struct stack *s, void *ptr, int where, void (*constructor) (void *))
+static int stack_push(struct stack *s, void *ptr, int where, void (*constructor) (void *))
 {
 	int place = where;
 
-	/* If where is -1, find the place ourselves.  */
-	if (place == -1) {
+	if (place < 0) {
 		/* Find the first empty place.  */
 		for (place = 0; place < s->size && s->ptr[place]; ++place);
 		/* If there's no space left, reallocate  */
-		if (place == s->size && s->ptr[place] != NULL) {
-			if (!stack_grow(s, s->size + SIZE_INCREMENT))
-				return -1;
-		}
-	} else {
-		assert(place >= 0);
-		if (place > s->size) {
-			if (!stack_grow(s, (place - s->size) + 1))
-				return -1;
-		}
-	}
+		if (place == s->size && s->ptr[place] != NULL
+		     && !stack_grow(s, s->size + SIZE_INCREMENT))
+			return -1;
+	else if (place > s->size && !stack_grow(s, (place - s->size) + 1))
+		return -1;
 
 	s->ptr[place] = ptr;
 	if (constructor)
@@ -182,8 +175,8 @@ static inline void *stack_top(struct stack *s)
  *
  * \sa stack_push().
  */
-static inline bool stack_remove(struct stack *s, void *ptr, bool (*compare_function) (const void *, const void *),
-                                void (*destructor) (void *), bool duplicate)
+static bool stack_remove(struct stack *s, void *ptr, bool (*compare_function) (const void *, const void *),
+                          void (*destructor) (void *), bool duplicate)
 {
 	int i;
 	bool r;

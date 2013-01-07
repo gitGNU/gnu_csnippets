@@ -8,18 +8,18 @@
 #define _LINUX_STYLE_H
 
 #if defined __GNUC__ || defined __clang__
-#define __noreturn      __attribute__((noreturn))
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
-#define __warn_unused   __attribute__((warn_unused_result))
-#define __weak          __attribute__((weak))
+#define __noreturn	__attribute__((noreturn))
+#define likely(x)	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
+#define __warn_unused	__attribute__((warn_unused_result))
+#define __weak		__attribute__((weak))
 #define __printf(nfmt, narg) \
 	__attribute__((format(__printf__, nfmt, narg)))
-#define __const         __attribute__((const))
-#define __unused        __attribute__((unused))
+#define __const		__attribute__((__const__))
+#define __unused	__attribute__((unused))
 #define __used		__attribute__((used))
-#define __init          __attribute__((constructor))
-#define __exit          __attribute__((destructor))
+#define __init		__attribute__((constructor))
+#define __exit		__attribute__((destructor))
 #define GCC_VERSION (__GNUC__ * 10000 \
 			+ __GNUC_MINOR__ * 100 \
 			+ __GNUC_PATCHLEVEL__)

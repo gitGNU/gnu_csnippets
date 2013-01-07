@@ -442,7 +442,10 @@ bool conn_read(struct conn *conn, void *data, size_t *len)
 	do
 		count = recv(conn->fd, data, *len, 0);
 	while (count == -1 && s_error == s_EINTR);
-	*len = count;
+	if (count <= 0)
+		*len = 0;
+	else
+		*len = count;
 	return !(count < 0 && !IsBlocking());
 }
 

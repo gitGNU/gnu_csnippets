@@ -42,11 +42,19 @@ typedef struct fd_select {
 } fd_select_t;
 
 struct pollev {
-	size_t maxfd;
 	size_t curr_size;
-	fd_select_t fds[MAX_EVENTS];
+	fd_select_t *fds;
 	fd_select_t **events;        /* Pointer to fds  */
 };
+
+static bool grow(struct pollev *pev, size_t s)
+{
+	alloc_grow(pev->fds, s * sizeof(fd_select_t),
+		    return false);
+	alloc_grow(pev->events, s * sizeof(fd_select_t *),
+		    return false);
+	return true;
+}
 
 struct pollev *pollev_init(void)
 {
@@ -54,9 +62,11 @@ struct pollev *pollev_init(void)
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
 	ev->curr_size = MAX_EVENTS;
-	xcalloc(ev->events, ev->curr_size, sizeof(fd_select_t *),
-			free(ev); return NULL);
-	memset(ev->fds, 0, sizeof(ev->fds));
+	if (!grow(ev, ev->curr_size)) {
+		free(ev);
+		return NULL;
+	}
+
 	return ev;
 }
 
@@ -71,12 +81,9 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	if (unlikely(!pev || fd < 0))
 		return;
 
-	if (fd >= pev->curr_size) {
-#ifdef _DEBUG_POLLEV
-		eprintf("pollev_add(): fd %d is out of range, reallocating...\n", fd);
-#endif
-		alloc_grow(pev->events, (pev->curr_size *= 2) * sizeof(pev->events[0]),
-				pev->curr_size /= 2; return);
+	if (fd >= pev->curr_size && !grow(pev, pev->curr_size *= 2)) {
+		pev->curr_size /= 2;
+		return;
 	}
 
 	if (bits & IO_READ)
@@ -160,7 +167,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 
 __inline __const int pollev_active(struct pollev *pev, int index)
 {
-	assert(unlikely(index >= 0 && pev->curr_size >= index));
+	assert(likely(index >= 0 && pev->curr_size >= index));
 	return pev->events[index]->fd;
 }
 
