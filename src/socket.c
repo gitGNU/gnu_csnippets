@@ -359,15 +359,16 @@ bool new_listener(const char *service,
 	set_nonblock(fd);
 	reuse_addr = 1; /* ON */
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0
-	    || bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
-	    || listen(fd, 2048) != 0) {
+	     || bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
+	     || listen(fd, 2048) != 0) {
 		freeaddrinfo(addr);
 		s_close(fd);
 		return false;
 	}
 	freeaddrinfo(addr);
 
-	xmalloc(ret, sizeof(*ret), return false);
+	xmalloc(ret, sizeof(*ret),
+		 s_close(fd); return false);
 	list_add_tail(&listeners, &ret->node);
 	pollev_add(io_events, fd, IO_READ);
 
