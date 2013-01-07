@@ -2,7 +2,7 @@
 
 static bool filter(const char *s)
 {
-	return strcmp(s, "module_") == 0;
+	return strcmp(s, "module_") != 0;
 }
 
 int main(int argc, char **argv)
