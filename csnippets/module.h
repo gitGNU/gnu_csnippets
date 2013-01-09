@@ -37,7 +37,7 @@ struct module {
 	struct list_node node;          /* Next and previous module, see list.h  */
 };
 
-typedef struct list_head module_list;;
+typedef struct list_head module_list;
 
 /**
  * module_load() - Load a single module
@@ -46,102 +46,32 @@ typedef struct list_head module_list;;
  * @module - the module pointer where the function pointer goes.
  * @filter the filter function pointer, this function is used to filter out
  *         un-needed modules, that has function name of first parameter,
- *         if this function returns false, the function name is ignored, otherwise
+ *         if this function returns false, the symbol is ignored, otherwise
  *         we store it.
  * This function returns 0 on success and -errno in the event of failure.
  *
  * Example:
- *	#include <csnippets/module.h>
- *
- *	static bool filter(const char *s)
- *	{
- *		if (strcmp(s, "module_") == 0)
- *			return true;
- *		return false;
- *	}
- *
- *	int main() {
- *		struct module *module;
- *		struct module_symbol *symbol;
- *		char *myfile = "helloworld.so";
- *		int ret;
- *
- *		ret = module_load(myfile, &module, filter);
- *		if (ret != 0)
- *			fatal("failed to load module %s %s\n",
- *				myfile, strerror(-ret));
- *
- *		list_for_each(&module->children, symbol, node)
- *			void (*myfuncptr) (void *) = 
- *				void (*myfunc) (void *)module->func_ptr;
- *		if (__builtin_expect(myfuncptr, 1))
- *			(*myfuncptr) (NULL);
- *		module_cleanup(module);
- *		return 0;
- *	}
+ *	see examples/modules/modloader.c
  */
 extern int module_load(const char *filename, struct module **module,
 			bool (*filter) (const char *));
+extern void module_cleanup(struct module *module);
 
 /**
- * modules_load() - Load a list of modules from dir `dir'.
+ * modules_load() - Load a list of modules from @dir 
  *
  * @dir - the directory containing the modules to load.
  * @list - a null list that will be set after a successfull load.
  * @filter - See module_load().
  *
- * This function returns 0 on success or -errno on failure.
+ * This function returns the number of modules loaded or -1 on failure.
  *
  * Example:
- *	#include <csnippets/module.h>
- *
- *	static bool filter(const char *s)
- *	{
- *		if (strcmp(s, "module_") == 0)
- *			return true;
- *		return false;
- *	}
- *
- *	int main() {
- *		module_list modules;
- *		struct module *module;
- *		int ret;
- *		const char *dir = "mymoduledir";
- *
- *		ret = modules_load(dir, &modules);
- *		if (ret)
- *			fatal("failed to load modules from %s.\n", dir);
- *
- *		log("found %d modules in %s.\n", ret, dir);
- *		list_for_each(&modules->children, module, node)
- *			list_for_each(&module->children, symbol, node)
- *				void (*myfuncptr) (void *) = void (*myfunc) (void *)module->func_ptr;
- *			if (__builtin_expect(myfuncptr, 0))
- *				(*myfuncptr) (NULL);
- *		modules_cleanup(modules);
- *		return 0;
- *	}
+ *	See examples/modules/modloader.c
  */
 extern int modules_load(const char *dir, module_list *list,
 			  bool (*filter) (const char *));
-
-/**
- * modules_cleanup() - Free modules
- *
- * @param modules the modules list allocated by modules_load().
- *
- * @return nothing.
- */
 extern void modules_cleanup(module_list *modules);
-
-/**
- * module_cleanup() - Free a module
- *
- * @param module the module to free.
- *
- * @return nothing.
- */
-extern void module_cleanup(struct module *module);
 
 #endif  /* _MODULE_H */
 
