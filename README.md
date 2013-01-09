@@ -66,6 +66,12 @@ Before compiling, make sure you have:
 ```sh
 ./build.sh
 ```
+Run:
+```
+./build.sh -h
+```
+for a list of options and examples available.
+
 or manually:
 ```sh
 mkdir build && cd build
