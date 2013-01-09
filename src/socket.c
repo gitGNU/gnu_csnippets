@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 Ahmed Samy <f.fallen45@gmail.com>
  *
- * The first few static net_* functions are borrowed from ccan/net.
+ * The first few static net_* functions are hacked off ccan/net.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

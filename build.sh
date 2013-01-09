@@ -33,6 +33,7 @@ cross_build=no
 build_type=RelWithDebInfo
 
 buildopt="$buildopt -DCMAKE_BUILD_TYPE=$build_type"
+static=yes
 # If this is the GIT version, define build commit and revision.
 # We might need the gen-version.sh script instead of all this magic,
 # this will help get the tag name and version associated.
@@ -55,7 +56,11 @@ run() {
 	if [ "$1" = "$DBG" ]; then
 		$1 --args $TARGET $ARGS
 	else
-		./$TARGET $ARGS
+		if [ "$static" = "no" ]; then
+			LD_LIBRARY_PATH=. ./$TARGET $ARGS
+		else
+			./$TARGET $ARGS
+		fi
 	fi
 }
 
@@ -75,9 +80,10 @@ _make() {
 debugging=no
 run_after=no
 install=no
-while getopts scbgrhi name
+while getopts scbgrhiz name
 do
 	case $name in
+	z)	static=no ;;
 	s)	buildopt="$buildopt -DUSE_SELECT_HANDLER=ON" ;;
 	c)	clean_before_build=yes ;;
 	b)	cross_build=yes ;;
@@ -86,6 +92,7 @@ do
 	i)	install=yes ;;
 	?|-h)	printf "Usage %s: [-s -c -b -g -r]\n" $0
 		printf "%s: run me with:\n" $0
+		printf "	%s -z to turn off static linking\n"	$0
 		printf "	%s -s to use select interface\n"	$0
 		printf "	%s -c to clean before building\n"	$0
 		printf "	%s -g to run %s in debug mode\n"	$0 $TARGET
@@ -97,6 +104,10 @@ do
 		exit 1 ;;
 	esac
 done
+
+if [ "$static" = "no" ]; then
+	buildopt="$buildopt -DUSE_STATIC_LIBS=OFF "
+fi
 
 if [ "$cross_build" = "yes" ]; then
 	if [ -d build ]; then
