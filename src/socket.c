@@ -638,9 +638,10 @@ void *conn_loop(void)
 							assert(free_conn(conn));
 							continue;
 						}
-					} else if (conn->next && !conn->next(conn, conn->argp))
-						assert(free_conn(conn));
-				} else if (conn->next && !conn->next(conn, conn->argp))
+					}
+				}
+
+				if (conn->next && !conn->next(conn, conn->argp))
 					assert(free_conn(conn));
 			}
 		}
