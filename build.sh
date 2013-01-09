@@ -90,17 +90,17 @@ do
 	g)	debugging=yes ;;
 	r)	run_after=yes ;;
 	i)	install=yes ;;
-	?|-h)	printf "Usage %s: [-s -c -b -g -r]\n" $0
+	?|-h)	printf "Usage: %s [-s -c -b -g -r -h -i - z]\n" $0
 		printf "%s: run me with:\n" $0
 		printf "	%s -z to turn off static linking\n"	$0
 		printf "	%s -s to use select interface\n"	$0
 		printf "	%s -c to clean before building\n"	$0
 		printf "	%s -g to run %s in debug mode\n"	$0 $TARGET
 		printf "	%s -r to run %s after building\n"	$0 $TARGET
-		printf "	%s -b prepare for cross-building\n"	$0
+		printf "	%s -b prepare for cross-building (Linux -> MinGW)\n"	$0
 		echo
 		echo   "	All of the above options can be combined together, i.e:"
-		printf "	%s -cgr would clean ,build and run in debugger.\n" $0
+		printf "	%s -cgr would clean, build and run in debugger.\n" $0
 		exit 1 ;;
 	esac
 done
