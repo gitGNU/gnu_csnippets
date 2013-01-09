@@ -37,9 +37,8 @@
 
 typedef struct fd_select {
 	int fd;
-	char read  : 2;    /* first bit: in use */
-	char write : 2;    /* second bit: pending data */
-	char err   : 2;
+	uint32_t events;
+	uint32_t revents;
 } fd_select_t;
 
 struct pollev {
@@ -88,10 +87,11 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	}
 
 	if (bits & IO_READ)
-		pev->fds[fd].read |= 1;
+		pev->fds[fd].events |= IO_READ;
 	if (bits & IO_WRITE)
-		pev->fds[fd].write |= 1;
+		pev->fds[fd].events |= IO_WRITE;
 	pev->fds[fd].fd = fd;
+	pev->fds[fd].revents = 0;
 }
 
 void pollev_del(struct pollev *pev, int fd)
@@ -106,8 +106,9 @@ void pollev_del(struct pollev *pev, int fd)
 		return;
 	}
 
-	pev->fds[fd].read = 0;
-	pev->fds[fd].write = 0;
+	pev->fds[fd].events = 0;
+	pev->fds[fd].revents = 0;
+	pev->fds[fd].fd = -1;
 }
 
 int pollev_poll(struct pollev *pev, int timeout)
@@ -126,12 +127,13 @@ int pollev_poll(struct pollev *pev, int timeout)
 	tv.tv_usec = (timeout % 1000) * 1000;
 
 	for (fd = 0, maxfd = 0; fd < MAX_EVENTS; fd++) {
-		if (pev->fds[fd].read)
+		if (test_bit(pev->fds[fd].events, IO_READ))
 			FD_SET(fd, &rfds);
-		if (pev->fds[fd].write)
+		if (test_bit(pev->fds[fd].events, IO_WRITE))
 			FD_SET(fd, &wfds);
 
-		if (pev->fds[fd].read || pev->fds[fd].write) {
+		if (test_bit(pev->fds[fd].events, IO_READ)
+		     || test_bit(pev->fds[fd].events, IO_WRITE)) {
 			FD_SET(fd, &efds);
 			if (fd > maxfd)
 				maxfd = fd;
@@ -145,21 +147,13 @@ int pollev_poll(struct pollev *pev, int timeout)
 		return numfds;
 
 	for (fd = 0; fd <= maxfd; fd++) {
-		if (FD_ISSET(fd, &efds))
-			continue;
-
+		pev->fds[fd].revents = 0;
 		if (FD_ISSET(fd, &rfds))
-			pev->fds[fd].read |= 2;
-		else
-			pev->fds[fd].read &= 1;
+			pev->fds[fd].revents |= IO_READ;
 		if (FD_ISSET(fd, &wfds))
-			pev->fds[fd].write |= 2;
-		else
-			pev->fds[fd].write &= 1;
+			pev->fds[fd].revents |= IO_WRITE;
 		if (FD_ISSET(fd, &efds))
-			pev->fds[fd].err |= 2;
-		else
-			pev->fds[fd].err &= 1;
+			pev->fds[fd].revents |= IO_ERR;
 	}
 
 	/* Create the events array so that we keep compatibility
@@ -178,22 +172,11 @@ __inline __const int pollev_active(struct pollev *pev, int index)
 	return pev->events[index]->fd;
 }
 
-uint32_t pollev_revent(struct pollev *pev, int index)
+__inline __const uint32_t pollev_revent(struct pollev *pev, int index)
 {
-	uint32_t r = 0;
-	int fd = pev->events[index]->fd;
-
-	if (pev->fds[fd].read & 0x02)
-		r |= IO_READ;
-	if (pev->fds[fd].write & 0x02)
-		r |= IO_WRITE;
-	if (pev->fds[fd].err & 0x02)
-		r |= IO_ERR;
-
-	pev->fds[fd].read &= 0x01;
-	pev->fds[fd].write &= 0x01;
-	pev->fds[fd].err &= 0x01;
-	return r;
+	if (unlikely(index < 0 || index > pev->curr_size))
+		return -1;
+	return pev->events[index]->revents;
 }
 
 #endif

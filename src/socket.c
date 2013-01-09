@@ -63,11 +63,6 @@ static struct pollev *io_events;
 static LIST_HEAD(conns);
 static LIST_HEAD(listeners);
 
-static inline bool test_bit(uint32_t bits, uint32_t bit)
-{
-	return (bits & bit) == bit;
-}
-
 static struct conn *find_conn(int fd)
 {
 	struct conn *ret;
