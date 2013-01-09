@@ -37,10 +37,7 @@ struct module {
 	struct list_node node;          /* Next and previous module, see list.h  */
 };
 
-struct module_list {
-	struct list_head children;  /* List of modules  */
-	unsigned int num_modules;   /* how many modules were loaded?  */
-};
+typedef struct list_head module_list;;
 
 /**
  * module_load() - Load a single module
@@ -84,7 +81,7 @@ struct module_list {
  *	}
  */
 extern int module_load(const char *filename, struct module **module,
-                       bool (*filter) (const char *));;
+			bool (*filter) (const char *));
 
 /**
  * modules_load() - Load a list of modules from dir `dir'.
@@ -106,7 +103,7 @@ extern int module_load(const char *filename, struct module **module,
  *	}
  *
  *	int main() {
- *		struct module_list *modules;
+ *		module_list modules;
  *		struct module *module;
  *		int ret;
  *		const char *dir = "mymoduledir";
@@ -115,7 +112,7 @@ extern int module_load(const char *filename, struct module **module,
  *		if (ret)
  *			fatal("failed to load modules from %s.\n", dir);
  *
- *		log("found %d modules in %s.\n", modules->num_modules, dir);
+ *		log("found %d modules in %s.\n", ret, dir);
  *		list_for_each(&modules->children, module, node)
  *			list_for_each(&module->children, symbol, node)
  *				void (*myfuncptr) (void *) = void (*myfunc) (void *)module->func_ptr;
@@ -125,8 +122,8 @@ extern int module_load(const char *filename, struct module **module,
  *		return 0;
  *	}
  */
-extern int modules_load(const char *dir, struct module_list **list,
-                        bool (*filter) (const char *));
+extern int modules_load(const char *dir, module_list *list,
+			  bool (*filter) (const char *));
 
 /**
  * modules_cleanup() - Free modules
@@ -135,7 +132,7 @@ extern int modules_load(const char *dir, struct module_list **list,
  *
  * @return nothing.
  */
-extern void modules_cleanup(struct module_list *modules);
+extern void modules_cleanup(module_list *modules);
 
 /**
  * module_cleanup() - Free a module

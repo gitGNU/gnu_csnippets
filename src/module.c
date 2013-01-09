@@ -168,37 +168,29 @@ cleanup:
 	return err;
 }
 
-int modules_load(const char *dir, struct module_list **modules,
-                 bool (*filterp) (const char *))
+int modules_load(const char *dir, module_list *modules,
+		  bool (*filterp) (const char *))
 {
 	int so_count = 0;
 	int ret = 0;
 	struct dirent **so_list;
-	struct module_list *mods;
 	struct module *mod = NULL;
 
 	so_count = scandir(dir, &so_list, filter, NULL);
-	if (so_count < 0)
-		return -errno;
+	if (so_count <= 0)
+		return 0;
 
-	xmalloc(mods, sizeof(*mods), return 0);
-	list_head_init(&mods->children);
+	list_head_init(modules);
 	while (so_count--) {
-		if ((ret = module_load(so_list[so_count]->d_name, &mod, filterp) != 0)) {
-#ifdef _DEBUG_MODULES
-			warning("failed to load module: %s (%d)\n", so_list[so_count]->d_name, ret);
-#endif
-		} else {
-			++mods->num_modules;
-			list_add(&mods->children, &mod->node);
+		if (module_load(so_list[so_count]->d_name, &mod, filterp) == 0) {
+			++ret;
+			list_add(modules, &mod->node);
 		}
-
 		free(so_list[so_count]);
 	}
 
-	*modules = mods;
 	free(so_list);
-	return 0;
+	return ret;
 }
 
 #endif    /* defined(__unix__) || (defined(__APPLE__) && defined(__MACH__) */
@@ -221,16 +213,15 @@ void module_cleanup(struct module *module)
 	free(module);
 }
 
-void modules_cleanup(struct module_list *modules)
+void modules_cleanup(module_list *modules)
 {
 	struct module *module, *next;
 	if (unlikely(!modules))
 		return;
 
-	list_for_each_safe(&modules->children, module, next, node) {
-		list_del_from(&modules->children, &module->node);
+	list_for_each_safe(modules, module, next, node) {
+		list_del_from(modules, &module->node);
 		module_cleanup(module);
 	}
-	free(modules);
 }
 

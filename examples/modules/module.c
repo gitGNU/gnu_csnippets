@@ -1,6 +1,10 @@
 #include <stdio.h>
 
-#include <csnippets/module.h>
+#define define_mod_func(name)	\
+	void mod_ ##name(void) {	\
+		printf("this is %s speaking\n", __func__); \
+		return; \
+	}
 
 static void __init init(void)
 {
@@ -12,13 +16,7 @@ static void __exit terminate(void)
 	printf("Destructing...\n");
 }
 
-void module_func(void)
-{
-	printf("this is module_func speaking\n");
-}
-
-void module_func2(void)
-{
-	printf("this is module_func2 speaking\n");
-}
+define_mod_func(fun1)
+define_mod_func(fun2)
+define_mod_func(testover9000)
 

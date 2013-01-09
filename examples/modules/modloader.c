@@ -1,4 +1,5 @@
 #include <csnippets/module.h>
+#include <errno.h>
 
 static bool filter(const char *s)
 {
@@ -7,16 +8,16 @@ static bool filter(const char *s)
 
 int main(int argc, char **argv)
 {
-	struct module_list *mlist;
+	module_list mlist;
 	struct module *module;
 	struct module_symbol *symbol;
 	int ret;
 
 	ret = modules_load(".", &mlist, filter);
-	if (ret)
-		fatal("failed to load modules %s.\n", strerror(-ret));
+	if (ret < 0)
+		fatal("failed to load modules %s.\n", strerror(errno));
 
-	list_for_each(&mlist->children, module, node) {
+	list_for_each(&mlist, module, node) {
 		list_for_each(&module->children, symbol, node) {
 			void (*mod_fn) (void) = symbol->func_ptr;
 			printf("Calling %s at location %p...\n", symbol->symbol_name,
@@ -26,7 +27,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	modules_cleanup(mlist);
+	modules_cleanup(&mlist);
 	return ret;
 }
 
