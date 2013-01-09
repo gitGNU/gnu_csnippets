@@ -26,6 +26,7 @@ struct pollev;
 
 #define IO_READ		0x01   /* There's data to be read.  */
 #define IO_WRITE	0x02   /* We're free to send incomplete data.  */
+#define IO_ERR		0x04   /* An error occured in this fd.  */
 
 /**
  * pollev_init() - allocate pollev structure and members,

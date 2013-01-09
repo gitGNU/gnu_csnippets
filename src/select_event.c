@@ -37,8 +37,9 @@
 
 typedef struct fd_select {
 	int fd;
-	char read : 2;    /* first bit: in use */
-	char write : 2;   /* second bit: pending data */
+	char read  : 2;    /* first bit: in use */
+	char write : 2;    /* second bit: pending data */
+	char err   : 2;
 } fd_select_t;
 
 struct pollev {
@@ -155,19 +156,25 @@ int pollev_poll(struct pollev *pev, int timeout)
 			pev->fds[fd].write |= 2;
 		else
 			pev->fds[fd].write &= 1;
+		if (FD_ISSET(fd, &efds))
+			pev->fds[fd].err |= 2;
+		else
+			pev->fds[fd].err &= 1;
 	}
 
 	/* Create the events array so that we keep compatibility
 	 * with other interfaces.  */
 	for (fd = 0, i = 0; fd <= maxfd; ++fd)
-		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds))
+		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)
+		     || FD_ISSET(fd, &efds))
 			pev->events[i++] = &pev->fds[fd];
 	return i;
 }
 
 __inline __const int pollev_active(struct pollev *pev, int index)
 {
-	assert(likely(index >= 0 && pev->curr_size >= index));
+	if (unlikely(index < 0 || index > pev->curr_size))
+		return -1;
 	return pev->events[index]->fd;
 }
 
@@ -180,9 +187,12 @@ uint32_t pollev_revent(struct pollev *pev, int index)
 		r |= IO_READ;
 	if (pev->fds[fd].write & 0x02)
 		r |= IO_WRITE;
+	if (pev->fds[fd].err & 0x02)
+		r |= IO_ERR;
 
 	pev->fds[fd].read &= 0x01;
 	pev->fds[fd].write &= 0x01;
+	pev->fds[fd].err &= 0x01;
 	return r;
 }
 

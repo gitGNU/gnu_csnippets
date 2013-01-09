@@ -124,9 +124,11 @@ uint32_t pollev_revent(struct pollev *ev, int index)
 	uint32_t r = 0;
 
 	if (events & EPOLLIN)
-		r = IO_READ;
+		r |= IO_READ;
 	if (events & EPOLLOUT)
 		r |= IO_WRITE;
+	if (events & EPOLLERR || events & EPOLLHUP)
+		r |= IO_ERR;
 	return r;
 }
 

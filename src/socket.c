@@ -63,6 +63,11 @@ static struct pollev *io_events;
 static LIST_HEAD(conns);
 static LIST_HEAD(listeners);
 
+static inline bool test_bit(uint32_t bits, uint32_t bit)
+{
+	return (bits & bit) == bit;
+}
+
 static struct conn *find_conn(int fd)
 {
 	struct conn *ret;
@@ -384,13 +389,17 @@ bool new_conn(const char *node, const char *service,
 {
 	struct addrinfo *addr;
 	struct conn *conn;
+	int fd;
 
 	addr = net_lookup(node, service, AF_UNSPEC, SOCK_STREAM);
 	if (!addr)
 		return false;
 
-	conn = new_conn_fd(net_connect(addr), fn, arg);
-	if (conn) {
+	fd = net_connect(addr);
+	conn = new_conn_fd(fd, fn, arg);
+	if (!conn)
+		s_close(fd);
+	else {
 		conn->sa = *addr->ai_addr;
 		conn->sa_len = addr->ai_addrlen;
 	}
@@ -557,7 +566,10 @@ void *conn_loop(void)
 				continue;
 
 			if ((li = find_listener(fd))) {
-				if (!(revent & IO_READ)) {
+				if (test_bit(revent, IO_ERR)) {
+#ifdef _DEBUG_SOCKET
+					eprintf("Closing listener %d (error occured)\n", fd);
+#endif
 					list_del(&li->node);
 					pollev_del(io_events, li->fd);
 					s_close(li->fd);
@@ -582,15 +594,26 @@ void *conn_loop(void)
 
 					set_nonblock(in_fd);
 					conn = new_conn_fd(in_fd, NULL, NULL);
-					if (!conn)
+					if (!conn) {
+						s_close(in_fd);
 						break;
+					}
+
 					conn->sa = in_addr;
 					conn->sa_len = in_len;
 					if (likely(li->fn) && !li->fn(conn, li->arg))
 						assert(free_conn(conn));
 				}
 			} else if ((conn = find_conn(fd))) {
-				if (revent & IO_WRITE) {
+				if (test_bit(revent, IO_ERR)) {
+#ifdef _DEBUG_SOCKET
+					eprintf("Closing %d (error occured)\n", fd);
+#endif
+					free_conn(conn);
+					continue;
+				}
+
+				if (test_bit(revent, IO_WRITE)) {
 					if (conn->in_progress) {
 						int err = 0;
 						socklen_t errlen = sizeof(err);
