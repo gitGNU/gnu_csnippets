@@ -3,6 +3,7 @@
  */
 #ifndef _CONTAINER_OF_H
 #define _CONTAINER_OF_H
+/* check_type is hacked off ccan/check_type  */
 /**
  * check_type - issue a warning or build failure if type is not correct.
  * @expr: the expression whose type we should check (not evaluated).

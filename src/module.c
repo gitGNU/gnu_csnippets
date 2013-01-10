@@ -141,11 +141,8 @@ int module_load(const char *file, struct module **mod,
 
 cleanup:
 	if (err && symbol && module) {
-		for (;;) {
-			symbol = list_top(&module->children, struct module_symbol, node);
-			if (!symbol)
-				break;
-
+		struct module_symbol *tmp;
+		list_for_each_safe(&module->children, symbol, tmp, node) {
 			free(symbol->symbol_name);
 			list_del_from(&module->children, &symbol->node);
 			free(symbol);
