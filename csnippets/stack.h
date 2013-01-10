@@ -133,7 +133,7 @@ static int stack_push(struct stack *s, void *ptr, int where, void (*constructor)
 		if (place == s->size && s->ptr[place] != NULL
 		     && !stack_grow(s, s->size + SIZE_INCREMENT))
 			return -1;
-	else if (place > s->size && !stack_grow(s, (place - s->size) + 1))
+	} else if (place > s->size && !stack_grow(s, (place - s->size) + 1))
 		return -1;
 
 	s->ptr[place] = ptr;
