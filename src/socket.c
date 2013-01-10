@@ -620,19 +620,16 @@ void *conn_loop(void)
 								assert(free_conn(conn));
 								continue;
 							}
-						} else {
-							/* Disconnected?  */
+						} else /* Disconnected?  */
 							assert(free_conn(conn));
-							continue;
-						}
+						continue;
 					} else if (conn->wb.data) {
 #ifdef _DEBUG_SOCKET
 						eprintf("sending incomplete data...\n");
 #endif
-						if (!do_write_queue(conn) && !IsBlocking()) {
+						if (!do_write_queue(conn) && !IsBlocking())
 							assert(free_conn(conn));
-							continue;
-						}
+						continue;
 					}
 				}
 

@@ -1,5 +1,4 @@
 #include <csnippets/socket.h>
-#include <netdb.h> /* for NI_MAXHOST... */
 
 #define BUFFER_SIZE 1024
 
@@ -8,7 +7,6 @@ struct buf {
 	size_t used;
 };
 
-static bool echo_read(struct conn *conn, struct buf *buf);
 static bool echo_close(struct conn *conn, struct buf *buf)
 {
 	free(buf);
