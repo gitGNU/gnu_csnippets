@@ -616,10 +616,8 @@ void *conn_loop(void)
 						if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == 0
 						    && err == 0) {
 							conn->in_progress = false;
-							if (conn->fn && !conn->fn(conn, conn->farg)) {
+							if (conn->fn && !conn->fn(conn, conn->farg))
 								assert(free_conn(conn));
-								continue;
-							}
 						} else /* Disconnected?  */
 							assert(free_conn(conn));
 						continue;

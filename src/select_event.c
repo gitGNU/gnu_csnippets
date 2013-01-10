@@ -72,6 +72,7 @@ struct pollev *pollev_init(void)
 
 void pollev_deinit(struct pollev *p)
 {
+	free(p->fds);
 	free(p->events);
 	free(p);
 }
@@ -81,15 +82,20 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	if (unlikely(!pev || fd < 0))
 		return;
 
-	if (fd >= pev->curr_size && !grow(pev, pev->curr_size *= 2)) {
-		pev->curr_size /= 2;
-		return;
+	if (fd >= pev->curr_size) {
+		pev->curr_size *= 2;
+		if (!grow(pev, pev->curr_size)) {
+			pev->curr_size /= 2;
+			return;
+		}
 	}
 
+	pev->fds[fd].events = 0;
 	if (bits & IO_READ)
 		pev->fds[fd].events |= IO_READ;
 	if (bits & IO_WRITE)
 		pev->fds[fd].events |= IO_WRITE;
+
 	pev->fds[fd].fd = fd;
 	pev->fds[fd].revents = 0;
 }
@@ -113,7 +119,7 @@ void pollev_del(struct pollev *pev, int fd)
 
 int pollev_poll(struct pollev *pev, int timeout)
 {
-	int fd, i, maxfd, numfds;
+	int fd, maxfd, rc;
 	static fd_set rfds, wfds, efds;
 	static struct timeval tv;
 
@@ -126,43 +132,47 @@ int pollev_poll(struct pollev *pev, int timeout)
 	tv.tv_sec  = timeout / 1000;
 	tv.tv_usec = (timeout % 1000) * 1000;
 
-	for (fd = 0, maxfd = 0; fd < MAX_EVENTS; fd++) {
+	for (fd = 0, maxfd = 0; fd < pev->curr_size; fd++) {
 		if (test_bit(pev->fds[fd].events, IO_READ))
 			FD_SET(fd, &rfds);
 		if (test_bit(pev->fds[fd].events, IO_WRITE))
 			FD_SET(fd, &wfds);
 
-		if (test_bit(pev->fds[fd].events, IO_READ)
-		     || test_bit(pev->fds[fd].events, IO_WRITE)) {
+		if (fd >= maxfd
+		     && (test_bit(pev->fds[fd].events, IO_READ)
+		         || test_bit(pev->fds[fd].events, IO_WRITE))) {
+			maxfd = fd;
+			/* Add it to watch-for-exceptions fd set  */
 			FD_SET(fd, &efds);
-			if (fd > maxfd)
-				maxfd = fd;
 		}
 	}
 
 	do
-		numfds = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
-	while (numfds < 0 && s_error == s_EINTR);
-	if (numfds < 0)
-		return numfds;
-
+		rc = select(maxfd + 1, &rfds, &wfds, &efds, NULL);
+	while (rc < 0 && s_error == s_EINTR);
+	if (rc < 0)
+		return rc;
+	/* establish results and create the events array so that we keep compatibility
+	 * with other interfaces.  */
+	rc = 0;
 	for (fd = 0; fd <= maxfd; fd++) {
-		pev->fds[fd].revents = 0;
+		if (pev->fds[fd].fd < 0)
+			continue;
+
 		if (FD_ISSET(fd, &rfds))
 			pev->fds[fd].revents |= IO_READ;
 		if (FD_ISSET(fd, &wfds))
 			pev->fds[fd].revents |= IO_WRITE;
 		if (FD_ISSET(fd, &efds))
 			pev->fds[fd].revents |= IO_ERR;
+		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)
+		     || FD_ISSET(fd, &efds)) {
+			pev->events[rc] = &pev->fds[fd];
+			++rc;
+		}
 	}
 
-	/* Create the events array so that we keep compatibility
-	 * with other interfaces.  */
-	for (fd = 0, i = 0; fd <= maxfd; ++fd)
-		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)
-		     || FD_ISSET(fd, &efds))
-			pev->events[i++] = &pev->fds[fd];
-	return i;
+	return rc;
 }
 
 __inline __const int pollev_active(struct pollev *pev, int index)
@@ -174,9 +184,12 @@ __inline __const int pollev_active(struct pollev *pev, int index)
 
 __inline __const uint32_t pollev_revent(struct pollev *pev, int index)
 {
+	uint32_t r = 0;
 	if (unlikely(index < 0 || index > pev->curr_size))
-		return -1;
-	return pev->events[index]->revents;
+		return r;
+	r = pev->events[index]->revents;
+	pev->events[index]->revents = 0;
+	return r;
 }
 
 #endif

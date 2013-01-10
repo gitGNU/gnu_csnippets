@@ -67,11 +67,7 @@ add_definitions(${csnippets_DEFINITIONS})
 target_link_libraries(csnippets ${csnippets_LIBRARIES})
 include_directories(csnippets ${csnippets_INCLUDE_DIRS})
 
-if(USE_STATIC_LIBS)
-	set(this_library "-L. -Wl,--no-as-needed -lcsnippets ${csnippets_LIBRARIES}")
-else()
-	set(this_library "-L. -lcsnippets ${csnippets_LIBRARIES}")
-endif()
+set(this_library "-L. -Wl,--no-as-needed -lcsnippets ${csnippets_LIBRARIES}")
 
 include(examples/server/CMakeLists.txt)
 include(examples/client/CMakeLists.txt)
