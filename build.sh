@@ -69,11 +69,7 @@ __make() {
 }
 
 _make() {
-	echo "Making Library"
 	__make $1
-	echo "Making module"
-	__make module $1
-	echo "Making $TARGET"
 	__make $TARGET $1
 }
 

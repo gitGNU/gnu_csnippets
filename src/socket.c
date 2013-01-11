@@ -60,7 +60,7 @@ struct conn {
 };
 
 static struct pollev *io_events;
-static LIST_HEAD(conns);
+static LIST_HEAD(conns);      /* XXX if many connections, searching will be slow!  */
 static LIST_HEAD(listeners);
 
 static struct conn *find_conn(int fd)

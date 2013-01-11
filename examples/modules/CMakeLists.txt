@@ -1,8 +1,8 @@
 set(modules_SOURCES ${modules_SOURCES}
-    ${CMAKE_CURRENT_LIST_DIR}/modloader.c
+	${CMAKE_CURRENT_LIST_DIR}/modloader.c
 )
 set(module_INIT_SRC ${module_INIT_SRC}
-    ${CMAKE_CURRENT_LIST_DIR}/module.c    
+	${CMAKE_CURRENT_LIST_DIR}/module.c    
 )
 
 add_executable(modloader EXCLUDE_FROM_ALL ${modules_SOURCES})
