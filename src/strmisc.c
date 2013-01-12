@@ -75,10 +75,6 @@ bool str_cmp(const char *str, int (*cmp_func) (int))
 	if (!cmp_func)
 		return false;
 	while (*p)
-		/*
-		 * compare every single character in this string
-		 * if one fails, then the whole comparison fails...
-		 */
 		if (!cmp_func((int)*p++))
 			return false;
 	return true;
@@ -102,5 +98,23 @@ char *str_convert(const char *str, int (*convert_func) (int))
 	p[len + 1]  = '\0';
 
 	return p;
+}
+
+bool str_startswith(const char *str, const char *start)
+{
+	while (*start)
+		if (*start++ != *str++)
+			return false;
+	return true;
+}
+
+bool str_endswith(const char *str, const char *end)
+{
+	char *estr = (char *)(str + (strlen(str) - 1));
+	char *eend = (char *)(end + (strlen(end) - 1));
+	while (*eend)
+		if (*eend-- != *estr--)
+			return false;
+	return true;
 }
 
