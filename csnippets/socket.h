@@ -27,34 +27,54 @@
 #ifndef _SOCKET_H
 #define _SOCKET_H
 
-#include <csnippets/list.h>
+#include <csnippets/typesafe_cb.h>
 
 /* Forward declare conn, internal usage only.  */
 struct conn;
 
-/* Creates a listener and adds it to the poll queue.  */
-bool new_listener(const char *service,
+/* Creates a listener and adds it to the poll queue. */
+#define new_listener(service, fn, arg)							\
+	_new_listener((service),							\
+		      typesafe_cb_cast(bool (*) (struct conn *, void *),		\
+				       bool (*) (struct conn *, __typeof__(arg)),	\
+				       (fn)),						\
+		      (arg))
+bool _new_listener(const char *service,
                   bool (*fn) (struct conn *, void *arg),
                   void *arg);
 
 /* Creates a connection struct and adds it to the poll queue.
  * IPv6 is automatically used if available.
  */
-bool new_conn(const char *node, const char *service,
+#define new_conn(node, service, fn, arg)					\
+	_new_conn((node), (service),						\
+		  typesafe_cb_cast(bool (*) (struct conn *, void *),		\
+				   bool (*) (struct conn *, __typeof__(arg)),	\
+				   (fn)),					\
+		  (arg))
+bool _new_conn(const char *node, const char *service,
               bool (*fn) (struct conn *, void *arg),
               void *arg);
+
 /* Like new_conn() but,  we don't look up nodes or services
  * here.  */
-struct conn *new_conn_fd(int fd,
+#define new_conn_fd(fd, fn, arg)						\
+	_new_conn_fd((fd),							\
+		  typesafe_cb_cast(bool (*) (struct conn *, void *),		\
+				   bool (*) (struct conn *, __typeof__(arg)),	\
+				   (fn)),					\
+		  (arg))
+struct conn *_new_conn_fd(int fd,
                          bool (*fn) (struct conn *, void *arg),
                          void *arg);
-/* Close connected socket, and free memory.  */
+/* Close connected socket, and free memory. 
+ * Fails if the socket file descriptor is already closed.  */
 bool free_conn(struct conn *);
 
 bool conn_read(struct conn *conn, void *data, size_t *len);
 bool conn_write(struct conn *conn, const void *data, size_t len);
 bool conn_writestr(struct conn *conn, const char *fmt, ...)
-__printf(2, 3);
+	__printf(2, 3);
 
 /* Calls @next at next acitivty from the connnection,
  * if the next function returns false, the connection is
@@ -63,7 +83,13 @@ __printf(2, 3);
  * It's not recommended to free the connection manually
  * in @next even if calling free_conn().
  */
-bool conn_next(struct conn *,
+#define conn_next(conn, next, arg)						\
+	_conn_next(conn,							\
+		   typesafe_cb_cast(bool (*) (struct conn *, void *),		\
+				    bool (*) (struct conn *, __typeof__(arg)),	\
+				    (next)),					\
+		   (arg))
+bool _conn_next(struct conn *,
                bool (*next) (struct conn *, void *arg),
                void *arg);
 

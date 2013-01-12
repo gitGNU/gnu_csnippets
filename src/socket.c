@@ -25,6 +25,7 @@
 #include <csnippets/io_poll.h>   /* IO event-based polling.  */
 #include <csnippets/asprintf.h>  /* Needed in conn_writestr  */
 #include <csnippets/poll.h>      /* Fake poll(2) enviroment that is cross-platform.  (Part of gnulib) */
+#include <csnippets/list.h>
 
 #include <internal/socket_compat.h>  /* Internal definitions, for compatibility with various platforms.  */
 
@@ -336,7 +337,7 @@ out:
 	return sockfd;
 }
 
-bool new_listener(const char *service,
+bool _new_listener(const char *service,
                   bool (*fn) (struct conn *, void *arg),
                   void *arg)
 {
@@ -377,7 +378,7 @@ bool new_listener(const char *service,
 	return true;
 }
 
-bool new_conn(const char *node, const char *service,
+bool _new_conn(const char *node, const char *service,
               bool (*fn) (struct conn *, void *arg),
               void *arg)
 {
@@ -417,7 +418,7 @@ bool free_conn(struct conn *conn)
 	return retval;
 }
 
-struct conn *new_conn_fd(int fd,
+struct conn *_new_conn_fd(int fd,
                          bool (*fn) (struct conn *, void *arg),
                          void *arg) {
 	struct conn *ret;
@@ -479,7 +480,7 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
 	return ret;
 }
 
-bool conn_next(struct conn *c,
+bool _conn_next(struct conn *c,
                bool (*next) (struct conn *, void *arg),
                void *arg)
 {
