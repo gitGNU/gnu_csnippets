@@ -76,10 +76,10 @@
  *	}
  */
 #define container_of(member_ptr, containing_type, member)		\
-	 ((containing_type *)						\
-	  ((char *)(member_ptr)						\
-	   - container_off(containing_type, member))			\
-	  + check_types_match(*(member_ptr), ((containing_type *)0)->member))
+	((containing_type *)						\
+	 ((char *)(member_ptr)						\
+	  - container_off(containing_type, member))			\
+	 + check_types_match(*(member_ptr), ((containing_type *)0)->member))
 
 /**
  * container_off - get offset to enclosing structure

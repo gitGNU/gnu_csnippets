@@ -50,14 +50,13 @@ struct pollev {
 static bool grow(struct pollev *pev, size_t s)
 {
 	alloc_grow(pev->fds, s * sizeof(fd_select_t),
-		    return false);
+	           return false);
 	alloc_grow(pev->events, s * sizeof(fd_select_t *),
-		    return false);
+	           return false);
 	return true;
 }
 
-struct pollev *pollev_init(void)
-{
+struct pollev *pollev_init(void) {
 	struct pollev *ev;
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
@@ -139,8 +138,8 @@ int pollev_poll(struct pollev *pev, int timeout)
 			FD_SET(fd, &wfds);
 
 		if (fd >= maxfd
-		     && (test_bit(pev->fds[fd].events, IO_READ)
-		         || test_bit(pev->fds[fd].events, IO_WRITE))) {
+		    && (test_bit(pev->fds[fd].events, IO_READ)
+		        || test_bit(pev->fds[fd].events, IO_WRITE))) {
 			maxfd = fd;
 			/* Add it to watch-for-exceptions fd set  */
 			FD_SET(fd, &efds);
@@ -166,7 +165,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 		if (FD_ISSET(fd, &efds))
 			pev->fds[fd].revents |= IO_ERR;
 		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)
-		     || FD_ISSET(fd, &efds)) {
+		    || FD_ISSET(fd, &efds)) {
 			pev->events[rc] = &pev->fds[fd];
 			++rc;
 		}

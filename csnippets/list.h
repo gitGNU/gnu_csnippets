@@ -415,10 +415,10 @@ static inline const void *list_tail_(const struct list_head *h, size_t off)
  *		printf("Name: %s\n", child->name);
  */
 #define list_for_each_off(h, i, off)                                    \
-  for (i = list_node_to_off_(list_debug(h)->n.next, (off));             \
-       list_node_from_off_((void *)i, (off)) != &(h)->n;                \
-       i = list_node_to_off_(list_node_from_off_((void *)i, (off))->next, \
-                             (off)))
+	for (i = list_node_to_off_(list_debug(h)->n.next, (off));             \
+	     list_node_from_off_((void *)i, (off)) != &(h)->n;                \
+	     i = list_node_to_off_(list_node_from_off_((void *)i, (off))->next, \
+	                           (off)))
 
 /**
  * list_for_each_safe_off - iterate through a list of memory regions, maybe
@@ -437,13 +437,13 @@ static inline const void *list_tail_(const struct list_head *h, size_t off)
  *		printf("Name: %s\n", child->name);
  */
 #define list_for_each_safe_off(h, i, nxt, off)                          \
-  for (i = list_node_to_off_(list_debug(h)->n.next, (off)),             \
-         nxt = list_node_to_off_(list_node_from_off_(i, (off))->next,   \
-                                 (off));                                \
-       list_node_from_off_(i, (off)) != &(h)->n;                        \
-       i = nxt,                                                         \
-         nxt = list_node_to_off_(list_node_from_off_(i, (off))->next,   \
-                                 (off)))
+	for (i = list_node_to_off_(list_debug(h)->n.next, (off)),             \
+	     nxt = list_node_to_off_(list_node_from_off_(i, (off))->next,   \
+	                             (off));                                \
+	     list_node_from_off_(i, (off)) != &(h)->n;                        \
+	     i = nxt,                                                         \
+	     nxt = list_node_to_off_(list_node_from_off_(i, (off))->next,   \
+	                             (off)))
 
 
 /* Other -off variants. */

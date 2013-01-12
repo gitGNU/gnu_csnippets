@@ -34,27 +34,27 @@ struct conn;
 
 /* Creates a listener and adds it to the poll queue.  */
 bool new_listener(const char *service,
-		bool (*fn) (struct conn *, void *arg),
-		void *arg);
+                  bool (*fn) (struct conn *, void *arg),
+                  void *arg);
 
 /* Creates a connection struct and adds it to the poll queue.
  * IPv6 is automatically used if available.
  */
 bool new_conn(const char *node, const char *service,
-		bool (*fn) (struct conn *, void *arg),
-		void *arg);
+              bool (*fn) (struct conn *, void *arg),
+              void *arg);
 /* Like new_conn() but,  we don't look up nodes or services
  * here.  */
 struct conn *new_conn_fd(int fd,
-		bool (*fn) (struct conn *, void *arg),
-		void *arg);
+                         bool (*fn) (struct conn *, void *arg),
+                         void *arg);
 /* Close connected socket, and free memory.  */
 bool free_conn(struct conn *);
 
 bool conn_read(struct conn *conn, void *data, size_t *len);
 bool conn_write(struct conn *conn, const void *data, size_t len);
 bool conn_writestr(struct conn *conn, const char *fmt, ...)
-	__printf(2, 3);
+__printf(2, 3);
 
 /* Calls @next at next acitivty from the connnection,
  * if the next function returns false, the connection is
@@ -64,8 +64,8 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
  * in @next even if calling free_conn().
  */
 bool conn_next(struct conn *,
-		bool (*next) (struct conn *, void *arg),
-		void *arg);
+               bool (*next) (struct conn *, void *arg),
+               void *arg);
 
 /* Close the connection, calling the next callback with the argument.  */
 void next_close(struct conn *, void *arg);
@@ -94,9 +94,9 @@ void next_close(struct conn *, void *arg);
 
 /* Wrappers for set/getsockopt().  */
 bool conn_getopt(struct conn *, int optname, void *optval,
-		  int *optlen);
+                 int *optlen);
 bool conn_setopt(struct conn *, int optname, const void *optval,
-		  int optlen);
+                 int optlen);
 
 /* Get this connection's name information,
  * Store host in @host, if numeric_host is specified, the
@@ -105,10 +105,10 @@ bool conn_setopt(struct conn *, int optname, const void *optval,
  * The same for @host applies to @serv.
  */
 bool conn_getnameinfo(struct conn *,
-		       char *host, size_t hostlen,
-		       char *serv, size_t servlen,
-		       bool numeric_host,
-		       bool numeric_serv);
+                      char *host, size_t hostlen,
+                      char *serv, size_t servlen,
+                      bool numeric_host,
+                      bool numeric_serv);
 
 /* This is the main loop.  */
 void *conn_loop(void);

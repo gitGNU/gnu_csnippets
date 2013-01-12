@@ -54,11 +54,11 @@ typedef struct list_head module_list;
  *	see examples/modules/modloader.c
  */
 extern int module_load(const char *filename, struct module **module,
-			bool (*filter) (const char *));
+                       bool (*filter) (const char *));
 extern void module_cleanup(struct module *module);
 
 /**
- * modules_load() - Load a list of modules from @dir 
+ * modules_load() - Load a list of modules from @dir
  *
  * @dir - the directory containing the modules to load.
  * @list - a null list that will be set after a successfull load.
@@ -70,7 +70,7 @@ extern void module_cleanup(struct module *module);
  *	See examples/modules/modloader.c
  */
 extern int modules_load(const char *dir, module_list *list,
-			  bool (*filter) (const char *));
+                        bool (*filter) (const char *));
 extern void modules_cleanup(module_list *modules);
 
 #endif  /* _MODULE_H */

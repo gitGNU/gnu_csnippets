@@ -14,30 +14,30 @@
 
 #define xfree(p) do { if (p) free(p); p = NULL; } while (0)
 #define __alloc_failure(s) do { \
-	warning("%s(%s:%d) failed to allocate %ld bytes\n", \
-			__func__, __FILE__, __LINE__, (long) s); \
-} while(0)
+		warning("%s(%s:%d) failed to allocate %ld bytes\n", \
+		        __func__, __FILE__, __LINE__, (long) s); \
+	} while(0)
 #define xmalloc(p, s, action) do {  \
-	p = calloc(1, s); \
-	if (__check(!p)) { \
-		__alloc_failure(s); \
-		action; \
-	} \
-} while (0)
+		p = calloc(1, s); \
+		if (__check(!p)) { \
+			__alloc_failure(s); \
+			action; \
+		} \
+	} while (0)
 #define xcalloc(p, l, s, action) do { \
-	p = calloc(l, s); \
-	if (__check(!p)) { \
-		__alloc_failure((s) * (l)); \
-		action; \
-	} \
-} while (0)
+		p = calloc(l, s); \
+		if (__check(!p)) { \
+			__alloc_failure((s) * (l)); \
+			action; \
+		} \
+	} while (0)
 #define xrealloc(new_ptr, old_ptr, count, action) do { \
-	(new_ptr) = realloc((old_ptr), count);  \
-	if (__check(!new_ptr)) { \
-		__alloc_failure((count)); \
-		action; \
-	} \
-} while (0)
+		(new_ptr) = realloc((old_ptr), count);  \
+		if (__check(!new_ptr)) { \
+			__alloc_failure((count)); \
+			action; \
+		} \
+	} while (0)
 #define alloc_grow(ptr, count, action) xrealloc(ptr, ptr, count, action)
 
 #endif  /*  _MEMORY_MANAGEMENT_H */

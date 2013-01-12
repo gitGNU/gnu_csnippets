@@ -63,23 +63,21 @@ static struct pollev *io_events;
 static LIST_HEAD(conns);      /* XXX if many connections, searching will be slow!  */
 static LIST_HEAD(listeners);
 
-static struct conn *find_conn(int fd)
-{
+static struct conn *find_conn(int fd) {
 	struct conn *ret;
 
 	list_for_each(&conns, ret, node)
-		if (ret->fd == fd)
-			return ret;
+	if (ret->fd == fd)
+		return ret;
 	return NULL;
 }
 
-static struct listener *find_listener(int fd)
-{
+static struct listener *find_listener(int fd) {
 	struct listener *ret;
 
 	list_for_each(&listeners, ret, node)
-		if (ret->fd == fd)
-			return ret;
+	if (ret->fd == fd)
+		return ret;
 	return NULL;
 }
 
@@ -105,11 +103,11 @@ static bool do_write(struct conn *conn, const void *data, size_t len)
 				if (!skb->data) {
 					skb->size = r_bytes + 128;
 					xmalloc(skb->data, sizeof(char) * skb->size,
-							return -1);
+					        return -1);
 				} else {
 					skb->size += r_bytes;
 					alloc_grow(skb->data, sizeof(char) * skb->size,
-							return -1);
+					           return -1);
 				}
 
 				memcpy(skb->data + (skb->size - r_bytes), data + t_bytes, r_bytes);
@@ -183,7 +181,7 @@ static __init __used void __sock_startup(void)
 		/* Unstoppable error, we have to abort.
 		 * Polling won't work */
 		eprintf("%s:%d: %s: initialising input and output events has failed due to OOM (Out of memory!)\n",
-				__FILE__, __LINE__, __func__);
+		        __FILE__, __LINE__, __func__);
 		abort();
 	}
 }
@@ -199,8 +197,7 @@ static __exit __used void __sock_cleanup(void)
 
 static struct addrinfo *
 net_lookup(const char *node, const char *service,
-		int family, int socktype)
-{
+           int family, int socktype) {
 	struct addrinfo hints;
 	struct addrinfo *res;
 
@@ -237,11 +234,11 @@ static bool set_nonblock(int fd)
 #define MAX_PROTOS 2
 
 static void remove_fd(
-		struct pollfd *pfd,
-		const struct addrinfo **addr,
-		socklen_t *slen,
-		unsigned int *num,
-		unsigned int i
+        struct pollfd *pfd,
+        const struct addrinfo **addr,
+        socklen_t *slen,
+        unsigned int *num,
+        unsigned int i
 )
 {
 	memmove(pfd  + i, pfd  + i + 1, (*num - i - 1) * sizeof(pfd [0]));
@@ -278,7 +275,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 		addr[num] = ipv6;
 		slen[num] = sizeof(struct sockaddr_in6);
 		pfd[num].fd = socket(AF_INET6, ipv6->ai_socktype,
-				     ipv6->ai_protocol);
+		                     ipv6->ai_protocol);
 		if (pfd[num].fd != -1)
 			num++;
 	}
@@ -287,7 +284,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 		addr[num] = ipv4;
 		slen[num] = sizeof(struct sockaddr_in);
 		pfd[num].fd = socket(AF_INET, ipv4->ai_socktype,
-				     ipv4->ai_protocol);
+		                     ipv4->ai_protocol);
 		if (pfd[num].fd != -1)
 			num++;
 	}
@@ -338,8 +335,8 @@ out:
 }
 
 bool new_listener(const char *service,
-		bool (*fn) (struct conn *, void *arg),
-		void *arg)
+                  bool (*fn) (struct conn *, void *arg),
+                  void *arg)
 {
 	int reuse_addr;
 	struct addrinfo *addr;
@@ -359,8 +356,8 @@ bool new_listener(const char *service,
 	set_nonblock(fd);
 	reuse_addr = 1; /* ON */
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0
-	     || bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
-	     || listen(fd, 2048) != 0) {
+	    || bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
+	    || listen(fd, 2048) != 0) {
 		freeaddrinfo(addr);
 		s_close(fd);
 		return false;
@@ -368,7 +365,7 @@ bool new_listener(const char *service,
 	freeaddrinfo(addr);
 
 	xmalloc(ret, sizeof(*ret),
-		 s_close(fd); return false);
+	        s_close(fd); return false);
 	list_add_tail(&listeners, &ret->node);
 	pollev_add(io_events, fd, IO_READ);
 
@@ -379,8 +376,8 @@ bool new_listener(const char *service,
 }
 
 bool new_conn(const char *node, const char *service,
-		bool (*fn) (struct conn *, void *arg),
-		void *arg)
+              bool (*fn) (struct conn *, void *arg),
+              void *arg)
 {
 	struct addrinfo *addr;
 	struct conn *conn;
@@ -419,9 +416,8 @@ bool free_conn(struct conn *conn)
 }
 
 struct conn *new_conn_fd(int fd,
-		bool (*fn) (struct conn *, void *arg),
-		void *arg)
-{
+                         bool (*fn) (struct conn *, void *arg),
+                         void *arg) {
 	struct conn *ret;
 	if (unlikely(fd < 0))
 		return NULL;
@@ -482,8 +478,8 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
 }
 
 bool conn_next(struct conn *c,
-		bool (*next) (struct conn *, void *arg),
-		void *arg)
+               bool (*next) (struct conn *, void *arg),
+               void *arg)
 {
 	if (unlikely(!c))
 		return false;
@@ -504,28 +500,28 @@ void next_close(struct conn *conn, void *arg)
 }
 
 bool conn_getopt(struct conn *conn, int optname, void *optval,
-		  int *optlen)
+                 int *optlen)
 {
 	if (unlikely(!conn))
 		return false;
 	return getsockopt(conn->fd, SOL_SOCKET, optname,
-			   optval, (socklen_t *)optlen) == 0;
+	                  optval, (socklen_t *)optlen) == 0;
 }
 
 bool conn_setopt(struct conn *conn, int optname, const void *optval,
-		  int optlen)
+                 int optlen)
 {
 	if (unlikely(!conn))
 		return false;
 	return setsockopt(conn->fd, SOL_SOCKET, optname,
-			   optval, (socklen_t)optlen) == 0;
+	                  optval, (socklen_t)optlen) == 0;
 }
 
 bool conn_getnameinfo(struct conn *conn,
-		       char *host, size_t hostlen,
-		       char *serv, size_t servlen,
-		       bool numeric_host,
-		       bool numeric_serv)
+                      char *host, size_t hostlen,
+                      char *serv, size_t servlen,
+                      bool numeric_host,
+                      bool numeric_serv)
 {
 	int flags = 0;
 	if (unlikely(!conn))
@@ -535,9 +531,9 @@ bool conn_getnameinfo(struct conn *conn,
 	if (numeric_serv)
 		flags |= NI_NUMERICSERV;
 	return getnameinfo((const struct sockaddr *)&conn->sa, conn->sa_len,
-			    host, hostlen,
-			    serv, servlen,
-			    flags) == 0;
+	                   host, hostlen,
+	                   serv, servlen,
+	                   flags) == 0;
 }
 
 void *conn_loop(void)

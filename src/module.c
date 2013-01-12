@@ -38,7 +38,7 @@ static __inline __const int filter(const struct dirent *dir)
 }
 
 int module_load(const char *file, struct module **mod,
-		bool (*filter) (const char *))
+                bool (*filter) (const char *))
 {
 	FILE *fp;
 	struct module *module = NULL;
@@ -80,7 +80,7 @@ int module_load(const char *file, struct module **mod,
 	for (i = 0; i < hdr->e_shnum; ++i) {
 		if (shdr[i].sh_type == SHT_STRTAB
 		    && strcmp(buffer + shdr[hdr->e_shstrndx].sh_offset + shdr[i].sh_name,
-		           ".dynstr") == 0) {
+		              ".dynstr") == 0) {
 			symbol_loc = i;
 			break;
 		}
@@ -100,9 +100,9 @@ int module_load(const char *file, struct module **mod,
 				continue;
 
 			xrealloc(symbols, symbols, (symbol_count + 1) * sizeof(char *),
-			          err = -ENOMEM; goto cleanup);
+			         err = -ENOMEM; goto cleanup);
 			xmalloc(symbols[symbol_count], strlen(func_name) + 1,
-			          err = -ENOMEM; goto cleanup);
+			        err = -ENOMEM; goto cleanup);
 
 			strcpy(symbols[symbol_count], func_name);
 			++symbol_count;
@@ -166,7 +166,7 @@ cleanup:
 }
 
 int modules_load(const char *dir, module_list *modules,
-		  bool (*filterp) (const char *))
+                 bool (*filterp) (const char *))
 {
 	int so_count = 0;
 	int ret = 0;

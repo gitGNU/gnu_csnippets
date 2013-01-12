@@ -21,8 +21,8 @@
 #define __init		__attribute__((constructor))
 #define __exit		__attribute__((destructor))
 #define GCC_VERSION (__GNUC__ * 10000 \
-			+ __GNUC_MINOR__ * 100 \
-			+ __GNUC_PATCHLEVEL__)
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
 #if GCC_VERSION < 40500 || !defined __clang__
 #define __builtin_unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #endif  /* GCC_VERSION */

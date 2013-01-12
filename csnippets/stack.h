@@ -131,7 +131,7 @@ static int stack_push(struct stack *s, void *ptr, int where, void (*constructor)
 		for (place = 0; place < s->size && s->ptr[place]; ++place);
 		/* If there's no space left, reallocate  */
 		if (place == s->size && s->ptr[place] != NULL
-		     && !stack_grow(s, s->size + SIZE_INCREMENT))
+		    && !stack_grow(s, s->size + SIZE_INCREMENT))
 			return -1;
 	} else if (place > s->size && !stack_grow(s, (place - s->size) + 1))
 		return -1;
@@ -176,7 +176,7 @@ static inline void *stack_top(struct stack *s)
  * \sa stack_push().
  */
 static bool stack_remove(struct stack *s, void *ptr, bool (*compare_function) (const void *, const void *),
-                          void (*destructor) (void *), bool duplicate)
+                         void (*destructor) (void *), bool duplicate)
 {
 	int i;
 	bool r;

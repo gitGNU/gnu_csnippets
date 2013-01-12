@@ -31,10 +31,10 @@ static int verbose = 0;
 /* A short name instead of a longass one.  */
 #define prog	program_invocation_short_name
 #define __dolog(s, args...) do { \
-	fprintf(stderr, _(s), ##args); \
-	if (verbose > 0) \
-		fprintf(stdout, _(s), ##args); \
-} while(0)
+		fprintf(stderr, _(s), ##args); \
+		if (verbose > 0) \
+			fprintf(stdout, _(s), ##args); \
+	} while(0)
 
 void log_init(void)
 {
@@ -52,7 +52,7 @@ void __noreturn error_nret(const char *str, ...)
 	va_end(ap);
 
 	__dolog(_("%s: %s\n%s: error is not recoverable, terminating now...\n"),
-			prog, buff, prog);
+	        prog, buff, prog);
 	free(buff);
 	exit(EXIT_FAILURE);
 }

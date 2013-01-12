@@ -37,8 +37,7 @@ struct pollev {
 	int epoll_fd;
 };
 
-struct pollev *pollev_init(void)
-{
+struct pollev *pollev_init(void) {
 	struct pollev *ev;
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
@@ -52,7 +51,7 @@ struct pollev *pollev_init(void)
 
 	ev->curr_size = 1024;
 	xcalloc(ev->events, ev->curr_size, sizeof(struct epoll_event),
-			free(ev); return NULL);
+	        free(ev); return NULL);
 	return ev;
 }
 
@@ -74,7 +73,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 
 	if (fd >= pev->curr_size)
 		alloc_grow(pev->events, (pev->curr_size *= 2) * sizeof(struct epoll_event),
-			    pev->curr_size /= 2; return);
+		           pev->curr_size /= 2; return);
 
 	ev.events = EPOLLET | EPOLLPRI;
 	if (bits & IO_READ)
@@ -108,7 +107,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 	s_seterror(0);
 	do
 		n = epoll_wait(pev->epoll_fd, pev->events, pev->curr_size,
-				timeout);
+		               timeout);
 	while (n == -1 && s_error == s_EINTR);
 	return n;
 }
