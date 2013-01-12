@@ -6,7 +6,7 @@ struct buf {
 	char bytes[BUFFER_SIZE];
 	size_t used;
 };
-static bool echo_read(struct conn *conn, struct buf *buf);
+
 static bool echo_close(struct conn *conn, struct buf *buf)
 {
 	free(buf);
