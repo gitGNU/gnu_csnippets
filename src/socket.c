@@ -63,21 +63,23 @@ static struct pollev *io_events;
 static LIST_HEAD(conns);      /* XXX if many connections, searching will be slow!  */
 static LIST_HEAD(listeners);
 
-static struct conn *find_conn(int fd) {
+static struct conn *find_conn(int fd)
+{
 	struct conn *ret;
 
 	list_for_each(&conns, ret, node)
-	if (ret->fd == fd)
-		return ret;
+		if (ret->fd == fd)
+			return ret;
 	return NULL;
 }
 
-static struct listener *find_listener(int fd) {
+static struct listener *find_listener(int fd)
+{
 	struct listener *ret;
 
 	list_for_each(&listeners, ret, node)
-	if (ret->fd == fd)
-		return ret;
+		if (ret->fd == fd)
+			return ret;
 	return NULL;
 }
 

@@ -147,7 +147,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 	}
 
 	do
-		rc = select(maxfd + 1, &rfds, &wfds, &efds, NULL);
+		rc = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
 	while (rc < 0 && s_error == s_EINTR);
 	if (rc < 0)
 		return rc;
