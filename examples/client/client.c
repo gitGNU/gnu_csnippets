@@ -48,10 +48,8 @@ static bool echo_start(struct conn *conn, void *unused)
 
 int main(int argc, char **argv)
 {
-	if (!new_conn(argv[1], argv[2], echo_start, NULL)) {
-		perror("new_conn()");
-		abort();
-	}
+	if (!new_conn(argv[1], argv[2], echo_start, NULL))
+		fatal("failed to create a conn to %s %s!\n", argv[1], argv[2]);
 
 	conn_loop ();
 	return 0;

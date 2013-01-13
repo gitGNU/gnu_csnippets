@@ -29,9 +29,9 @@
 #define _(x) x
 #endif
 
-#define LOG_FATAL	"FATAL: "
-#define LOG_WARNING	"WARNING: "
-#define LOG_NOTICE	"NOTICE: "
+#define LOG_FATAL	"\033[31mFATAL: \033[0m"
+#define LOG_WARNING	"\033[35mWARNING: \033[0m"
+#define LOG_NOTICE	"\033[1mNOTICE: \003[0m"
 
 #define LOG_FILE "stderr.log"	/* log file to print to (stderr).  */
 /* shortcuts. */

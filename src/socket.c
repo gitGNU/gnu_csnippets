@@ -420,7 +420,8 @@ bool free_conn(struct conn *conn)
 
 struct conn *_new_conn_fd(int fd,
                          bool (*fn) (struct conn *, void *arg),
-                         void *arg) {
+                         void *arg)
+{
 	struct conn *ret;
 	if (unlikely(fd < 0))
 		return NULL;

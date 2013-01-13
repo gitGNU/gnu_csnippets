@@ -48,10 +48,8 @@ static bool echo_start(struct conn *conn, void *unused)
 
 int main(int argc, char *argv[])
 {
-	if (!new_listener(argv[1], echo_start, NULL)) {
-		perror("new_listener()");
-		abort();
-	}
+	if (!new_listener(argv[1], echo_start, NULL))
+		fatal("failed to create new listener!\n");
 
 	conn_loop();
 	return 0;
