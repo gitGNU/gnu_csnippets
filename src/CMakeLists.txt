@@ -41,6 +41,11 @@ set(csnippets_PRE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")
 set(BUILD_COMMIT "devel" CACHE "Git commit string (intended for releases)" STRING)
 set(BUILD_REVISION "0" CACHE "Git revision string (intended for releases)" STRING)
 
+set(USE_COLORS "ON" CACHE "Use colorful terminal messages (for errors)" BOOL)
+if(USE_COLORS)
+	set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -DUSE_COLORS)
+endif()
+
 # default build type
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "RelWithDebInfo")
