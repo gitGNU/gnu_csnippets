@@ -32,13 +32,15 @@
 /* Forward declare conn, internal usage only.  */
 struct conn;
 
+#define common_cb_cast(arg, expr)					\
+	typesafe_cb_cast(bool (*) (struct conn *, void *),		\
+			 bool (*) (struct conn *, __typeof__(arg)),	\
+			 (expr))
+
 /* Creates a listener and adds it to the poll queue. */
-#define new_listener(service, fn, arg)							\
-	_new_listener((service),							\
-		      typesafe_cb_cast(bool (*) (struct conn *, void *),		\
-				       bool (*) (struct conn *, __typeof__(arg)),	\
-				       (fn)),						\
-		      (arg))
+#define new_listener(service, fn, arg)				\
+	_new_listener((service), common_cb_cast(arg, fn),	\
+			(arg))
 bool _new_listener(const char *service,
                   bool (*fn) (struct conn *, void *arg),
                   void *arg);
@@ -46,24 +48,18 @@ bool _new_listener(const char *service,
 /* Creates a connection struct and adds it to the poll queue.
  * IPv6 is automatically used if available.
  */
-#define new_conn(node, service, fn, arg)					\
-	_new_conn((node), (service),						\
-		  typesafe_cb_cast(bool (*) (struct conn *, void *),		\
-				   bool (*) (struct conn *, __typeof__(arg)),	\
-				   (fn)),					\
-		  (arg))
+#define new_conn(node, service, fn, arg)			\
+	_new_conn((node), (service), common_cb_cast(arg, fn),	\
+		   (arg))
 bool _new_conn(const char *node, const char *service,
               bool (*fn) (struct conn *, void *arg),
               void *arg);
 
 /* Like new_conn() but,  we don't look up nodes or services
  * here.  */
-#define new_conn_fd(fd, fn, arg)						\
-	_new_conn_fd((fd),							\
-		  typesafe_cb_cast(bool (*) (struct conn *, void *),		\
-				   bool (*) (struct conn *, __typeof__(arg)),	\
-				   (fn)),					\
-		  (arg))
+#define new_conn_fd(fd, fn, arg)			\
+	_new_conn_fd((fd), common_cb_cast(arg, fn),	\
+			(arg))
 struct conn *_new_conn_fd(int fd,
                          bool (*fn) (struct conn *, void *arg),
                          void *arg);
@@ -83,11 +79,8 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
  * It's not recommended to free the connection manually
  * in @next even if calling free_conn().
  */
-#define conn_next(conn, next, arg)						\
-	_conn_next(conn,							\
-		   typesafe_cb_cast(bool (*) (struct conn *, void *),		\
-				    bool (*) (struct conn *, __typeof__(arg)),	\
-				    (next)),					\
+#define conn_next(conn, next, arg)			\
+	_conn_next(conn, common_cb_cast(arg, next),	\
 		   (arg))
 bool _conn_next(struct conn *,
                bool (*next) (struct conn *, void *arg),
