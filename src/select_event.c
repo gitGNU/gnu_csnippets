@@ -56,7 +56,8 @@ static bool grow(struct pollev *pev, size_t s)
 	return true;
 }
 
-struct pollev *pollev_init(void) {
+struct pollev *pollev_init(void)
+{
 	struct pollev *ev;
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
@@ -89,7 +90,6 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 		}
 	}
 
-	pev->fds[fd].events = 0;
 	if (bits & IO_READ)
 		pev->fds[fd].events |= IO_READ;
 	if (bits & IO_WRITE)
@@ -153,8 +153,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 		return rc;
 	/* establish results and create the events array so that we keep compatibility
 	 * with other interfaces.  */
-	rc = 0;
-	for (fd = 0; fd <= maxfd; fd++) {
+	for (rc = 0, fd = 0; fd <= maxfd; fd++) {
 		if (pev->fds[fd].fd < 0)
 			continue;
 
