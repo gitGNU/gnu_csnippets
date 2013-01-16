@@ -16,14 +16,20 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#define s_close(fd)	closesocket((fd))
-#define s_error		WSAGetLastError()
-#define s_seterror(e)	WSASetLastError((e))
+#define S_close(fd)	closesocket((fd))
+#define S_error		WSAGetLastError()
+#define S_seterror(e)	WSASetLastError((e))
 
-#define s_EAGAIN	WSAEWOULDBLOCK     /* Windows socket does not have WSAEAGAIN it seems, define it to would block instead (Same as some POSIX-based systems).  */
-#define s_EBLOCK	WSAEWOULDBLOCK
-#define s_EINTR		WSAEINTR
-#define s_EINPROGRESS	WSAEINPROGRESS
+#define S_EAGAIN	WSAEWOULDBLOCK     /* Windows socket does not have WSAEAGAIN it seems, define it to would block instead (Same as some POSIX-based systems).  */
+#define S_EBLOCK	WSAEWOULDBLOCK
+#define S_EINTR		WSAEINTR
+#define S_EINPROGRESS	WSAEINPROGRESS
+#define S_ENOTCONN	WSAENOTCONN
+#define S_ESHUTDOWN	WSAESHUTDOWN
+#define S_ECONNRESET	WSAECONNRESET
+#define S_ECONNABORTED	WSAECONNABORTED
+#define S_ENETRESET	WSAENETRESET
+#define S_ENOTSOCK	WSAENOTSOCK
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -32,16 +38,22 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define s_close(fd)	close((fd))
-#define s_error		errno
-#define s_seterror(e)	errno = (e)
+#define S_close(fd)	close((fd))
+#define S_error		errno
+#define S_seterror(e)	errno = (e)
 
-#define s_EAGAIN	EAGAIN
-#define s_EBLOCK	EWOULDBLOCK
-#define s_EINTR		EINTR
-#define s_EINPROGRESS	EINPROGRESS
+#define S_EAGAIN	EAGAIN
+#define S_EBLOCK	EWOULDBLOCK
+#define S_EINTR		EINTR
+#define S_EINPROGRESS	EINPROGRESS
+#define S_ENOTCONN	ENOTCONN
+#define S_ESHUTDOWN	ESHUTDOWN
+#define S_ECONNRESET	ECONNRESET
+#define S_ECONNABORTED	ECONNABORTED
+#define S_ENETRESET	ENETRESET
+#define S_ENOTSOCK	ENOTSOCK
 #endif
-#define IsBlocking() (s_error == s_EBLOCK || s_error == s_EAGAIN)
+#define IsBlocking() (S_error == S_EBLOCK || S_error == S_EAGAIN)
 
 #endif    /* _SOCKET_COMPAT_H  */
 

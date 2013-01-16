@@ -47,6 +47,57 @@ struct pollev {
 	fd_select_t **events;        /* Pointer to fds  */
 };
 
+/* Hacked off compute_revents in src/poll.c */
+static int
+compute_revents(int fd, int sought, fd_set *rfds, fd_set *wfds, fd_set *efds)
+{
+	int happened = 0;
+
+	if (FD_ISSET(fd, rfds)) {
+		int r;
+		int socket_errno;
+
+# if defined __MACH__ && defined __APPLE__
+		/* There is a bug in Mac OS X that causes it to ignore MSG_PEEK
+		 for some kinds of descriptors.  Detect if this descriptor is a
+		 connected socket, a server socket, or something else using a
+		 0-byte recv, and use ioctl(2) to detect hang up.  */
+		r = recv (fd, NULL, 0, MSG_PEEK);
+		socket_errno = (r < 0) ? errno : 0;
+		if (r == 0 || socket_errno == S_ENOTSOCK)
+			ioctl (fd, FIONREAD, &r);
+#else
+		char data[64];
+		r = recv (fd, data, sizeof (data), MSG_PEEK);
+		socket_errno = (r < 0) ? S_error : 0;
+#endif
+		/* If the event happened on an unconnected server socket,
+		 that's fine. */
+		if (r > 0 || ( /* (r == -1) && */ socket_errno == S_ENOTCONN))
+			happened |= IO_READ & sought;
+
+		/* Distinguish hung-up sockets from other errors.  */
+		else if (socket_errno == S_ESHUTDOWN || socket_errno == S_ECONNRESET
+		         || socket_errno == S_ECONNABORTED || socket_errno == S_ENETRESET)
+			happened |= IO_ERR;
+
+		/* some systems can't use recv() on non-socket, including HP NonStop */
+		else if (/* (r == -1) && */ socket_errno == S_ENOTSOCK)
+			happened |= IO_READ & sought;
+
+		else
+			happened |= IO_ERR;
+	}
+
+	if (FD_ISSET (fd, wfds))
+		happened |= IO_WRITE & sought;
+
+	if (FD_ISSET (fd, efds))
+		happened |= IO_ERR & sought;
+
+	return happened;
+}
+
 static bool grow(struct pollev *pev, size_t s)
 {
 	alloc_grow(pev->fds, s * sizeof(fd_select_t),
@@ -82,10 +133,11 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	if (unlikely(!pev || fd < 0))
 		return;
 
-	if (fd >= pev->curr_size) {
-		pev->curr_size *= 2;
+	if (fd > pev->curr_size) {
+		size_t tmp = pev->curr_size;
+		pev->curr_size = fd;
 		if (!grow(pev, pev->curr_size)) {
-			pev->curr_size /= 2;
+			pev->curr_size = tmp;
 			return;
 		}
 	}
@@ -118,7 +170,7 @@ void pollev_del(struct pollev *pev, int fd)
 
 int pollev_poll(struct pollev *pev, int timeout)
 {
-	int fd, maxfd, rc;
+	int fd, maxfd, rc, i;
 	static fd_set rfds, wfds, efds;
 	static struct timeval tv;
 
@@ -131,56 +183,53 @@ int pollev_poll(struct pollev *pev, int timeout)
 	tv.tv_sec  = timeout / 1000;
 	tv.tv_usec = (timeout % 1000) * 1000;
 
-	for (fd = 0, maxfd = 0; fd < pev->curr_size; fd++) {
-		if (test_bit(pev->fds[fd].events, IO_READ))
+	for (maxfd = 0, i = 0; i < pev->curr_size; ++i) {
+		fd = pev->fds[i].fd;
+		if (test_bit(pev->fds[i].events, IO_READ))
 			FD_SET(fd, &rfds);
-		if (test_bit(pev->fds[fd].events, IO_WRITE))
+		if (test_bit(pev->fds[i].events, IO_WRITE))
 			FD_SET(fd, &wfds);
 
 		if (fd >= maxfd
-		    && (test_bit(pev->fds[fd].events, IO_READ)
-		        || test_bit(pev->fds[fd].events, IO_WRITE))) {
+		    && (pev->fds[i].events & (IO_READ | IO_WRITE))) {
 			maxfd = fd;
 			/* Add it to watch-for-exceptions fd set  */
 			FD_SET(fd, &efds);
 		}
 	}
 
+	dbg("polling on %d fds.\n", maxfd + 1);
 	do
 		rc = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
-	while (rc < 0 && s_error == s_EINTR);
-	if (rc < 0)
+	while (rc < 0 && S_error == S_EINTR);
+	if (rc <= 0)
 		return rc;
+
 	/* establish results and create the events array so that we keep compatibility
 	 * with other interfaces.  */
-	for (rc = 0, fd = 0; fd <= maxfd; fd++) {
-		if (pev->fds[fd].fd < 0)
-			continue;
-
-		if (FD_ISSET(fd, &rfds))
-			pev->fds[fd].revents |= IO_READ;
-		if (FD_ISSET(fd, &wfds))
-			pev->fds[fd].revents |= IO_WRITE;
-		if (FD_ISSET(fd, &efds))
-			pev->fds[fd].revents |= IO_ERR;
-		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)
-		    || FD_ISSET(fd, &efds)) {
-			pev->events[rc] = &pev->fds[fd];
-			++rc;
+	for (rc = 0, i = 0; i <= maxfd; ++i) {
+		if (pev->fds[i].fd >= 0) {
+			int happened = compute_revents(pev->fds[i].fd, pev->fds[i].events,
+							&rfds, &wfds, &efds);
+			if (happened) {
+				pev->fds[i].revents = happened;
+				pev->events[rc++] = &pev->fds[i];
+			}
 		}
 	}
 
+	dbg("Done.  %d fd(s) are ready.\n", rc);
 	return rc;
 }
 
-__inline __const int pollev_active(struct pollev *pev, int index)
+__inline int pollev_active(struct pollev *pev, int index)
 {
 	if (unlikely(index < 0 || index > pev->curr_size))
 		return -1;
 	return pev->events[index]->fd;
 }
 
-__inline __const uint32_t pollev_revent(struct pollev *pev, int index)
+__inline uint32_t pollev_revent(struct pollev *pev, int index)
 {
 	uint32_t r = 0;
 	if (unlikely(index < 0 || index > pev->curr_size))

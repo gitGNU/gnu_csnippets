@@ -90,7 +90,7 @@ int pollev_poll(struct pollev *, int timeout);
  *
  * See pollev_poll() for more information.
  */
-int pollev_active(struct pollev *, int index);
+int pollev_active(struct pollev *, int index) __fconst;
 
 /**
  * pollev_revent() - get the returned events
@@ -100,7 +100,7 @@ int pollev_active(struct pollev *, int index);
  *
  * See pollev_poll() for more information.
  */
-uint32_t pollev_revent(struct pollev *, int index);
+uint32_t pollev_revent(struct pollev *, int index) __fconst;
 
 #endif
 

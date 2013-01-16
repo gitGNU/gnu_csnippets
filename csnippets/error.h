@@ -45,6 +45,7 @@
 #define LOG_FATAL	COL_RED	   "FATAL: " COL_BLANK
 #define LOG_WARNING	COL_ORANGE "WARNING: " COL_BLANK
 #define LOG_NOTICE	COL_PURPLE "NOTICE: " COL_BLANK
+#define LOG_DEBUG	COL_PURPLE "DEBUG: "
 
 #define LOG_FILE "stderr.log"	/* log file to print to (stderr).  */
 /* shortcuts. */
@@ -53,11 +54,12 @@
 #define fatal(str, args...)	error_nret(LOG_FATAL str, ##args)
 #define warning(str, args...)	dolog(LOG_WARNING str, ##args)
 #define eprintf(str, args...)	dolog(str, ##args)
-#define edebug(str, args...)	dolog(__func__ str, ##args)
 #ifdef _DEBUG
 #define might_bug()		dolog(LOG_WARNING " %s is not well-tested and might behave incorrectly, please report any bugs you encounter\n", __func__)
+#define dbg(fmt, args...)	dolog(LOG_DEBUG "%s:%d " fmt COL_BLANK, __func__, __LINE__, ##args)
 #else
 #define might_bug()
+#define dbg(fmt, args...)
 #endif
 
 /* Initialize log file.  */

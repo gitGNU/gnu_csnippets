@@ -99,7 +99,7 @@ static bool do_write(struct conn *conn, const void *data, size_t len)
 		if (!skb->data)
 			do
 				n = send(conn->fd, data + t_bytes, r_bytes, 0);
-			while (n == -1 && s_error == s_EINTR);
+			while (n == -1 && S_error == S_EINTR);
 
 		if (n < 0) {
 			if ((IsBlocking() && r_bytes > 0) || skb->data) {
@@ -142,7 +142,7 @@ static bool do_write_queue(struct conn *conn)
 	while (t_bytes < skb->size) {
 		do
 			n = send(conn->fd, skb->data + t_bytes, r_bytes, 0);
-		while (n == -1 && s_error == s_EINTR);
+		while (n == -1 && S_error == S_EINTR);
 		if (n == -1) {
 			if (IsBlocking() && r_bytes > 0) {
 				/* Not everything has been sent yet...  Store for next.  */
@@ -301,7 +301,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 		if (connect(pfd[i].fd, addr[i]->ai_addr, slen[i]) == 0)
 			goto got_one;
 
-		if (s_error != s_EINPROGRESS) {
+		if (S_error != S_EINPROGRESS) {
 			/* Remove dead one. */
 			remove_fd(pfd, addr, slen, &num, i--);
 		}
@@ -320,7 +320,7 @@ static int net_connect(const struct addrinfo *addrinfo)
 				goto got_one;
 
 			/* Remove dead one. */
-			s_seterror(err);
+			S_seterror(err);
 			remove_fd(pfd, addr, slen, &num, i--);
 		}
 	}
@@ -329,11 +329,11 @@ got_one:
 	sockfd = pfd[i].fd;
 
 out:
-	saved_error = s_error;
+	saved_error = S_error;
 	for (i = 0; i < num; i++)
 		if (pfd[i].fd != sockfd)
-			s_close(pfd[i].fd);
-	s_seterror(saved_error);
+			S_close(pfd[i].fd);
+	S_seterror(saved_error);
 	return sockfd;
 }
 
@@ -362,13 +362,13 @@ bool _new_listener(const char *service,
 	    || bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
 	    || listen(fd, 2048) != 0) {
 		freeaddrinfo(addr);
-		s_close(fd);
+		S_close(fd);
 		return false;
 	}
 	freeaddrinfo(addr);
 
 	xmalloc(ret, sizeof(*ret),
-	        s_close(fd); return false);
+	        S_close(fd); return false);
 	list_add_tail(&listeners, &ret->node);
 	pollev_add(io_events, fd, IO_READ);
 
@@ -393,7 +393,7 @@ bool _new_conn(const char *node, const char *service,
 	fd = net_connect(addr);
 	conn = new_conn_fd(fd, fn, arg);
 	if (!conn)
-		s_close(fd);
+		S_close(fd);
 	else {
 		conn->sa = *addr->ai_addr;
 		conn->sa_len = addr->ai_addrlen;
@@ -411,7 +411,7 @@ bool free_conn(struct conn *conn)
 
 	list_del(&conn->node);
 	pollev_del(io_events, conn->fd);
-	if (s_close(conn->fd) == 0)
+	if (S_close(conn->fd) == 0)
 		retval = true;
 
 	free(conn);
@@ -443,10 +443,10 @@ bool conn_read(struct conn *conn, void *data, size_t *len)
 	if (unlikely(!conn))
 		return false;
 
-	s_seterror(0);
+	S_seterror(0);
 	do
 		count = recv(conn->fd, data, *len, 0);
-	while (count == -1 && s_error == s_EINTR);
+	while (count == -1 && S_error == S_EINTR);
 	if (count <= 0)
 		*len = 0;
 	else
@@ -544,7 +544,8 @@ void *conn_loop(void)
 {
 	struct conn *conn;
 	struct listener *li;
-	while (1) {
+
+	while (!list_empty(&listeners) || !list_empty(&conns)) {
 		int nfds, i;
 
 		/* 1 second time out  */
@@ -567,7 +568,7 @@ void *conn_loop(void)
 #endif
 					list_del(&li->node);
 					pollev_del(io_events, li->fd);
-					s_close(li->fd);
+					S_close(li->fd);
 					free(li);
 					continue;
 				}
@@ -577,10 +578,10 @@ void *conn_loop(void)
 					socklen_t in_len = sizeof(in_addr);
 					int in_fd;
 
-					s_seterror(0);
+					S_seterror(0);
 					do
 						in_fd = accept(li->fd, &in_addr, &in_len);
-					while (in_fd == -1 && s_error == s_EINTR);
+					while (in_fd == -1 && S_error == S_EINTR);
 					if (in_fd == -1) {
 						if (IsBlocking())
 							break;
@@ -590,7 +591,7 @@ void *conn_loop(void)
 					set_nonblock(in_fd);
 					conn = new_conn_fd(in_fd, NULL, NULL);
 					if (!conn) {
-						s_close(in_fd);
+						S_close(in_fd);
 						break;
 					}
 
@@ -637,6 +638,7 @@ void *conn_loop(void)
 		}
 	}
 
-	__builtin_unreachable ();
+	dbg("Reached end of conn_loop()\n");
+	return NULL;
 }
 

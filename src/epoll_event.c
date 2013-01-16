@@ -95,7 +95,7 @@ void pollev_del(struct pollev *pev, int fd)
 
 	if (epoll_ctl(pev->epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
 		eprintf("pollev_del(): epoll_ctl(%d) returned an error %d(%s)\n",
-		        fd, s_error, strerror(s_error));
+		        fd, S_error, strerror(S_error));
 }
 
 int pollev_poll(struct pollev *pev, int timeout)
@@ -104,15 +104,15 @@ int pollev_poll(struct pollev *pev, int timeout)
 	if (unlikely(!pev))
 		return -1;
 
-	s_seterror(0);
+	S_seterror(0);
 	do
 		n = epoll_wait(pev->epoll_fd, pev->events, pev->curr_size,
 		               timeout);
-	while (n == -1 && s_error == s_EINTR);
+	while (n == -1 && S_error == S_EINTR);
 	return n;
 }
 
-__inline __const int pollev_active(struct pollev *pev, int index)
+__inline int pollev_active(struct pollev *pev, int index)
 {
 	return pev->events[index].data.fd;
 }
