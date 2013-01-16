@@ -31,23 +31,64 @@
 #include <ctype.h>
 #include <errno.h>
 
+struct marked {
+	void *ptr;
+	struct list_node n;
+};
+static LIST_HEAD(marked);
+
+static __exit void free_mod_memory(void)
+{
+	struct marked *m, *next;
+	list_for_each_safe(&marked, m, next, n) {
+		dlclose(m->ptr);
+		list_del_from(&marked, &m->n);
+		free(m);
+	}
+}
+#define MARK_FOR_DELETION(h)			\
+	struct marked *m = malloc(sizeof(*m));	\
+	if (m) {				\
+		m->ptr = h;			\
+		list_add_tail(&marked, &m->n);	\
+	}
+
 static __inline __fconst int filter(const struct dirent *dir)
 {
 	const char *name = dir->d_name;
 	return strlen(name) > 3 ? !strcmp(name + strlen(name) - 3, ".so") : 0;
 }
 
-int module_load(const char *file, struct module **mod,
+int readfn_module(const char *filename, struct modsym *s,
+		const char *func)
+{
+	void *handle;
+	char *tmpf;
+
+	if (!asprintf(&tmpf, "./%s", filename))
+		return -1;
+	handle = dlopen(tmpf, RTLD_NOW);
+	free(tmpf);
+	if (!handle)
+		return -1;
+	s->ptr = dlsym(handle, func);
+	s->name = (char *)func;
+
+	MARK_FOR_DELETION(handle);
+	return 0;
+}
+
+int read_module(const char *file, struct mod **mod,
                 bool (*filter) (const char *))
 {
 	FILE *fp;
-	struct module *module = NULL;
-	struct module_symbol *symbol = NULL;
+	struct mod *ret = NULL;
+	struct modsym *msym = NULL;
 
 	off_t size;
 	int err = 0, i, j;
-	unsigned int symbol_loc = 0, symbol_count = 0;
-	char **symbols = NULL, *buffer,
+	unsigned int sym_loc = 0, symcount = 0;
+	char **syms = NULL, *buffer,
 	       *errorstr;
 
 	Elf32_Ehdr *hdr;
@@ -81,7 +122,7 @@ int module_load(const char *file, struct module **mod,
 		if (shdr[i].sh_type == SHT_STRTAB
 		    && strcmp(buffer + shdr[hdr->e_shstrndx].sh_offset + shdr[i].sh_name,
 		              ".dynstr") == 0) {
-			symbol_loc = i;
+			sym_loc = i;
 			break;
 		}
 	}
@@ -95,18 +136,23 @@ int module_load(const char *file, struct module **mod,
 			if (!sym[j].st_name || !sym[j].st_size)
 				continue;
 
-			char *func_name = buffer + shdr[symbol_loc].sh_offset + sym[j].st_name;
+			char *func_name = buffer + shdr[sym_loc].sh_offset + sym[j].st_name;
 			if (filter && !filter(func_name))
 				continue;
 
-			xrealloc(symbols, symbols, (symbol_count + 1) * sizeof(char *),
+			xrealloc(syms, syms, (symcount + 1) * sizeof(char *),
 			         err = -ENOMEM; goto cleanup);
-			xmalloc(symbols[symbol_count], strlen(func_name) + 1,
+			xmalloc(syms[symcount], strlen(func_name) + 1,
 			        err = -ENOMEM; goto cleanup);
 
-			strcpy(symbols[symbol_count], func_name);
-			++symbol_count;
+			strcpy(syms[symcount], func_name);
+			++symcount;
 		}
+	}
+
+	if (symcount <= 0) {
+		*mod = NULL;
+		return 0;
 	}
 
 	char *tmpf;
@@ -120,68 +166,68 @@ int module_load(const char *file, struct module **mod,
 		goto cleanup;
 	}
 
-	xmalloc(module, sizeof(struct module), err = -ENOMEM; goto cleanup);
-	module->handle = handle;
-	list_head_init(&module->children);
+	xmalloc(ret, sizeof(struct mod), err = -ENOMEM; goto cleanup);
+	list_head_init(&ret->children);
 
-	for (i = 0; i < symbol_count; ++i) {
-		xmalloc(symbol, sizeof(*symbol), err = -ENOMEM; goto cleanup);
+	for (i = 0; i < symcount; ++i) {
+		xmalloc(sym, sizeof(*sym), err = -ENOMEM; goto cleanup);
 
-		symbol->func_ptr = dlsym(handle, symbols[i]);
+		msym->ptr = dlsym(handle, syms[i]);
 		if ((errorstr = dlerror())) {
 #ifdef _DEBUG_MODULES
-			warning("error resolving symbol %s: %s\n", symbols[i], errorstr);
+			warning("error resolving sym %s: %s\n", syms[i], errorstr);
 #endif
 			goto cleanup;
 		}
 
-		symbol->symbol_name = strdup(symbols[i]);
-		list_add(&module->children, &symbol->node);
+		msym->name = syms[i];
+		list_add_tail(&ret->children, &msym->node);
 	}
 
 cleanup:
-	if (err && symbol && module) {
-		struct module_symbol *tmp;
-		list_for_each_safe(&module->children, symbol, tmp, node) {
-			free(symbol->symbol_name);
-			list_del_from(&module->children, &symbol->node);
-			free(symbol);
+	if (err && msym && ret) {
+		struct modsym *tmp;
+		list_for_each_safe(&ret->children, msym, tmp, node) {
+			list_del_from(&ret->children, &msym->node);
+			free(msym);
 		}
 	}
 
-	if (symbols) {
-		for (i = 0; i < symbol_count; ++i)
-			free(symbols[i]);
-		free(symbols);
+	if (syms) {
+		for (i = 0; i < symcount; ++i)
+			free(syms[i]);
+		free(syms);
 	}
 
 	free(buffer);
 	free(tmpf);
 	if (mod)
-		*mod = module;
+		*mod = ret;
 	else
-		module_cleanup(module);
+		cleanup_module(ret);
 
+	MARK_FOR_DELETION(handle);
 	return err;
 }
 
-int modules_load(const char *dir, module_list *modules,
-                 bool (*filterp) (const char *))
+int read_moddir(const char *dir, mod_list *mods,
+                bool (*filterp) (const char *))
 {
 	int so_count = 0;
 	int ret = 0;
 	struct dirent **so_list;
-	struct module *mod = NULL;
+	struct mod *mod = NULL;
 
 	so_count = scandir(dir, &so_list, filter, NULL);
 	if (so_count <= 0)
 		return 0;
 
-	list_head_init(modules);
+	list_head_init(mods);
 	while (so_count--) {
-		if (module_load(so_list[so_count]->d_name, &mod, filterp) == 0) {
+		if (read_module(so_list[so_count]->d_name, &mod, filterp) == 0
+		     && mod) {
 			++ret;
-			list_add(modules, &mod->node);
+			list_add_tail(mods, &mod->node);
 		}
 		free(so_list[so_count]);
 	}
@@ -192,33 +238,30 @@ int modules_load(const char *dir, module_list *modules,
 
 #endif    /* defined(__unix__) || (defined(__APPLE__) && defined(__MACH__) */
 
-void module_cleanup(struct module *module)
+void cleanup_module(struct mod *mod)
 {
-	struct module_symbol *symbol, *next;
-	if (unlikely(!module))
+	struct modsym *sym, *next;
+	if (unlikely(!mod))
 		return;
 
-	list_for_each_safe(&module->children, symbol, next, node) {
-		free(symbol->symbol_name);
-		list_del_from(&module->children, &symbol->node);
-		free(symbol);
+	list_for_each_safe(&mod->children, sym, next, node) {
+		free(sym->name);
+		list_del_from(&mod->children, &sym->node);
+		free(sym);
 	}
 
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-	dlclose(module->handle);
-#endif
-	free(module);
+	free(mod);
 }
 
-void modules_cleanup(module_list *modules)
+void cleanup_mods(mod_list *mods)
 {
-	struct module *module, *next;
-	if (unlikely(!modules))
+	struct mod *mod, *next;
+	if (unlikely(!mods))
 		return;
 
-	list_for_each_safe(modules, module, next, node) {
-		list_del_from(modules, &module->node);
-		module_cleanup(module);
+	list_for_each_safe(mods, mod, next, node) {
+		list_del_from(mods, &mod->node);
+		cleanup_module(mod);
 	}
 }
 

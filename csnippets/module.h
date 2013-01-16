@@ -24,54 +24,57 @@
 
 #include <csnippets/list.h>
 
-struct module_symbol {
-	char *symbol_name;           /* symbol name (aka function name mostly)  */
-	void *func_ptr;              /* the function pointer, this should be casted
-                                      to something like void (*my_func) (...);  */
+struct modsym {
+	char *name;		/* symbol name (function name mostly)  */
+	void *ptr;              /* function pointer.  */
+
 	struct list_node node;
 };
 
-struct module {
-	void *handle;                   /* internal usage */
+struct mod {
 	struct list_head children;      /* Symbols list  */
 	struct list_node node;          /* Next and previous module, see list.h  */
 };
 
-typedef struct list_head module_list;
+typedef struct list_head mod_list;
 
 /**
- * module_load() - Load a single module
+ * read_module() - Load a single mod
  *
  * @file - (.dll,.so,...) to load from.
- * @module - the module pointer where the function pointer goes.
+ * @mod - the mod pointer where the function pointer goes.
  * @filter the filter function pointer, this function is used to filter out
- *         un-needed modules, that has function name of first parameter,
+ *         un-needed mods, that has function name of first parameter,
  *         if this function returns false, the symbol is ignored, otherwise
  *         we store it.
  * This function returns 0 on success and -errno in the event of failure.
  *
  * Example:
- *	see examples/modules/modloader.c
+ *	see examples/mods/modloader.c
  */
-extern int module_load(const char *filename, struct module **module,
+extern int read_module(const char *filename, struct mod **mod,
                        bool (*filter) (const char *));
-extern void module_cleanup(struct module *module);
+/* Like read_module() but only find function name.  and store
+ * information in modsym.  */
+extern int readfn_module(const char *filename, struct modsym *,
+			 const char *func);
+extern void cleanup_module(struct mod *mod);
 
 /**
- * modules_load() - Load a list of modules from @dir
+ * read_moddir() - Load a list of mods from @dir
  *
- * @dir - the directory containing the modules to load.
+ * @dir - the directory containing the mods to load.
  * @list - a null list that will be set after a successfull load.
- * @filter - See module_load().
+ * @filter - See read_module().
  *
- * This function returns the number of modules loaded or -1 on failure.
+ * This function returns the number of mods loaded or -1 on failure.
  *
  * Example:
- *	See examples/modules/modloader.c
+ *	See examples/mods/modloader.c
  */
-extern int modules_load(const char *dir, module_list *list,
+extern int read_moddir(const char *dir, mod_list *list,
                         bool (*filter) (const char *));
-extern void modules_cleanup(module_list *modules);
+extern void cleanup_mods(mod_list *mods);
 
 #endif  /* _MODULE_H */
 
