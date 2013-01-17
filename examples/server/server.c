@@ -1,4 +1,8 @@
 #include <csnippets/socket.h>
+#include <csnippets/poll.h>
+
+#include <unistd.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 1024
 
@@ -48,10 +52,27 @@ static bool echo_start(struct conn *conn, void *unused)
 
 int main(int argc, char *argv[])
 {
+	int numthreads;
 	if (!new_listener(argv[1], echo_start, NULL))
 		fatal("failed to create new listener!\n");
 
-	conn_loop();
+	numthreads = argc > 3 ? atoi(argv[2]) : 0;
+	if (numthreads > 0) {
+		int i;
+		pthread_t thrds[numthreads];
+		for (i = 0; i < numthreads; ++i)
+			if (pthread_create(&thrds[i], NULL, (void *(*) (void *))conn_loop, NULL) != 0)
+				return 1;
+		struct pollfd pfd;
+		pfd.fd = STDIN_FILENO;
+		pfd.events = POLLIN;
+
+		if (poll(&pfd, 1, -1) && pfd.revents & POLLIN) {
+			printf("Keyboard interrupt\n");
+			return 1;
+		}
+	} else
+		conn_loop();
 	return 0;
 }
 
