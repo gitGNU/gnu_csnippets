@@ -15,7 +15,8 @@
 #define __weak		__attribute__((weak))
 #define __printf(nfmt, narg) \
 	__attribute__((format(__printf__, nfmt, narg)))
-#define __fconst		__attribute__((__const__))
+#define __packed	__attribute__((packed))
+#define __fconst	__attribute__((__const__))
 #define __unused	__attribute__((unused))
 #define __used		__attribute__((used))
 #define __init		__attribute__((constructor))
@@ -34,6 +35,7 @@
 #define __warn_unused
 #define __weak
 #define __printf(nfmt, narg)
+#define __packed
 #define __fconst
 #define __unused
 #define __builtin_unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)

@@ -451,7 +451,7 @@ bool conn_read(struct conn *conn, void *data, size_t *len)
 		*len = 0;
 	else
 		*len = count;
-	return !(count <= 0 || IsBlocking());
+	return !(count <= 0 && !IsBlocking());
 }
 
 bool conn_write(struct conn *conn, const void *data, size_t len)

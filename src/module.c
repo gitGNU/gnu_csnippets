@@ -136,16 +136,16 @@ int read_module(const char *file, struct mod **mod,
 			if (!sym[j].st_name || !sym[j].st_size)
 				continue;
 
-			char *func_name = buffer + shdr[sym_loc].sh_offset + sym[j].st_name;
-			if (filter && !filter(func_name))
+			char *symbn = buffer + shdr[sym_loc].sh_offset + sym[j].st_name;
+			if (filter && !filter(symbn))
 				continue;
 
 			xrealloc(syms, syms, (symcount + 1) * sizeof(char *),
 			         err = -ENOMEM; goto cleanup);
-			xmalloc(syms[symcount], strlen(func_name) + 1,
+			xmalloc(syms[symcount], strlen(symbn) + 1,
 			        err = -ENOMEM; goto cleanup);
 
-			strcpy(syms[symcount], func_name);
+			strcpy(syms[symcount], symbn);
 			++symcount;
 		}
 	}
@@ -175,7 +175,7 @@ int read_module(const char *file, struct mod **mod,
 		msym->ptr = dlsym(handle, syms[i]);
 		if ((errorstr = dlerror())) {
 #ifdef _DEBUG_MODULES
-			warning("error resolving sym %s: %s\n", syms[i], errorstr);
+			dbg("error resolving sym %s: %s\n", syms[i], errorstr);
 #endif
 			goto cleanup;
 		}

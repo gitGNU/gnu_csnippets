@@ -30,6 +30,7 @@
 #define S_ECONNABORTED	WSAECONNABORTED
 #define S_ENETRESET	WSAENETRESET
 #define S_ENOTSOCK	WSAENOTSOCK
+#define S_ETIMEDOUT	WSAETIMEDOUT
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -52,6 +53,7 @@
 #define S_ECONNABORTED	ECONNABORTED
 #define S_ENETRESET	ENETRESET
 #define S_ENOTSOCK	ENOTSOCK
+#define S_ETIMEDOUT	ETIMEDOUT
 #endif
 #define IsBlocking() (S_error == S_EBLOCK || S_error == S_EAGAIN)
 
