@@ -43,7 +43,7 @@ typedef enum _Bool {
  */
 #define countof(array) (sizeof((array)) / sizeof((array)[0]))
 
-static inline bool test_bit(uint32_t bits, uint32_t bit)
+static __const_inline bool test_bit(uint32_t bits, uint32_t bit)
 {
 	return (bits & bit) == bit;
 }

@@ -14,9 +14,13 @@
 #define __warn_unused	__attribute__((warn_unused_result))
 #define __weak		__attribute__((weak))
 #define __printf(nfmt, narg) \
-	__attribute__((format(__printf__, nfmt, narg)))
+	__attribute__((__format__(__printf__, nfmt, narg)))
 #define __packed	__attribute__((packed))
 #define __fconst	__attribute__((__const__))
+#define __noinline	__attribute__((noinline))
+#define __const_inline	inline __attribute__((always_inline, __const__))
+#define __noclone	__attribute__((noclone))
+/* Mark stuff as used/unused  */
 #define __unused	__attribute__((unused))
 #define __used		__attribute__((used))
 #define __init		__attribute__((constructor))
@@ -37,6 +41,9 @@
 #define __printf(nfmt, narg)
 #define __packed
 #define __fconst
+#define __noinline
+#define __const_inline
+#define __noclone
 #define __unused
 #define __builtin_unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #define __init
