@@ -36,9 +36,9 @@ static int verbose = 0;
 			fprintf(stdout, _(s), ##args); \
 	} while(0)
 
-void log_init(void)
+void log_init(const char *tofile)
 {
-	(void) freopen(LOG_FILE, "w", stderr);
+	(void) freopen(tofile, "w", stderr);
 	verbose = 1;
 }
 
@@ -70,7 +70,7 @@ void dolog(const char *str, ...)
 	free(buff);
 }
 
-void set_verbose_level(int level)
+__inline void set_verbose_level(int level)
 {
 	verbose = !!level;
 }

@@ -47,7 +47,6 @@
 #define LOG_NOTICE	COL_PURPLE "NOTICE: " COL_BLANK
 #define LOG_DEBUG	COL_PURPLE "DEBUG: "
 
-#define LOG_FILE "stderr.log"	/* log file to print to (stderr).  */
 /* shortcuts. */
 #define elog(str, args...)	dolog(LOG_NOTICE str, ##args)
 #define die			fatal
@@ -63,7 +62,7 @@
 #endif
 
 /* Initialize log file.  */
-extern void log_init(void);
+extern void log_init(const char *tofile);
 
 /* error_nret() - Log a formatted string.
  *
