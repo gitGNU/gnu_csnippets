@@ -24,7 +24,7 @@ static bool echo_write(struct conn *conn, struct buf *buf)
 		return false;
 	}
 
-	conn_next(conn, echo_close, NULL);
+	conn_next(conn, echo_close, (struct buf *)0);
 	next_close(conn, buf);
 	return true;
 }
