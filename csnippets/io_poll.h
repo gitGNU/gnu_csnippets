@@ -100,7 +100,7 @@ int pollev_active(struct pollev *, int index) __fconst;
  *
  * See pollev_poll() for more information.
  */
-uint32_t pollev_revent(struct pollev *, int index) __fconst;
+short pollev_revent(struct pollev *, int index) __fconst;
 
 #endif
 

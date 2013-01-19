@@ -117,10 +117,10 @@ __inline int pollev_active(struct pollev *pev, int index)
 	return pev->events[index].data.fd;
 }
 
-uint32_t pollev_revent(struct pollev *ev, int index)
+short pollev_revent(struct pollev *ev, int index)
 {
 	uint32_t events = ev->events[index].events;
-	uint32_t r = 0;
+	short r = 0;
 
 	if (events & EPOLLIN)
 		r |= IO_READ;

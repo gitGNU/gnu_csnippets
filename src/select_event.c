@@ -82,7 +82,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	if (unlikely(!pev || fd < 0))
 		return;
 
-	if (++tmpidx >= FD_SETSIZE) {
+	if (++tmpidx > FD_SETSIZE) {
 #ifdef _DEBUG_POLLEV
 		dbg("can't add more file descriptors to this set, the size would exceed the maximum number of file descriptors\n");
 #endif
@@ -116,15 +116,31 @@ int pollev_poll(struct pollev *pev, int timeout)
 {
 	int fd, maxfd, rc, i;
 	static fd_set rfds, wfds, efds;
-	static struct timeval tv;
+	static struct timeval tv, *ptv;
+
+	if (unlikely(!pev))
+		return -1;
+	if (unlikely(pev->index == 0))
+		return 0;
 
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 	FD_ZERO(&efds);
 
 	memset(&tv, 0, sizeof(tv));
-	tv.tv_sec  = timeout / 1000;
-	tv.tv_usec = (timeout % 1000) * 1000;
+	/* The following time out code is hacked off src/poll.c */
+	if (timeout == 0) {
+		ptv = &tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+	} else if (timeout > 0) {
+		ptv = &tv;
+		tv.tv_sec  = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+	} else if (timeout == -1)
+		ptv = NULL;
+	else
+		return -1;
 
 	for (maxfd = 0, i = 0; i < pev->index; ++i) {
 		fd = pev->fds[i].fd;
@@ -135,17 +151,16 @@ int pollev_poll(struct pollev *pev, int timeout)
 			FD_SET(fd, &rfds);
 		if (ev & IO_WRITE)
 			FD_SET(fd, &wfds);
-
-		if (ev & (IO_READ | IO_WRITE)) {
+		if (ev & (IO_READ | IO_WRITE)
+		     && (fd >= maxfd && fd <= FD_SETSIZE)) {
 			FD_SET(fd, &efds);
-			if (fd > maxfd && fd <= FD_SETSIZE)
-				maxfd = fd;
+			maxfd = fd;
 		}
 	}
 
 	dbg("polling on %d fds.\n", maxfd + 1);
 	do
-		rc = select(maxfd + 1, &rfds, &wfds, &efds, &tv);
+		rc = select(maxfd + 1, &rfds, &wfds, &efds, ptv);
 	while (rc < 0 && S_error == S_EINTR);
 	if (rc <= 0)
 		return -1;
@@ -172,9 +187,9 @@ __inline int pollev_active(struct pollev *pev, int index)
 	return pev->fds[index].fd;
 }
 
-__inline uint32_t pollev_revent(struct pollev *pev, int index)
+__inline short pollev_revent(struct pollev *pev, int index)
 {
-	uint32_t r = 0;
+	short r = 0;
 	if (unlikely(index < 0 || index > FD_SETSIZE))
 		return r;
 	r = pev->fds[index].revents;
