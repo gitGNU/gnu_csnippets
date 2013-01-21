@@ -1,3 +1,17 @@
+## Compilation with debug symbols
+
+Pretty simple if using the build.sh script:
+```
+./build.sh -cgr
+```
+Should clean any previous builds, build in debug mode and run in GDB or the specified debugger.
+
+To build manually:
+```
+cmake -DCMAKE_BUILD_TYPE=Debug
+```
+And then `make'.  Building using the script provided is easer and quicker, though.
+
 ## Coding Style
 
 I use and prefer Linux style over all but may be switching to GNU coding standards since I'm starting to like them.
