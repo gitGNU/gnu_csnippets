@@ -32,7 +32,10 @@ cross_build=no
 #    Release
 build_type=RelWithDebInfo
 
-buildopt="$buildopt -DCMAKE_BUILD_TYPE=$build_type"
+add_opts() {
+	buildopt="$buildopt $*"
+}
+
 static=yes
 # If this is the GIT version, define build commit and revision.
 # We might need the gen-version.sh script instead of all this magic,
@@ -46,8 +49,8 @@ if [ -d .git ]; then
 	really_inside=yes
 	git --help >/dev/null || really_inside=no # Is GIT actually installed at this site?
 	if [ "$really_inside" = "yes" ]; then
-		buildopt="$buildopt -DBUILD_COMMIT=`git describe --dirty --always` \
-			   -DBUILD_REVISION=`git rev-list --all | wc -l`"
+		add_opts -DBUILD_COMMIT=`git describe --dirty --always` \
+			   -DBUILD_REVISION=`git rev-list --all | wc -l`
 	fi
 fi
 
@@ -76,11 +79,12 @@ _make() {
 debugging=no
 run_after=no
 install=no
+force_select=no
 while getopts scbgrhiz name
 do
 	case $name in
 	z)	static=no ;;
-	s)	buildopt="$buildopt -DUSE_SELECT_HANDLER=ON" ;;
+	s)	force_select=yes ;;
 	c)	clean_before_build=yes ;;
 	b)	cross_build=yes ;;
 	g)	debugging=yes ;;
@@ -101,8 +105,15 @@ do
 	esac
 done
 
-if [ "$static" = "no" ]; then
-	buildopt="$buildopt -DUSE_STATIC_LIBS=OFF "
+[[ "$static" = "no" ]] &&  add_opts -DUSE_STATIC_LIBS=OFF
+if [ "$force_select" = "yes" ]; then
+	add_opts -DSOCKET_INTERFACE=Select
+else
+	PLATFORM=`uname -s`
+	case "$PLATFORM" in
+		linux* | Linux*) add_opts -DSOCKET_INTERFACE=Epoll ;;
+		*) ;;
+	esac
 fi
 
 if [ "$cross_build" = "yes" ]; then
@@ -111,10 +122,10 @@ if [ "$cross_build" = "yes" ]; then
 		# already a cached version with these variables set, so clean it up.
 		rm -rf build
 	fi
-	buildopt="$buildopt -DCMAKE_SYSTEM_NAME=Windows\
-		   -DCMAKE_RC_COMPILER=/usr/bin/i486-mingw32-windres\
-		   -DCMAKE_C_COMPILER=/usr/bin/i486-mingw32-gcc\
-		   -DCMAKE_CXX_COMPILER=/usr/bin/i486-mingw32-g++"
+	add_opts -DCMAKE_SYSTEM_NAME=Windows \
+		   -DCMAKE_RC_COMPILER=/usr/bin/i486-mingw32-windres \
+		   -DCMAKE_C_COMPILER=/usr/bin/i486-mingw32-gcc \
+		   -DCMAKE_CXX_COMPILER=/usr/bin/i486-mingw32-g++
 fi
 
 if [ "$clean_before_build" = "yes" ]; then
@@ -127,29 +138,17 @@ fi
 mkdir -p build
 cd build
 
-if [ "$debugging" = "yes" ]; then
-	buildopt="$buildopt -DCMAKE_BUILD_TYPE=Debug"
-fi
+[[ "$debugging" = "yes" ]] && add_opts -DCMAKE_BUILD_TYPE=Debug || \
+				add_opts -DCMAKE_BUILD_TYPE="$build_type"
 
 echo Generating Makefile with $buildopt
 cmake .. $buildopt || exit
 
-if [ "$clean_before_build" = "yes" ]; then
-	echo "Cleaning up stuff..."
-	$MAKE clean
-fi
+[[ "$clean_before_build" = "yes" ]] && $MAKE clean
 
-if [ "$install" = "yes" ]; then
-	sudo $MAKE all install -j$MAKEOPT
-else
-	_make
-fi
+[[ "$install" = "yes" ]] && sudo $MAKE all install -j$MAKEOPT || _make
 
 if [ "$run_after" = "yes" ]; then
-	if [ "$debugging" = "yes" ]; then
-		run $DBG
-	else
-		run
-	fi
+	[[ "$debugging" = "yes" ]] && run $DBG || run
 fi
 

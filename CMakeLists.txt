@@ -32,21 +32,12 @@ endif(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 include(src/CMakeLists.txt)
 
-option(USE_SELECT_HANDLER "Use select handler instead of epoll (enabled by default on windows)" OFF)
 add_definitions(-D"VERSION=\\"${VERSION}\\"")
 
-set(SOCKET_INTERFACE "Select")
-set(SOCKET_INTERFACE_DEF "-DUSE_SELECT")
-if(USE_SELECT_HANDLER OR WIN32)
-	# do nothing, it's the default!
-elseif(UNIX)
-	# TODO: Epoll is Linux specific, we cannot just assign it to
-	# every UNIX-based system.  Instead select can be used as "generic"
-	# interface or the corresponding interface.
-	set(SOCKET_INTERFACE "Epoll")
+set(SOCKET_INTERFACE "Select" CACHE "Poll interface" STRING)
+set(SOCKET_INTERFACE_DEF "-DUSE_SELECT" CACHE "Changed according to SOCKET_INTERFACE" STRING)
+if(SOCKET_INTERFACE STREQUAL "Epoll")
 	set(SOCKET_INTERFACE_DEF "-DUSE_EPOLL")
-else()
-	message(STATUS "No poll interface specified,  falling back to default (${SOCKET_INTERFACE} interface)")
 endif()
 message(STATUS "Using interface: ${SOCKET_INTERFACE}")
 add_definitions(${SOCKET_INTERFACE_DEF})

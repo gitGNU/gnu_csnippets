@@ -557,10 +557,9 @@ void *conn_loop(void)
 			int fd, revent;
 
 			fd = pollev_active(io_events, i);
-			revent = pollev_revent(io_events, i);
-			if (!revent)
+			if (fd < 0)
 				continue;
-
+			revent = pollev_revent(io_events, i);
 			if ((li = find_listener(fd))) {
 				if (test_bit(revent, IO_ERR)) {
 #ifdef _DEBUG_SOCKET

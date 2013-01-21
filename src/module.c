@@ -53,7 +53,7 @@ static __exit void free_mod_memory(void)
 		list_add_tail(&marked, &m->n);	\
 	}
 
-static __inline __fconst int filter(const struct dirent *dir)
+static __inline int filter(const struct dirent *dir)
 {
 	const char *name = dir->d_name;
 	return strlen(name) > 3 ? !strcmp(name + strlen(name) - 3, ".so") : 0;
@@ -175,9 +175,9 @@ int read_module(const char *file, struct mod **mod,
 		msym->ptr = dlsym(handle, syms[i]);
 		if ((errorstr = dlerror())) {
 #ifdef _DEBUG_MODULES
-			dbg("error resolving sym %s: %s\n", syms[i], errorstr);
+			dbg("error resolving symbol %s: %s\n", syms[i], errorstr);
 #endif
-			goto cleanup;
+			continue;
 		}
 
 		msym->name = syms[i];
