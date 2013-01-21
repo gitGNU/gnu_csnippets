@@ -1,5 +1,5 @@
 /* Public Domain */
-#include <csnippets/strmisc.h>
+#include <csnippets/string.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -69,10 +69,8 @@ int strwildmatch(const char *pattern, const char *string)
 
 bool str_cmp(const char *str, int (*cmp_func) (int))
 {
-	char *p = (char *)str;
-	if (!str || *str == '\0')
-		return false;
-	if (!cmp_func)
+	register char *p = (char *)str;
+	if (unlikely(!str || !cmp_func))
 		return false;
 	while (*p)
 		if (!cmp_func((int)*p++))
@@ -82,22 +80,18 @@ bool str_cmp(const char *str, int (*cmp_func) (int))
 
 char *str_convert(const char *str, int (*convert_func) (int))
 {
-	char *p;
-	int len, i;
+	int len;
+	register int i;
+	char *ret;
 
-	if (unlikely(!convert_func))
+	if (!convert_func || !str || *str == '\0')
 		return NULL;
-
 	len = strlen(str);
-	if (len < 0)
-		return NULL;
-
-	xmalloc(p, len + 1, return NULL);
-	for (i = len; i > 0; i--)
-		p[i] = convert_func((int)str[i]);
-	p[len + 1]  = '\0';
-
-	return p;
+	xmalloc(ret, len + 1, return NULL);
+	for (i = 0; i < len; ++i)
+		ret[i] = convert_func(str[i]);
+	ret[i + 1] = '\0';
+	return ret;
 }
 
 bool str_startswith(const char *str, const char *start)
@@ -110,8 +104,8 @@ bool str_startswith(const char *str, const char *start)
 
 bool str_endswith(const char *str, const char *end)
 {
-	char *estr = (char *)(str + (strlen(str) - 1));
-	char *eend = (char *)(end + (strlen(end) - 1));
+	register char *estr = (char *)(str + (strlen(str) - 1));
+	register char *eend = (char *)(end + (strlen(end) - 1));
 	while (*eend)
 		if (*eend-- != *estr--)
 			return false;

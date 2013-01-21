@@ -2,6 +2,9 @@
 #ifndef _STR_MISC_H
 #define _STR_MISC_H
 
+/* See the comment in csnippets/csnippets.h  */
+#include_next <string.h>
+
 char *strtrim(char *str);
 char **strexplode(char *string, char seperator, int *size);
 int strwildmatch(const char *pattern, const char *string);

@@ -29,6 +29,14 @@ typedef enum _Bool {
 #include <stddef.h>
 #include <assert.h>
 #include <stdio.h>
+/* This does NOT include the one from libc,
+ * but csnippets/string.h if -I is passed to the compiler,
+ * In order to solve this, i've added a #include_next in csnippets/string.h
+ * which solves this problem.
+ *
+ * If some compilers do not support #include_next, please file a bug report.
+ * See also: http://gcc.gnu.org/onlinedocs/cpp/Wrapper-Headers.html
+ */
 #include <string.h>
 #include <stdlib.h>
 
