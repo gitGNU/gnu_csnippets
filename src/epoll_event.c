@@ -34,14 +34,14 @@
 struct pollev {
 	struct epoll_event *events;
 	size_t curr_size;
-	int epoll_fd;
+	int efd;
 };
 
 struct pollev *pollev_init(void) {
 	struct pollev *ev;
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
-	if ((ev->epoll_fd = epoll_create1(0)) < 0) {
+	if ((ev->efd = epoll_create1(0)) < 0) {
 #ifdef _DEBUG_POLLEV
 		perror("epoll_create1");
 #endif
@@ -60,7 +60,7 @@ void pollev_deinit(struct pollev *pev)
 	if (unlikely(!pev))
 		return;
 
-	close(pev->epoll_fd);
+	close(pev->efd);
 	free(pev->events);
 	free(pev);
 }
@@ -83,7 +83,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 
 	memset(&ev.data, 0, sizeof(ev.data));
 	ev.data.fd = fd;
-	if (epoll_ctl(pev->epoll_fd, EPOLL_CTL_ADD, fd, &ev) < 0)
+	if (epoll_ctl(pev->efd, EPOLL_CTL_ADD, fd, &ev) < 0)
 		eprintf("pollev_add(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, errno, strerror(errno));
 }
@@ -93,7 +93,7 @@ void pollev_del(struct pollev *pev, int fd)
 	if (unlikely(!pev))
 		return;
 
-	if (epoll_ctl(pev->epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
+	if (epoll_ctl(pev->efd, EPOLL_CTL_DEL, fd, NULL) < 0)
 		eprintf("pollev_del(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, S_error, strerror(S_error));
 }
@@ -106,7 +106,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 
 	S_seterror(0);
 	do
-		n = epoll_wait(pev->epoll_fd, pev->events, pev->curr_size,
+		n = epoll_wait(pev->efd, pev->events, pev->curr_size,
 		               timeout);
 	while (n == -1 && S_error == S_EINTR);
 	return n;

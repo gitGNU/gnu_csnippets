@@ -72,7 +72,6 @@ struct pollev *pollev_init(void)
 
 void pollev_deinit(struct pollev *p)
 {
-	free(p->fds);
 	free(p);
 }
 
