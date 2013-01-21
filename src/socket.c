@@ -556,7 +556,7 @@ void *conn_loop(void)
 		for (i = 0; i < nfds; ++i) {
 			int fd, revent;
 
-			fd = pollev_active(io_events, i);
+			fd = pollev_activefd(io_events, i);
 			if (fd < 0)
 				continue;
 			revent = pollev_revent(io_events, i);

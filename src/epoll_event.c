@@ -112,7 +112,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 	return n;
 }
 
-__inline int pollev_active(struct pollev *pev, int index)
+__inline int pollev_activefd(struct pollev *pev, int index)
 {
 	return pev->events[index].data.fd;
 }

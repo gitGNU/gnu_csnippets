@@ -74,7 +74,7 @@ void pollev_del(struct pollev *, int fd);
  *	for (i = 0; i < nfds; i++) {
  *		int revents, fd;
  *
- *		fd = pollev_active(events, i);
+ *		fd = pollev_activefd(events, i);
  *		revent = pollev_revent(events, i);
  *
  *		if (revent & IO_READ)
@@ -84,13 +84,13 @@ void pollev_del(struct pollev *, int fd);
 int pollev_poll(struct pollev *, int timeout);
 
 /**
- * pollev_active() - get the current active file descriptor
+ * pollev_activefd() - get the current active file descriptor
  *
  * Get the active file descriptor of @index.
  *
  * See pollev_poll() for more information.
  */
-int pollev_active(struct pollev *, int index) __fconst;
+int pollev_activefd(struct pollev *, int index) __fconst;
 
 /**
  * pollev_revent() - get the returned events

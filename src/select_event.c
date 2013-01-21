@@ -180,7 +180,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 	return rc;
 }
 
-__inline int pollev_active(struct pollev *pev, int index)
+__inline int pollev_activefd(struct pollev *pev, int index)
 {
 	if (unlikely(index < 0 || index > FD_SETSIZE))
 		return -1;
