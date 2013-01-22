@@ -67,34 +67,34 @@ int strwildmatch(const char *pattern, const char *string)
 	}
 }
 
-bool str_cmp(const char *str, int (*cmp_func) (int))
+bool strccmp(const char *str, int (*cmp) (int))
 {
-	register char *p = (char *)str;
-	if (unlikely(!str || !cmp_func))
+	register const char *p = str;
+	if (!str || !cmp)
 		return false;
 	while (*p)
-		if (!cmp_func((int)*p++))
+		if (!cmp((int)*p++))
 			return false;
 	return true;
 }
 
-char *str_convert(const char *str, int (*convert_func) (int))
+char *strconv(const char *str, int (*conv) (int))
 {
 	int len;
 	register int i;
 	char *ret;
 
-	if (!convert_func || !str || *str == '\0')
+	if (!conv || !str || *str == '\0')
 		return NULL;
 	len = strlen(str);
 	xmalloc(ret, len + 1, return NULL);
 	for (i = 0; i < len; ++i)
-		ret[i] = convert_func(str[i]);
+		ret[i] = conv(str[i]);
 	ret[i + 1] = '\0';
 	return ret;
 }
 
-bool str_startswith(const char *str, const char *start)
+bool strstartswith(const char *str, const char *start)
 {
 	while (*start)
 		if (*start++ != *str++)
@@ -102,7 +102,7 @@ bool str_startswith(const char *str, const char *start)
 	return true;
 }
 
-bool str_endswith(const char *str, const char *end)
+bool strendswith(const char *str, const char *end)
 {
 	register char *estr = (char *)(str + (strlen(str) - 1));
 	register char *eend = (char *)(end + (strlen(end) - 1));
