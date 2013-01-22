@@ -104,8 +104,8 @@ bool strstartswith(const char *str, const char *start)
 
 bool strendswith(const char *str, const char *end)
 {
-	register char *estr = (char *)(str + (strlen(str) - 1));
-	register char *eend = (char *)(end + (strlen(end) - 1));
+	register const char *estr = str + (strlen(str) - 1);
+	register const char *eend = end + (strlen(end) - 1);
 	while (*eend)
 		if (*eend-- != *estr--)
 			return false;
