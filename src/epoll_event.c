@@ -71,9 +71,12 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	if (unlikely(!pev))
 		return;
 
-	if (fd >= pev->curr_size)
-		alloc_grow(pev->events, (pev->curr_size *= 2) * sizeof(struct epoll_event),
-		           pev->curr_size /= 2; return);
+	if (fd >= pev->curr_size) {
+		size_t tmp = pev->curr_size;
+		pev->curr_size = fd;
+		alloc_grow(pev->events, sizeof(struct epoll_event),
+		            pev->curr_size = tmp; return);
+	}
 
 	ev.events = EPOLLET | EPOLLPRI;
 	if (bits & IO_READ)

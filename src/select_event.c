@@ -41,7 +41,7 @@ struct pollev {
 		int fd;
 		short events;
 		short revents;
-	} __packed fds[FD_SETSIZE];
+	} __packed fds[FD_SETSIZE], events[FD_SETSIZE];
 };
 
 static int
@@ -170,7 +170,8 @@ int pollev_poll(struct pollev *pev, int timeout)
 			int happened = compute_revents(pev->fds[i].fd, pev->fds[i].events,
 							&rfds, &wfds, &efds);
 			if (happened) {
-				pev->fds[i].revents = happened;
+				pev->events[rc].revents = happened;
+				pev->events[rc].fd = fd;
 				++rc;
 			}
 		}
@@ -183,9 +184,9 @@ __inline int pollev_activefd(struct pollev *pev, int index)
 {
 	if (unlikely(index < 0 || index > FD_SETSIZE))
 		return -1;
-	if (pev->fds[index].revents == 0)
+	if (pev->events[index].revents == 0)
 		return -1;
-	return pev->fds[index].fd;
+	return pev->events[index].fd;
 }
 
 __inline short pollev_revent(struct pollev *pev, int index)
@@ -193,8 +194,8 @@ __inline short pollev_revent(struct pollev *pev, int index)
 	short r = 0;
 	if (unlikely(index < 0 || index > FD_SETSIZE))
 		return r;
-	r = pev->fds[index].revents;
-	pev->fds[index].revents = 0;
+	r = pev->events[index].revents;
+	pev->events[index].revents = 0;
 	return r;
 }
 

@@ -46,8 +46,7 @@ bool _new_listener(const char *service,
                   void *arg);
 
 /* Creates a connection struct and adds it to the poll queue.
- * IPv6 is automatically used if available.
- */
+ * IPv6 is automatically used if available. */
 #define new_conn(node, service, fn, arg)			\
 	_new_conn((node), (service), common_cb_cast(arg, fn),	\
 		   (arg))
@@ -56,7 +55,9 @@ bool _new_conn(const char *node, const char *service,
               void *arg);
 
 /* Like new_conn() but,  we don't look up nodes or services
- * here.  */
+ * here.
+ * If the file descriptor is not a socket file descriptor,
+ * (or if the fd has some error), a NULL is returned. */
 #define new_conn_fd(fd, fn, arg)			\
 	_new_conn_fd((fd), common_cb_cast(arg, fn),	\
 			(arg))

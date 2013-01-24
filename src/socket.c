@@ -423,7 +423,13 @@ struct conn *_new_conn_fd(int fd,
                          void *arg)
 {
 	struct conn *ret;
+	int err;
+	socklen_t errlen = sizeof(err);
 	if (unlikely(fd < 0))
+		return NULL;
+
+	/* Is it really a socket file descriptor?  */
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) != 0 && S_error == S_EBADF)
 		return NULL;
 
 	xmalloc(ret, sizeof(*ret), return NULL);

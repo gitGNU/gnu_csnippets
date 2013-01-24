@@ -13,8 +13,8 @@
  */
 #if defined _MSC_VER || (defined __STDC_VERSION__ && __STDC_VERSION__ < 199901L)
 typedef enum _Bool {
-        false = 0,
-        true  = 1
+	false = 0,
+	true  = 1
 } bool;
 #else
 #include <stdbool.h>

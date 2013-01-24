@@ -59,8 +59,8 @@ void pollev_del(struct pollev *, int fd);
 /**
  * pollev_poll() - poll on every file descriptor added.
  *
- * This function ignores any system call interrupt and blocks
- * until anything happens on file descriptors at this time.
+ * This function ignores system call interrupts and blocks
+ * until a timeout, or forever if timeout is -1.
  *
  * Returns the number of file descriptors that were active
  * at that time.

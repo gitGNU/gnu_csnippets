@@ -42,7 +42,8 @@ static bool echo_start(struct conn *conn, void *unused)
 	struct buf *buf = malloc(sizeof(*buf));
 	if (!buf)
 		return false;
-
+	if (!conn_writestr(conn, "Hello\n"))
+		return false;
 	return conn_next(conn, echo_read, buf);
 }
 
