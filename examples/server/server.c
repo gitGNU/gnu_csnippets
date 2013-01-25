@@ -50,6 +50,14 @@ static bool echo_start(struct conn *conn, void *unused)
 	return conn_next(conn, echo_read, buf);
 }
 
+static void *start_thread(void *fptr)
+{
+	void (*rfptr) (void *) = fptr;
+	if (rfptr)
+		(*rfptr) (NULL);
+	return NULL;
+}
+
 int main(int argc, char *argv[])
 {
 	int numthreads;
@@ -61,7 +69,7 @@ int main(int argc, char *argv[])
 		int i;
 		pthread_t thrds[numthreads];
 		for (i = 0; i < numthreads; ++i)
-			if (pthread_create(&thrds[i], NULL, (void *(*) (void *))conn_loop, NULL) != 0)
+			if (pthread_create(&thrds[i], NULL, start_thread, conn_loop) != 0)
 				return 1;
 		struct pollfd pfd;
 		pfd.fd = STDIN_FILENO;
