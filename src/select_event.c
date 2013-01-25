@@ -166,7 +166,9 @@ int pollev_poll(struct pollev *pev, int timeout)
 
 	/* establish results  */
 	for (rc = 0, i = 0; i <= maxfd; ++i)
-		if (pev->fds[i].fd >= 0) {
+		if (pev->fds[i].fd < 0)
+			pev->events[rc].revents = 0;
+		else {
 			int happened = compute_revents(pev->fds[i].fd, pev->fds[i].events,
 							&rfds, &wfds, &efds);
 			if (happened) {
