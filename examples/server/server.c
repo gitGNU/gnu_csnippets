@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
 		pfd.events = POLLIN;
 
 		if (poll(&pfd, 1, -1) && pfd.revents & POLLIN) {
-			printf("Keyboard interrupt\n");
-			return 1;
+			printf("Key pressed, terminating...\n");
+			pthread_exit(NULL);
 		}
 	} else
 		conn_loop();

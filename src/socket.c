@@ -1,25 +1,6 @@
 /*
  * Copyright (c) 2012 Ahmed Samy <f.fallen45@gmail.com>
- *
- * The first few static net_* functions are hacked off ccan/net.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Licensed under MIT, see LICENSE.MIT for details.
  */
 #include <csnippets/socket.h>
 #include <csnippets/io_poll.h>   /* IO event-based polling.  */
@@ -56,7 +37,6 @@ struct conn {
 	bool in_progress;
 
 	struct sockaddr sa;
-
 	struct sk_buff wb;
 };
 
@@ -381,16 +361,15 @@ bool _new_listener(const char *service,
 	set_nonblock(fd);
 	reuse_addr = 1; /* ON */
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0
-	    || bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
-	    || listen(fd, 2048) != 0) {
+		|| bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
+		|| listen(fd, 2048) != 0) {
 		freeaddrinfo(addr);
 		S_close(fd);
 		return false;
 	}
 	freeaddrinfo(addr);
 
-	xmalloc(ret, sizeof(*ret),
-	        S_close(fd); return false);
+	xmalloc(ret, sizeof(*ret), S_close(fd); return false);
 	list_add_tail(&listeners, &ret->node);
 	pollev_add(io_events, fd, IO_READ);
 

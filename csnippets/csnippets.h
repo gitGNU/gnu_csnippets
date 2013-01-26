@@ -40,7 +40,7 @@ typedef enum _Bool {
 #include <string.h>
 #include <stdlib.h>
 
-#include <csnippets/linux_style.h>
+#include <csnippets/attributes.h>
 #include <csnippets/error.h>
 #include <csnippets/mm.h>
 

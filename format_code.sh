@@ -16,6 +16,6 @@ astyle --style=linux --indent=tab=8 \
 	src/*.c csnippets/*.h && success=yes
 if [[ "$success" == "yes" ]]; then
 	mkdir -p orig_code
-	mv src/*.orig csnippets/*.orig orig_code
+	mv src/*.orig csnippets/*.orig orig_code/
 fi
 

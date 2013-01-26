@@ -1,11 +1,6 @@
-/**
- * Various Linux stlye macros, when I say Linux style,
- * I mean the macro style used in the Linux kernel (__noreturn, __weak, ...)
- *
- * Defines shortcuts for some attributes if __GNUC__ (GNU C compiler) used.
- */
-#ifndef _LINUX_STYLE_H
-#define _LINUX_STYLE_H
+/*  Defines shortcuts for some attributes if GNU C compiler or clang used.  */
+#ifndef _ATTRIBUTES_H
+#define _ATTRIBUTES_H
 
 #if defined __GNUC__ || defined __clang__
 #define __noreturn	__attribute__((noreturn))
@@ -53,5 +48,5 @@
 #define __exit
 #endif  /* __GNUC__ || __clang__ */
 
-#endif    /* _LINUX_STYLE_H */
+#endif    /* _ATTRIBUTES_H */
 

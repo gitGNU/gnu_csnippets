@@ -1,7 +1,8 @@
 /* Socket compatibility with other Platforms.
  * This still Needs more work.
  *
- * I probably misused some things as well.
+ * This should never be included in an exported header,
+ * only in a source file or an internal header (like this one).
  */
 #ifndef _SOCKET_COMPAT_H
 #define _SOCKET_COMPAT_H
