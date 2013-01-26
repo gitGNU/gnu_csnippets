@@ -173,7 +173,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 							&rfds, &wfds, &efds);
 			if (happened) {
 				pev->events[rc].revents = happened;
-				pev->events[rc].fd = fd;
+				pev->events[rc].fd = pev->fds[i].fd;
 				++rc;
 			}
 		}
