@@ -24,6 +24,14 @@ project(csnippets)
 
 set(VERSION "0.1")
 
+include(TestBigEndian)
+TEST_BIG_ENDIAN(BIG_ENDIAN)
+if (BIG_ENDIAN)
+	set(ENDIAN_DEFINE "-DHAVE_BIG_ENDIAN")
+else()
+	set(ENDIAN_DEFINE "-DHAVE_LITTLE_ENDIAN")
+endif()
+
 # CMAKE_CURRENT_LIST_DIR cmake 2.6 compatibility
 if(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 6)
 	get_filename_component(CMAKE_CURRENT_LIST_DIR ${CMAKE_CURRENT_LIST_FILE} PATH)
@@ -54,7 +62,7 @@ else()
 	message(STATUS "Link to static libraries: OFF")
 endif()
 
-add_definitions(${csnippets_DEFINITIONS})
+add_definitions(${csnippets_DEFINITIONS} ${ENDIAN_DEFINE})
 target_link_libraries(csnippets ${csnippets_LIBRARIES})
 include_directories(csnippets ${csnippets_INCLUDE_DIRS})
 

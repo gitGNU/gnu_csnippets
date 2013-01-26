@@ -26,6 +26,8 @@
 #include <csnippets/asprintf.h>  /* Needed in conn_writestr  */
 #include <csnippets/poll.h>      /* Fake poll(2) enviroment that is cross-platform.  (Part of gnulib) */
 #include <csnippets/list.h>
+#include <csnippets/htable.h>
+#include <csnippets/hash.h>
 
 #include <internal/socket_compat.h>  /* Internal definitions, for compatibility with various platforms.  */
 
@@ -54,24 +56,44 @@ struct conn {
 	bool in_progress;
 
 	struct sockaddr sa;
-	int sa_len;
 
 	struct sk_buff wb;
-	struct list_node node;
 };
 
 static struct pollev *io_events;
-static LIST_HEAD(conns);      /* XXX if many connections, searching will be slow!  */
 static LIST_HEAD(listeners);
 
-static struct conn *find_conn(int fd)
+static size_t chash(int fd)
 {
-	struct conn *ret;
+	return hash_u32((uint32_t *)&fd, 1, 0);
+}
 
-	list_for_each(&conns, ret, node)
-		if (ret->fd == fd)
-			return ret;
+static size_t rehash(const void *e, void *__unused unused)
+{
+	return chash(((struct conn *)e)->fd);
+}
+static struct htable conns = HTABLE_INITIALIZER(conns, rehash, NULL);
+
+static inline struct conn *find_conn(int fd)
+{
+	int fdhash = chash(fd);
+	struct conn *c;
+	struct htable_iter i;
+
+	for (c = htable_firstval(&conns, &i, fdhash); c; c = htable_nextval(&conns, &i, fdhash))
+		if (c->fd == fd)
+			return c;
 	return NULL;
+}
+
+static inline void add_conn(struct conn *c)
+{
+	assert(htable_add(&conns, chash(c->fd), c));
+}
+
+static inline void rm_conn(const struct conn *c)
+{
+	htable_del(&conns, chash(c->fd), c);
 }
 
 static struct listener *find_listener(int fd)
@@ -394,10 +416,8 @@ bool _new_conn(const char *node, const char *service,
 	conn = new_conn_fd(fd, fn, arg);
 	if (!conn)
 		S_close(fd);
-	else {
+	else
 		conn->sa = *addr->ai_addr;
-		conn->sa_len = addr->ai_addrlen;
-	}
 
 	freeaddrinfo(addr);
 	return !!conn;
@@ -409,7 +429,7 @@ bool free_conn(struct conn *conn)
 	if (unlikely(!conn))
 		return retval;
 
-	list_del(&conn->node);
+	rm_conn(conn);
 	pollev_del(io_events, conn->fd);
 	if (S_close(conn->fd) == 0)
 		retval = true;
@@ -438,7 +458,7 @@ struct conn *_new_conn_fd(int fd,
 	ret->farg  = arg;
 	ret->in_progress = true;
 
-	list_add_tail(&conns, &ret->node);
+	add_conn(ret);
 	pollev_add(io_events, ret->fd, IO_READ | IO_WRITE);
 	return ret;
 }
@@ -540,7 +560,7 @@ bool conn_getnameinfo(struct conn *conn,
 		flags |= NI_NUMERICHOST;
 	if (numeric_serv)
 		flags |= NI_NUMERICSERV;
-	return getnameinfo((const struct sockaddr *)&conn->sa, conn->sa_len,
+	return getnameinfo((const struct sockaddr *)&conn->sa, sizeof(conn->sa),
 	                   host, hostlen,
 	                   serv, servlen,
 	                   flags) == 0;
@@ -551,7 +571,7 @@ void *conn_loop(void)
 	struct conn *conn;
 	struct listener *li;
 
-	while (!list_empty(&listeners) || !list_empty(&conns)) {
+	while (1) {
 		int nfds, i;
 
 		/* 1 second time out  */
@@ -601,7 +621,6 @@ void *conn_loop(void)
 					}
 
 					conn->sa = in_addr;
-					conn->sa_len = in_len;
 					if (likely(li->fn) && !li->fn(conn, li->arg))
 						assert(free_conn(conn));
 				}

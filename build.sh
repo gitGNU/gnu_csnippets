@@ -112,6 +112,7 @@ else
 	PLATFORM=`uname -s`
 	case "$PLATFORM" in
 		linux* | Linux*) add_opts -DSOCKET_INTERFACE=Epoll ;;
+		Darwin*)	 add_opts -DSOCKET_INTERFACE=KQueue ;; # unimplemented ;(
 		*) ;;
 	esac
 fi

@@ -23,6 +23,7 @@
 /* Mark stuff as used/unused  */
 #define __unused	__attribute__((unused))
 #define __used		__attribute__((used))
+#define __cold		__attribute__((cold))
 #define __init		__attribute__((constructor))
 #define __exit		__attribute__((destructor))
 #define GCC_VERSION (__GNUC__ * 10000 \
@@ -45,6 +46,8 @@
 #define __const_inline
 #define __noclone
 #define __unused
+#define __used
+#define __cold
 #define __builtin_unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
 #define __init
 #define __exit
