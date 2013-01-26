@@ -1,6 +1,6 @@
 As noted on some of the license headers, there are code that have been taken and modified or taken without modification but I may have forgotten to write their names;
 
-Rusty Russell - asprintf, list, typesafe_cb and container_of implementations (and net_* functions in socket).
+Rusty Russell - asprintf, list, htable, typesafe_cb and container_of implementations (and net_* functions in socket).
 Paolo Bonzini - poll(2) code (see src/poll.c and csnippets/poll.h)
 Ahmed Samy - remaining code (event, task, socket, ...)
 
