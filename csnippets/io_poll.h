@@ -43,10 +43,11 @@ void pollev_del(struct pollev *, int fd);
  * pollev_poll() - poll on every file descriptor added.
  *
  * This function ignores system call interrupts and blocks
- * until a timeout, or forever if timeout is -1.
+ * until a timeout is reached, or forever if timeout is -1.
  *
  * Returns the number of file descriptors that were active
- * at that time.
+ * at that time or -1 if time out was reached or some kind of
+ * error happened.
  *
  * Usage example:
  *
@@ -84,6 +85,14 @@ int pollev_activefd(struct pollev *, int index) __fconst;
  * See pollev_poll() for more information.
  */
 short pollev_revent(struct pollev *, int index) __fconst;
+
+/**
+ * pollev_ret() - retrieve returned fd and it's events.
+ *
+ * A call to this is equivalent to:
+ *	int fd = pollev_activefd(...), revent = pollev_revent(...);
+ */
+bool pollev_ret(struct pollev *, int, int *, short *) __fconst;
 
 #endif
 

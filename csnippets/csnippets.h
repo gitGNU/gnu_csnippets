@@ -8,9 +8,7 @@
 #define _CSNIPPETS_H
 
 #ifndef __cplusplus
-/**
- * MSVC stuck in C89, shitty compiler (CL to be specific).
- */
+/* MSVC stuck in C89, shitty compiler (CL to be specific). */
 #if defined _MSC_VER || (defined __STDC_VERSION__ && __STDC_VERSION__ < 199901L)
 typedef enum _Bool {
 	false = 0,
@@ -20,11 +18,7 @@ typedef enum _Bool {
 #include <stdbool.h>
 #endif  /* _MSC_VER */
 #endif  /* __cplusplus */
-/**
- * Comon headers.
- *
- * I don't like spamming every header with inclusion of those ones
- */
+/* Comon headers.  */
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
@@ -44,11 +38,7 @@ typedef enum _Bool {
 #include <csnippets/error.h>
 #include <csnippets/mm.h>
 
-/*
- * countof() returns the count of array, i.e
- * const char *my_array[] = { ... };
- * int count = countof(my_array);
- */
+/* countof() returns the count of elements in an array. */
 #define countof(array) (sizeof((array)) / sizeof((array)[0]))
 
 static __const_inline bool test_bit(uint32_t bits, uint32_t bit)

@@ -88,13 +88,8 @@ static struct listener *find_listener(int fd)
 
 static bool do_write(struct conn *conn, const void *data, size_t len)
 {
-	int t_bytes = 0, r_bytes, n = -1;
-	struct sk_buff *skb;
-	if (unlikely(!conn))
-		return false;
-
-	r_bytes = len;
-	skb = &conn->wb;
+	int t_bytes = 0, r_bytes = len, n = -1;
+	struct sk_buff *skb = &conn->wb;
 
 	might_bug();
 	while (t_bytes < len) {
@@ -133,9 +128,6 @@ static bool do_write_queue(struct conn *conn)
 {
 	int t_bytes = 0, r_bytes, n;
 	struct sk_buff *skb;
-
-	if (unlikely(!conn || !conn->wb.data))
-		return true;
 
 	skb = &conn->wb;
 	r_bytes = skb->size;
@@ -183,26 +175,32 @@ static __init __used void __sock_startup(void)
 	/* Initialise polling  */
 	io_events = pollev_init();
 	if (!io_events) {
-		/* Unstoppable error, we have to abort.
-		 * Polling won't work */
-		eprintf("%s:%d: %s: initialising input and output events has failed due to OOM (Out of memory!)\n",
-		        __FILE__, __LINE__, __func__);
+		dbg("initialising input and output events has failed due to OOM (Out of memory!)\n");
 		abort();
 	}
 }
 
 static __exit __used void __sock_cleanup(void)
 {
+	struct listener *li, *next;
+
 #ifdef _WIN32
 	WSACleanup();
 #endif
 	if (io_events)
 		pollev_deinit(io_events);
+
+	htable_clear(&conns);
+	list_for_each_safe(&listeners, li, next, node) {
+		list_del(&li->node);
+		free(li);
+	}
 }
 
 static struct addrinfo *
 net_lookup(const char *node, const char *service,
-           int family, int socktype) {
+           int family, int socktype)
+{
 	struct addrinfo hints;
 	struct addrinfo *res;
 
@@ -432,9 +430,11 @@ struct conn *_new_conn_fd(int fd,
 		return NULL;
 
 	xmalloc(ret, sizeof(*ret), return NULL);
-	ret->fd    = fd;
-	ret->fn    = fn;
-	ret->farg  = arg;
+	ret->fd		= fd;
+	ret->fn		= fn;
+	ret->farg	= arg;
+	ret->wb.data	= NULL;
+	ret->wb.size	= 0;
 	ret->in_progress = true;
 
 	add_conn(ret);
@@ -553,18 +553,17 @@ void *conn_loop(void)
 	while (1) {
 		int nfds, i;
 
-		/* 1 second time out  */
-		nfds = pollev_poll(io_events, 1000);
+		nfds = pollev_poll(io_events, -1);
 		if (nfds < 0)
 			continue;
 
 		for (i = 0; i < nfds; ++i) {
-			int fd, revent;
+			int fd;
+			short revent;
 
-			fd = pollev_activefd(io_events, i);
-			if (fd < 0)
+			if (!pollev_ret(io_events, i, &fd, &revent))
 				continue;
-			revent = pollev_revent(io_events, i);
+
 			if ((li = find_listener(fd))) {
 				if (test_bit(revent, IO_ERR)) {
 #ifdef _DEBUG_SOCKET
@@ -641,7 +640,6 @@ void *conn_loop(void)
 		}
 	}
 
-	dbg("Reached end of conn_loop()\n");
-	return NULL;
+	__builtin_unreachable ();
 }
 

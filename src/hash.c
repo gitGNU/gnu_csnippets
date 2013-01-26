@@ -67,7 +67,7 @@ on 1 byte), but shoehorning those bytes into integers efficiently is messy.
 #endif
 #endif /* old hash.c headers. */
 
-#include "hash.h"
+#include <csnippets/hash.h>
 
 #if HAVE_LITTLE_ENDIAN
 #define HASH_LITTLE_ENDIAN 1

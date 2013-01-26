@@ -20,6 +20,20 @@ struct pollev {
 	int efd;
 };
 
+static inline short compute_revents(struct pollev *ev, int index)
+{
+	uint32_t events = ev->events[index].events;
+	short r = 0;
+
+	if (events & EPOLLIN)
+		r |= IO_READ;
+	if (events & EPOLLOUT)
+		r |= IO_WRITE;
+	if (events & EPOLLERR || events & EPOLLHUP)
+		r |= IO_ERR;
+	return r;
+}
+
 struct pollev *pollev_init(void) {
 	struct pollev *ev;
 
@@ -105,16 +119,18 @@ __inline int pollev_activefd(struct pollev *pev, int index)
 
 short pollev_revent(struct pollev *ev, int index)
 {
-	uint32_t events = ev->events[index].events;
-	short r = 0;
+	if (unlikely(!ev || (index < 0 || index > ev->size)))
+		return false;
+	return compute_revents(ev, index);
+}
 
-	if (events & EPOLLIN)
-		r |= IO_READ;
-	if (events & EPOLLOUT)
-		r |= IO_WRITE;
-	if (events & EPOLLERR || events & EPOLLHUP)
-		r |= IO_ERR;
-	return r;
+bool pollev_ret(struct pollev *ev, int index, int *fd, short *revents)
+{
+	if (unlikely(!ev || (index < 0 || index > ev->size)))
+		return false;
+	*fd = ev->events[index].data.fd;
+	*revents = compute_revents(ev, index);
+	return true;
 }
 
 #endif

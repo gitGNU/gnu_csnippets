@@ -27,7 +27,7 @@ struct pollev {
 	} __packed fds[FD_SETSIZE], events[FD_SETSIZE];
 };
 
-static int
+static inline int
 compute_revents(int fd, int sought, fd_set *rfds, fd_set *wfds, fd_set *efds)
 {
 	int happened = 0;
@@ -182,6 +182,16 @@ __inline short pollev_revent(struct pollev *pev, int index)
 	r = pev->events[index].revents;
 	pev->events[index].revents = 0;
 	return r;
+}
+
+bool pollev_ret(struct pollev *pev, int index, int *fd, short *revents)
+{
+	if (unlikely(!pev || (index < 0 || index > FD_SETSIZE)
+			|| pev->events[index].revents == 0))
+		return false;
+	*fd = pev->events[index].fd;
+	*revents = pev->events[index].revents;
+	return true;
 }
 
 #endif

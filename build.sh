@@ -12,7 +12,7 @@ CORES=`grep processor /proc/cpuinfo | wc -l`
 MAKEOPT=$(($CORES + 1))
 # arguments to pass to $TARGET (see below) generated
 ARGS=1337
-# The target to build after building the static library.
+# The target to build after building the library.
 TARGET=server
 # the "make" command, change this to "mingw32-make" if using the MINGW toolchain.
 MAKE=make
@@ -31,12 +31,14 @@ cross_build=no
 #    RelWithDebInfo
 #    Release
 build_type=RelWithDebInfo
+# whether we should build a static library or shared, this can be modified when running the script
+static=yes
 
 add_opts() {
 	buildopt="$buildopt $*"
 }
 
-static=yes
+
 # If this is the GIT version, define build commit and revision.
 # We might need the gen-version.sh script instead of all this magic,
 # this will help get the tag name and version associated.
@@ -57,7 +59,7 @@ fi
 run() {
 	echo "Running $TARGET with $ARGS"
 	if [ "$1" = "$DBG" ]; then
-		$1 --args $TARGET $ARGS
+		LD_LIBRARY_PATH=. $1 --args $TARGET $ARGS
 	else
 		if [ "$static" = "no" ]; then
 			LD_LIBRARY_PATH=. ./$TARGET $ARGS
@@ -67,13 +69,9 @@ run() {
 	fi
 }
 
-__make() {
-	$MAKE $1 $2 -j$MAKEOPT || exit
-}
-
-_make() {
-	__make $1
-	__make $TARGET $1
+build() {
+	$MAKE $* -j$MAKEOPT || exit
+	$MAKE $TARGET $* -j$MAKEOPT || exit
 }
 
 debugging=no
@@ -147,7 +145,7 @@ cmake .. $buildopt || exit
 
 [[ "$clean_before_build" = "yes" ]] && $MAKE clean
 
-[[ "$install" = "yes" ]] && sudo $MAKE all install -j$MAKEOPT || _make
+[[ "$install" = "yes" ]] && sudo $MAKE all install -j$MAKEOPT || build
 
 if [ "$run_after" = "yes" ]; then
 	[[ "$debugging" = "yes" ]] && run $DBG || run

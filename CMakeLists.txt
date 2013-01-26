@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(csnippets)
 
 set(VERSION "0.1")
@@ -52,9 +52,9 @@ add_definitions(${SOCKET_INTERFACE_DEF})
 
 option(USE_STATIC_LIBS "Don't use shared libraries" ON)
 if(USE_STATIC_LIBS)
-	if(NOT APPLE)
-		set(CMAKE_C_LINK_FLAGS "-static-libgcc")
-	endif()
+	# TODO: This is compiler-depend, so if building with GCC,
+	# this should be used, otherwise don't.
+	set(CMAKE_C_LINK_FLAGS "-static-libgcc")
 	add_library(csnippets ${csnippets_SOURCES})
 	message(STATUS "Link to static libraries: ON")
 else()
