@@ -90,7 +90,7 @@ To build a shared library use:
 cmake .. -DUSE_STATIC_LIBS=OFF
 ```
 
-Variables (i.e where the .a and headers go etc):
+Variables (i.e where the library and headers go etc):
 ```sh
 SET(BIN_INSTALL_DIR bin CACHE PATH "Where to install binaries to.")
 SET(LIB_INSTALL_DIR lib CACHE PATH "Where to install libraries to.")

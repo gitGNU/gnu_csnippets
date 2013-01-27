@@ -38,7 +38,17 @@ typedef struct list_head mod_list;
 extern int read_module(const char *filename, struct mod **mod,
                        bool (*filter) (const char *));
 /* Like read_module() but only find function name.  and store
- * information in modsym.  */
+ * information in modsym.
+ *
+ * Example:
+ *	struct modsym sym;
+ *
+ *	if (readfn_module("mymodule.so", &sym, "helloworld") != 0)
+ *		... error occured ...
+ *	void (*helloworld) (void) = sym->ptr;
+ *	if (helloworld)
+ *		(*helloworld) ();
+ */
 extern int readfn_module(const char *filename, struct modsym *,
 			 const char *func);
 extern void cleanup_module(struct mod *mod);

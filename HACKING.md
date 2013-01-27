@@ -12,11 +12,36 @@ cmake -DCMAKE_BUILD_TYPE=Debug
 ```
 And then `make'.  Building using the script provided is easer and quicker, though.
 
+## Headers
+
+Here's some information about hidden headers that are kind of hard-to-explore.
+
+csnippets/
+	csnippets.h - This header includes some libc headers that are commonly used,
+			also, it includes some of the headers in the same directory; those ones define
+			some helpful macros, etc.
+	attributes.h - This is included by the above header, it provides shortcuts for function/variable
+			attributes, like, __attribute__((cold)) -> __cold and so on.
+	error.h  - This defines some macros used to notify the user for errors/warnings and such things that occur
+			during runtime.
+
+internal/
+	socket_compat.h - This header is not installed and should not be used by any header file that will be
+				installed with the library, but only be included in source code or
+				any other internal header.
+
+Please note that csnippets/csnippets.h is included during compilation and not programmatically,
+that's because it acts as a pre-compiled header.  The -include is passed to the compiler like so:
+```sh
+$compiler <options> -include csnippets/csnippets.h
+```
+This tells the compiler that we want that header included on top of the file that is being compiled.
+
 ## Coding Style
 
 I use and prefer Linux style over all but may be switching to GNU coding standards since I'm starting to like them.
 
-Use tabs of 8 width and braces in line not after.  If you feel the code looks like spaghetti, use astyle to format it.
+Use tabs of 8 width and braces in line not after.  If you feel the code looks like spaghetti, use astyle (or ./format_code.sh) to format it.
 
 ### Braces
 

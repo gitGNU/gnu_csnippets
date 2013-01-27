@@ -78,7 +78,7 @@ debugging=no
 run_after=no
 install=no
 force_select=no
-while getopts scbgrhiz name
+while getopts scbgrhizd: name
 do
 	case $name in
 	z)	static=no ;;
@@ -88,8 +88,10 @@ do
 	g)	debugging=yes ;;
 	r)	run_after=yes ;;
 	i)	install=yes ;;
-	?|-h)	printf "Usage: %s [-s -c -b -g -r -h -i - z]\n" $0
+	d)	DBG="$OPTARG" ;;
+	?|-h)	printf "Usage: %s [-s -c -b -g -r -h -i - z -d]\n" $0
 		printf "%s: run me with:\n" $0
+		printf "	%s -d <debugger> to use <debugger> instead of GDB (the default).\n" $0
 		printf "	%s -z to turn off static linking\n"	$0
 		printf "	%s -s to use select interface\n"	$0
 		printf "	%s -c to clean before building\n"	$0
@@ -99,9 +101,13 @@ do
 		echo
 		echo   "	All of the above options can be combined together, i.e:"
 		printf "	%s -cgr would clean, build and run in debugger.\n" $0
+		echo
+		printf "	Note: Any remaining arguments are passed to $TARGET on runtime.\n"
 		exit 1 ;;
 	esac
 done
+shift $(($OPTIND - 1))
+ARGS="$ARGS $*"
 
 [[ "$static" = "no" ]] &&  add_opts -DUSE_STATIC_LIBS=OFF
 if [ "$force_select" = "yes" ]; then

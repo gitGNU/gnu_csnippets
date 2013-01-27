@@ -69,15 +69,15 @@ add_definitions(-D"BUILD_COMMIT=\\\"${BUILD_COMMIT}\\\"")
 message(STATUS "Build revision: ${BUILD_REVISION}")
 add_definitions(-D"BUILD_REVISION=\\\"${BUILD_REVISION}\\\"")
 
-find_package(DL REQUIRED)
 find_package(LibIntl)
-
 if(WIN32)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads -DUSE_SELECT")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads")
 	set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--large-address-aware") # strip all debug information
 	set(csnippets_LIBRARIES "-lws2_32")
 elseif(APPLE)
 	set(csnippets_DEFINITIONS ${csnippets_DEFINITIONS} -D_REENTRANT) # enable thread safe code
+elseif(UNIX)
+	find_package(DL REQUIRED)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")

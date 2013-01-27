@@ -18,13 +18,16 @@
 #define MAX_EVENTS 1024
 #endif
 
+struct data {
+	int fd;
+	short events;
+	short revents;
+} __packed;
+
 struct pollev {
 	size_t index;
-	struct data {
-		int fd;
-		short events;
-		short revents;
-	} __packed fds[FD_SETSIZE], events[FD_SETSIZE];
+	struct data fds[FD_SETSIZE];     /* Array of fds to poll on  */
+	struct data events[FD_SETSIZE];  /* Events occured.  */
 };
 
 static inline int
@@ -124,7 +127,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 	else
 		return -1;
 
-	for (maxfd = 0, i = 0; i < pev->index; ++i) {
+	for (maxfd = -1, i = 0; i < pev->index; ++i) {
 		fd = pev->fds[i].fd;
 		if (fd <= 0)
 			continue;

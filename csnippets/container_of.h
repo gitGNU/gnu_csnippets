@@ -1,6 +1,5 @@
 /* Licensed under CCO, see LICENSE.COO
- * Hacked off ccan/container_of.
- */
+ * Hacked off ccan/container_of.  */
 #ifndef _CONTAINER_OF_H
 #define _CONTAINER_OF_H
 /* check_type is hacked off ccan/check_type  */

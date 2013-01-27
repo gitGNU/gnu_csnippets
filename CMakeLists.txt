@@ -21,7 +21,6 @@
 
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(csnippets)
-
 set(VERSION "0.1")
 
 include(TestBigEndian)
@@ -30,6 +29,18 @@ if (BIG_ENDIAN)
 	set(ENDIAN_DEFINE "-DHAVE_BIG_ENDIAN")
 else()
 	set(ENDIAN_DEFINE "-DHAVE_LITTLE_ENDIAN")
+endif()
+
+include(CheckIncludeFile)
+check_include_file(sys/ioctl.h HAVE_SYS_IOCTL_H)
+check_include_file(sys/filio.h HAVE_SYS_FILIO_H)
+
+set(include_defs "")
+if (HAVE_SYS_IOCTL_H)
+	set(include_defs "${include_defs} -DHAVE_SYS_IOCTL_H")
+endif()
+if (HAVE_SYS_FILIO_H)
+	set(include_defs "${include_defs} -DHAVE_SYS_FILIO_H")
 endif()
 
 # CMAKE_CURRENT_LIST_DIR cmake 2.6 compatibility
@@ -43,7 +54,7 @@ include(src/CMakeLists.txt)
 add_definitions(-D"VERSION=\\"${VERSION}\\"")
 
 set(SOCKET_INTERFACE "Select" CACHE "Poll interface" STRING)
-set(SOCKET_INTERFACE_DEF "-DUSE_SELECT" CACHE "Changed according to SOCKET_INTERFACE" STRING)
+set(SOCKET_INTERFACE_DEF "-DUSE_SELECT" CACHE "Changed according to ${SOCKET_INTERFACE}" STRING)
 if(SOCKET_INTERFACE STREQUAL "Epoll")
 	set(SOCKET_INTERFACE_DEF "-DUSE_EPOLL")
 endif()
@@ -52,9 +63,9 @@ add_definitions(${SOCKET_INTERFACE_DEF})
 
 option(USE_STATIC_LIBS "Don't use shared libraries" ON)
 if(USE_STATIC_LIBS)
-	# TODO: This is compiler-depend, so if building with GCC,
-	# this should be used, otherwise don't.
-	set(CMAKE_C_LINK_FLAGS "-static-libgcc")
+	if (__COMPILER_GNU)
+		set(CMAKE_C_LINK_FLAGS "-static-libgcc")
+	endif()
 	add_library(csnippets ${csnippets_SOURCES})
 	message(STATUS "Link to static libraries: ON")
 else()
@@ -62,7 +73,7 @@ else()
 	message(STATUS "Link to static libraries: OFF")
 endif()
 
-add_definitions(${csnippets_DEFINITIONS} ${ENDIAN_DEFINE})
+add_definitions(${csnippets_DEFINITIONS} ${ENDIAN_DEFINE} ${include_defs})
 target_link_libraries(csnippets ${csnippets_LIBRARIES})
 include_directories(csnippets ${csnippets_INCLUDE_DIRS})
 

@@ -139,7 +139,8 @@ static bool do_write_queue(struct conn *conn)
 		while (n == -1 && S_error == S_EINTR);
 		if (n == -1) {
 			if (IsBlocking() && r_bytes > 0) {
-				/* Not everything has been sent yet...  Store for next.  */
+				/* Not everything has been sent yet...  Store for next.
+				 * XXX Get rid of memmove.  */
 				memmove(skb->data, skb->data + t_bytes, r_bytes);
 				skb->size = r_bytes;
 				return false;

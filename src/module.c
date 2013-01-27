@@ -79,7 +79,7 @@ int read_module(const char *file, struct mod **mod,
 	Elf32_Sym *sym;
 	void *handle = NULL;
 
-	if (!(fp = fopen(file, "r")))
+	if (!mod || !(fp = fopen(file, "r")))
 		return -errno;
 
 	fseek(fp, 0L, SEEK_END);
@@ -133,7 +133,7 @@ int read_module(const char *file, struct mod **mod,
 		}
 	}
 
-	if (symcount <= 0) {
+	if (!symcount) {
 		*mod = NULL;
 		return 0;
 	}
@@ -184,11 +184,8 @@ cleanup:
 
 	free(buffer);
 	free(tmpf);
-	if (mod)
-		*mod = ret;
-	else
-		cleanup_module(ret);
 
+	*mod = ret;
 	MARK_FOR_DELETION(handle);
 	return err;
 }
