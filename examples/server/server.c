@@ -52,9 +52,9 @@ static bool echo_start(struct conn *conn, void *unused)
 
 static void *start_thread(void *fptr)
 {
-	void (*rfptr) (void *) = fptr;
+	void *(*rfptr) (void) = fptr;
 	if (rfptr)
-		(*rfptr) (NULL);
+		(*rfptr) ();
 	return NULL;
 }
 
