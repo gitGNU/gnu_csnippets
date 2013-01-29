@@ -99,9 +99,10 @@ void pollev_del(struct pollev *pev, int fd)
 
 int pollev_poll(struct pollev *pev, int timeout)
 {
-	int fd, maxfd, rc, i;
-	static fd_set rfds, wfds, efds;
-	static struct timeval tv, *ptv;
+	int maxfd, rc, i;
+	fd_set rfds, wfds, efds;
+	struct timeval tv, *ptv;
+	struct data *d;
 
 	if (unlikely(!pev))
 		return -1;
@@ -128,18 +129,17 @@ int pollev_poll(struct pollev *pev, int timeout)
 		return -1;
 
 	for (maxfd = -1, i = 0; i < pev->index; ++i) {
-		fd = pev->fds[i].fd;
-		if (fd <= 0)
+		d = &pev->fds[i];
+		if (d->fd <= 0)
 			continue;
-		uint32_t ev = pev->fds[i].events;
-		if (ev & IO_READ)
-			FD_SET(fd, &rfds);
-		if (ev & IO_WRITE)
-			FD_SET(fd, &wfds);
-		if (ev & (IO_READ | IO_WRITE)
-		     && (fd >= maxfd && fd <= FD_SETSIZE)) {
-			FD_SET(fd, &efds);
-			maxfd = fd;
+		if (d->events & IO_READ)
+			FD_SET(d->fd, &rfds);
+		if (d->events & IO_WRITE)
+			FD_SET(d->fd, &wfds);
+		if (d->events & (IO_READ | IO_WRITE)) {
+			FD_SET(d->fd, &efds);
+			if (d->fd > maxfd)
+				maxfd = d->fd;
 		}
 	}
 
@@ -151,18 +151,15 @@ int pollev_poll(struct pollev *pev, int timeout)
 		return -1;
 
 	/* establish results  */
-	for (rc = 0, i = 0; i <= maxfd; ++i)
-		if (pev->fds[i].fd < 0)
-			pev->events[rc].revents = 0;
-		else {
-			int happened = compute_revents(pev->fds[i].fd, pev->fds[i].events,
-							&rfds, &wfds, &efds);
-			if (happened) {
-				pev->events[rc].revents = happened;
-				pev->events[rc].fd = pev->fds[i].fd;
-				++rc;
-			}
+	for (rc = 0, i = 0; i <= maxfd; ++i) {
+		int happened = compute_revents(pev->fds[i].fd, pev->fds[i].events,
+						&rfds, &wfds, &efds);
+		if (happened) {
+			pev->events[rc].revents = happened;
+			pev->events[rc].fd = pev->fds[i].fd;
+			++rc;
 		}
+	}
 
 	dbg("Done.  %d fd(s) are ready.\n", rc);
 	return rc;

@@ -34,7 +34,7 @@ typedef enum _Bool {
 #include <string.h>
 #include <stdlib.h>
 
-#include <csnippets/attributes.h>
+#include <csnippets/compiler.h>
 #include <csnippets/error.h>
 #include <csnippets/mm.h>
 

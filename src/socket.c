@@ -504,9 +504,8 @@ void next_close(struct conn *conn, void *arg)
 	if (unlikely(!conn))
 		return;
 
-	if (conn->next)
-		conn->next(conn, arg);
-	assert(free_conn(conn));
+	if (conn->next && conn->next(conn, arg))
+		assert(free_conn(conn));
 }
 
 bool conn_getopt(struct conn *conn, int optname, void *optval,
