@@ -94,21 +94,3 @@ char *strconv(const char *str, int (*conv) (int))
 	return ret;
 }
 
-bool strstartswith(const char *str, const char *start)
-{
-	while (*start)
-		if (*start++ != *str++)
-			return false;
-	return true;
-}
-
-bool strendswith(const char *str, const char *end)
-{
-	register const char *estr = str + strlen(str) - 1;
-	register const char *eend = end + strlen(end) - 1;
-	while (estr > str && eend > end)
-		if (*eend-- != *estr--)
-			return false;
-	return true;
-}
-

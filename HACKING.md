@@ -17,15 +17,18 @@ And then `make'.  Building using the script provided is easer and quicker, thoug
 Here's some information about hidden headers that are kind of hard-to-explore.
 
 csnippets/
+
 	csnippets.h - This header includes some libc headers that are commonly used,
 			also, it includes some of the headers in the same directory; those ones define
 			some helpful macros, etc.
+
 	attributes.h - This is included by the above header, it provides shortcuts for function/variable
 			attributes, like, __attribute__((cold)) -> __cold and so on.
 	error.h  - This defines some macros used to notify the user for errors/warnings and such things that occur
 			during runtime.
 
 internal/
+
 	socket_compat.h - This header is not installed and should not be used by any header file that will be
 				installed with the library, but only be included in source code or
 				any other internal header.

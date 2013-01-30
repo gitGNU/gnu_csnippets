@@ -5,6 +5,17 @@
 /* See the comment in csnippets/csnippets.h  */
 #include_next <string.h>
 
+/* Shamelessly stolen from ccan/str.  */
+#define streq(a, b) (strcmp((a), (b)) == 0)
+#define strstarts(str,prefix) (strncmp((str),(prefix),strlen(prefix)) == 0)
+static inline bool strends(const char *str, const char *postfix)
+{
+	if (strlen(str) < strlen(postfix))
+		return false;
+
+	return streq(str + strlen(str) - strlen(postfix), postfix);
+}
+
 char *strtrim(char *str);
 char **strexplode(char *string, char seperator, int *size);
 int strwildmatch(const char *pattern, const char *string);
@@ -14,10 +25,6 @@ bool strccmp(const char *str, int (*cmp) (int));
 /* Convert a string with convfun function and return
  * a malloc'd version of it.  */
 char *strconv(const char *str, int (*conv) (int));
-/* Check if a string starts with @start  */
-bool strstartswith(const char *str, const char *start);
-/* Check if a string ends with @end  */
-bool strendswith(const char *str, const char *end);
 
 #endif /*  _STR_MISC_H */
 

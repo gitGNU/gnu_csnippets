@@ -90,7 +90,7 @@ void pollev_del(struct pollev *pev, int fd)
 	if (unlikely(!pev))
 		return;
 
-	for (i = 0; i < FD_SETSIZE; ++i)
+	for (i = 0; i < pev->index; ++i)
 		if (pev->fds[i].fd == fd) {
 			pev->fds[i].fd = -1;
 			break;

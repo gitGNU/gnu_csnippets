@@ -54,6 +54,7 @@
 #define __construct
 #define __destruct
 #define __builtin_unreachable() do { fatal("Something went tottaly unexpected!\n"); } while (0)
+#warning "Some features might not work since your compiler is not supported"
 #endif  /* __GNUC__ || __clang__ */
 
 #endif    /* _COMPILER_H */
