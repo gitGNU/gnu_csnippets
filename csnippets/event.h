@@ -9,12 +9,7 @@
 
 _BEGIN_DECLS
 
-typedef struct {
-	int64_t delay;           /* Delay in seconds, the thread will wait before executing this.  */
-	task_t *task;            /* The task pointer, Internal use only.
-                                This is created by the thread.  */
-	struct list_node node;   /* Next/Prev event.  */
-} event_t;
+struct event;
 
 /**
  * Initialize events thread
@@ -33,7 +28,7 @@ extern void events_stop(void);
  *
  * @param event, create it with event_create().
  */
-extern void events_add(event_t *event);
+extern void events_add(struct event *event);
 /**
  * Create an event, NOTE: This does NOT add it to the list.
  * You must add it manually via events_add().
@@ -41,7 +36,7 @@ extern void events_add(event_t *event);
  * Example usage:
  *    events_add(event_create(10, my_func, my_param));
  */
-extern event_t *event_create(int delay, task_routine start, void *p);
+extern struct event *event_create(int delay, task_routine start, void *p);
 
 _END_DECLS
 #endif  /* _EVENT_H */

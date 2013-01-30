@@ -6,6 +6,12 @@
 
 #include <pthread.h>
 
+struct task {
+	task_routine start_routine;    /* See above */
+	void *param;                   /* The param to call the function (start_routine) with.  */
+	struct list_node node;         /* The next and prev task */
+};
+
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;
 static LIST_HEAD(tasks);
@@ -14,7 +20,7 @@ static pthread_t self;
 
 static void *tasks_thread(void __unused *unused)
 {
-	task_t *task = NULL, *next = NULL;
+	struct task *task = NULL, *next = NULL;
 
 	while (running) {
 		pthread_mutex_lock(&mutex);
@@ -25,7 +31,7 @@ static void *tasks_thread(void __unused *unused)
 		}
 
 		if (!list_empty(&tasks)) {
-			task = list_top(&tasks, task_t, node);
+			task = list_top(&tasks, struct task, node);
 			if (!task) {
 				pthread_mutex_unlock(&mutex);
 				continue;
@@ -83,20 +89,20 @@ void tasks_stop(void)
 	pthread_cond_destroy(&cond);
 }
 
-task_t *task_create(task_routine routine, void *param)
+struct task *task_create(task_routine routine, void *param)
 {
-	task_t *task;
+	struct task *task;
 	if (!routine)
 		return NULL;
 
-	xmalloc(task, sizeof(task_t), return NULL);
+	xmalloc(task, sizeof(struct task), return NULL);
 
 	task->start_routine = routine;
 	task->param = param;
 	return task;
 }
 
-void tasks_add(task_t *task)
+void tasks_add(struct task *task)
 {
 	bool empty = false;
 	if (!task)
