@@ -198,7 +198,7 @@ static __exit __used void __sock_cleanup(void)
 	}
 }
 
-static struct addrinfo *
+static __cold struct addrinfo *
 net_lookup(const char *node, const char *service,
            int family, int socktype)
 {

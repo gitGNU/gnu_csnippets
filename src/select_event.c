@@ -169,8 +169,6 @@ __inline int pollev_activefd(struct pollev *pev, int index)
 {
 	if (unlikely(index < 0 || index > FD_SETSIZE))
 		return -1;
-	if (pev->events[index].revents == 0)
-		return -1;
 	return pev->events[index].fd;
 }
 
