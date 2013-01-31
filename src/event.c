@@ -103,7 +103,7 @@ void events_stop(void)
 struct event *event_create(int delay, task_routine start, void *p)
 {
 	struct event *event;
-	if (unlikely(!start || delay < 0))
+	if (!start || delay < 0)
 		return NULL;
 
 	xmalloc(event, sizeof(struct event), return NULL);
@@ -125,7 +125,7 @@ void events_add(struct event *event)
 		return;
 
 	pthread_mutex_lock(&mutex);
-	if (likely(running)) {
+	if (running) {
 		empty = list_empty(&events);
 		list_add_tail(&events, &event->node);
 	}

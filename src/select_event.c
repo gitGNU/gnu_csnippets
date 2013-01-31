@@ -64,7 +64,7 @@ void pollev_deinit(struct pollev *p)
 void pollev_add(struct pollev *pev, int fd, int bits)
 {
 	size_t tmpidx = pev->index;
-	if (unlikely(!pev || fd < 0))
+	if (!pev || fd < 0)
 		return;
 
 	if (++tmpidx > FD_SETSIZE) {
@@ -87,7 +87,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 void pollev_del(struct pollev *pev, int fd)
 {
 	int i;
-	if (unlikely(!pev))
+	if (!pev)
 		return;
 
 	for (i = 0; i < pev->index; ++i)
@@ -104,9 +104,9 @@ int pollev_poll(struct pollev *pev, int timeout)
 	struct timeval tv, *ptv;
 	struct data *d;
 
-	if (unlikely(!pev))
+	if (!pev)
 		return -1;
-	if (unlikely(pev->index == 0))
+	if (pev->index == 0)
 		return 0;
 
 	FD_ZERO(&rfds);
@@ -143,7 +143,9 @@ int pollev_poll(struct pollev *pev, int timeout)
 		}
 	}
 
+#ifdef _DEBUG_POLLEV
 	dbg("polling on %d fds.\n", maxfd + 1);
+#endif
 	do
 		rc = select(maxfd + 1, &rfds, &wfds, &efds, ptv);
 	while (rc < 0 && S_error == S_EINTR);
@@ -161,13 +163,15 @@ int pollev_poll(struct pollev *pev, int timeout)
 		}
 	}
 
+#ifdef _DEBUG_POLLEV
 	dbg("Done.  %d fd(s) are ready.\n", rc);
+#endif
 	return rc;
 }
 
 __inline int pollev_activefd(struct pollev *pev, int index)
 {
-	if (unlikely(index < 0 || index > FD_SETSIZE))
+	if (index < 0 || index > FD_SETSIZE)
 		return -1;
 	return pev->events[index].fd;
 }
@@ -175,7 +179,7 @@ __inline int pollev_activefd(struct pollev *pev, int index)
 __inline short pollev_revent(struct pollev *pev, int index)
 {
 	short r = 0;
-	if (unlikely(index < 0 || index > FD_SETSIZE))
+	if (index < 0 || index > FD_SETSIZE)
 		return r;
 	r = pev->events[index].revents;
 	pev->events[index].revents = 0;
@@ -184,8 +188,8 @@ __inline short pollev_revent(struct pollev *pev, int index)
 
 bool pollev_ret(struct pollev *pev, int index, int *fd, short *revents)
 {
-	if (unlikely(!pev || (index < 0 || index > FD_SETSIZE)
-			|| pev->events[index].revents == 0))
+	if (!pev || (index < 0 || index > FD_SETSIZE)
+			|| pev->events[index].revents == 0)
 		return false;
 	*fd = pev->events[index].fd;
 	*revents = pev->events[index].revents;

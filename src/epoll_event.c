@@ -34,7 +34,8 @@ static inline short compute_revents(struct pollev *ev, int index)
 	return r;
 }
 
-struct pollev *pollev_init(void) {
+struct pollev *pollev_init(void)
+{
 	struct pollev *ev;
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
@@ -54,7 +55,7 @@ struct pollev *pollev_init(void) {
 
 void pollev_deinit(struct pollev *pev)
 {
-	if (unlikely(!pev))
+	if (!pev)
 		return;
 
 	close(pev->efd);
@@ -65,7 +66,7 @@ void pollev_deinit(struct pollev *pev)
 void pollev_add(struct pollev *pev, int fd, int bits)
 {
 	struct epoll_event ev;
-	if (unlikely(!pev))
+	if (!pev)
 		return;
 
 	if (fd >= pev->size) {
@@ -90,7 +91,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 
 void pollev_del(struct pollev *pev, int fd)
 {
-	if (unlikely(!pev))
+	if (!pev)
 		return;
 
 	if (epoll_ctl(pev->efd, EPOLL_CTL_DEL, fd, NULL) < 0)
@@ -101,13 +102,12 @@ void pollev_del(struct pollev *pev, int fd)
 int pollev_poll(struct pollev *pev, int timeout)
 {
 	int n;
-	if (unlikely(!pev))
+	if (!pev)
 		return -1;
 
 	S_seterror(0);
 	do
-		n = epoll_wait(pev->efd, pev->events, pev->size,
-		               timeout);
+		n = epoll_wait(pev->efd, pev->events, pev->size, timeout);
 	while (n == -1 && S_error == S_EINTR);
 	return n;
 }
@@ -119,14 +119,14 @@ __inline int pollev_activefd(struct pollev *pev, int index)
 
 short pollev_revent(struct pollev *ev, int index)
 {
-	if (unlikely(!ev || (index < 0 || index > ev->size)))
+	if (!ev || (index < 0 || index > ev->size))
 		return false;
 	return compute_revents(ev, index);
 }
 
 bool pollev_ret(struct pollev *ev, int index, int *fd, short *revents)
 {
-	if (unlikely(!ev || (index < 0 || index > ev->size)))
+	if (!ev || (index < 0 || index > ev->size))
 		return false;
 	*fd = ev->events[index].data.fd;
 	*revents = compute_revents(ev, index);

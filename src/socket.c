@@ -404,7 +404,7 @@ bool _new_conn(const char *node, const char *service,
 bool free_conn(struct conn *conn)
 {
 	bool retval = false;
-	if (unlikely(!conn))
+	if (!conn)
 		return retval;
 
 	rm_conn(conn);
@@ -423,7 +423,7 @@ struct conn *_new_conn_fd(int fd,
 	struct conn *ret;
 	int err;
 	socklen_t errlen = sizeof(err);
-	if (unlikely(fd < 0))
+	if (fd < 0)
 		return NULL;
 
 	/* Is it really a socket file descriptor?  */
@@ -437,6 +437,8 @@ struct conn *_new_conn_fd(int fd,
 	ret->wb.data	= NULL;
 	ret->wb.size	= 0;
 	ret->in_progress = true;
+	ret->next = NULL;
+	ret->argp = NULL;
 
 	add_conn(ret);
 	pollev_add(io_events, ret->fd, IO_READ | IO_WRITE);
@@ -446,7 +448,7 @@ struct conn *_new_conn_fd(int fd,
 bool conn_read(struct conn *conn, void *data, size_t *len)
 {
 	ssize_t count;
-	if (unlikely(!conn))
+	if (!conn)
 		return false;
 
 	S_seterror(0);
@@ -462,7 +464,7 @@ bool conn_read(struct conn *conn, void *data, size_t *len)
 
 bool conn_write(struct conn *conn, const void *data, size_t len)
 {
-	if (unlikely(!conn))
+	if (!conn)
 		return false;
 	return do_write(conn, data, len);
 }
@@ -473,7 +475,7 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
 	va_list ap;
 	int len;
 	bool ret;
-	if (unlikely(!conn))
+	if (!conn)
 		return false;
 
 	va_start(ap, fmt);
@@ -491,7 +493,7 @@ bool _conn_next(struct conn *c,
                bool (*next) (struct conn *, void *arg),
                void *arg)
 {
-	if (unlikely(!c))
+	if (!c)
 		return false;
 
 	c->next = next;
@@ -501,7 +503,7 @@ bool _conn_next(struct conn *c,
 
 void next_close(struct conn *conn, void *arg)
 {
-	if (unlikely(!conn))
+	if (!conn)
 		return;
 
 	if (conn->next && conn->next(conn, arg))
@@ -511,7 +513,7 @@ void next_close(struct conn *conn, void *arg)
 bool conn_getopt(struct conn *conn, int optname, void *optval,
                  int *optlen)
 {
-	if (unlikely(!conn))
+	if (!conn)
 		return false;
 	return getsockopt(conn->fd, SOL_SOCKET, optname,
 	                  optval, (socklen_t *)optlen) == 0;
@@ -520,7 +522,7 @@ bool conn_getopt(struct conn *conn, int optname, void *optval,
 bool conn_setopt(struct conn *conn, int optname, const void *optval,
                  int optlen)
 {
-	if (unlikely(!conn))
+	if (!conn)
 		return false;
 	return setsockopt(conn->fd, SOL_SOCKET, optname,
 	                  optval, (socklen_t)optlen) == 0;
@@ -533,7 +535,7 @@ bool conn_getnameinfo(struct conn *conn,
                       bool numeric_serv)
 {
 	int flags = 0;
-	if (unlikely(!conn))
+	if (!conn)
 		return false;
 	if (numeric_host)
 		flags |= NI_NUMERICHOST;
@@ -592,14 +594,14 @@ void *conn_loop(void)
 					}
 
 					set_nonblock(in_fd);
-					conn = new_conn_fd(in_fd, NULL, NULL);
+					conn = _new_conn_fd(in_fd, NULL, NULL);
 					if (!conn) {
 						S_close(in_fd);
 						break;
 					}
 
 					conn->sa = in_addr;
-					if (likely(li->fn) && !li->fn(conn, li->arg))
+					if (li->fn && !li->fn(conn, li->arg))
 						assert(free_conn(conn));
 				}
 			} else if ((conn = find_conn(fd))) {

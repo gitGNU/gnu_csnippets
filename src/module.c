@@ -221,7 +221,7 @@ int read_moddir(const char *dir, mod_list *mods,
 void cleanup_module(struct mod *mod)
 {
 	struct modsym *sym, *next;
-	if (unlikely(!mod))
+	if (!mod)
 		return;
 
 	list_for_each_safe(&mod->children, sym, next, node) {
@@ -236,7 +236,7 @@ void cleanup_module(struct mod *mod)
 void cleanup_mods(mod_list *mods)
 {
 	struct mod *mod, *next;
-	if (unlikely(!mods))
+	if (!mods)
 		return;
 
 	list_for_each_safe(mods, mod, next, node) {
