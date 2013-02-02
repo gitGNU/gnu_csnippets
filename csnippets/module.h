@@ -5,69 +5,14 @@
 #ifndef _MODULE_H
 #define _MODULE_H
 
-#include <csnippets/list.h>
+struct mod;
 
-struct modsym {
-	char *name;		/* symbol name (function name mostly)  */
-	void *ptr;              /* function pointer.  */
+struct mod *module_open(const char *filename);
+void module_close(struct mod *mod);
 
-	struct list_node node;
-};
-
-struct mod {
-	struct list_head children;      /* Symbols list  */
-	struct list_node node;          /* Next and previous module, see list.h  */
-};
-
-typedef struct list_head mod_list;
-
-/**
- * read_module() - Load a single mod
- *
- * @file - (.dll,.so,...) to load from.
- * @mod - the mod pointer where the function pointer goes.
- * @filter the filter function pointer, this function is used to filter out
- *         un-needed mods, that has function name of first parameter,
- *         if this function returns false, the symbol is ignored, otherwise
- *         we store it.
- * This function returns 0 on success and -errno in the event of failure.
- *
- * Example:
- *	see examples/mods/modloader.c
- */
-extern int read_module(const char *filename, struct mod **mod,
-                       bool (*filter) (const char *));
-/* Like read_module() but only find function name.  and store
- * information in modsym.
- *
- * Example:
- *	struct modsym sym;
- *
- *	if (readfn_module("mymodule.so", &sym, "helloworld") != 0)
- *		... error occured ...
- *	void (*helloworld) (void) = sym->ptr;
- *	if (helloworld)
- *		(*helloworld) ();
- */
-extern int readfn_module(const char *filename, struct modsym *,
-			 const char *func);
-extern void cleanup_module(struct mod *mod);
-
-/**
- * read_moddir() - Load a list of mods from @dir
- *
- * @dir - the directory containing the mods to load.
- * @list - a null list that will be set after a successfull load.
- * @filter - See read_module().
- *
- * This function returns the number of mods loaded or -1 on failure.
- *
- * Example:
- *	See examples/mods/modloader.c
- */
-extern int read_moddir(const char *dir, mod_list *list,
-                        bool (*filter) (const char *));
-extern void cleanup_mods(mod_list *mods);
+const char *module_error(void);
+const char *module_name(struct mod *);
+bool module_symbol(struct mod *, const char *name, void **symbol);
 
 #endif  /* _MODULE_H */
 

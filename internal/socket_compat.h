@@ -33,7 +33,7 @@
 #define S_ENOTSOCK	WSAENOTSOCK
 #define S_ETIMEDOUT	WSAETIMEDOUT
 #define S_EBADF		WSAEBADF
-#else
+#elif defined(__unix__)
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
