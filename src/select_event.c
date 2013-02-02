@@ -183,16 +183,19 @@ __inline short pollev_revent(struct pollev *pev, int index)
 		return r;
 	r = pev->events[index].revents;
 	pev->events[index].revents = 0;
+	pev->events[index].fd = 0;
 	return r;
 }
 
 bool pollev_ret(struct pollev *pev, int index, int *fd, short *revents)
 {
 	if (!pev || (index < 0 || index > FD_SETSIZE)
-			|| pev->events[index].revents == 0)
+	     || pev->events[index].revents == 0)
 		return false;
 	*fd = pev->events[index].fd;
 	*revents = pev->events[index].revents;
+	pev->events[index].revents = 0;
+	pev->events[index].fd = 0;
 	return true;
 }
 

@@ -39,7 +39,7 @@ static __exit void free_mod_memory(void)
 static __inline int filter(const struct dirent *dir)
 {
 	const char *name = dir->d_name;
-	return strlen(name) > 3 ? !strcmp(name + strlen(name) - 3, ".so") : 0;
+	return strlen(name) > 3 ? streq(name + strlen(name) - 3, ".so") : 0;
 }
 
 int readfn_module(const char *filename, struct modsym *s,
@@ -103,8 +103,8 @@ int read_module(const char *file, struct mod **mod,
 
 	for (i = 0; i < hdr->e_shnum; ++i) {
 		if (shdr[i].sh_type == SHT_STRTAB
-		    && strcmp(buffer + shdr[hdr->e_shstrndx].sh_offset + shdr[i].sh_name,
-		              ".dynstr") == 0) {
+		    && streq(buffer + shdr[hdr->e_shstrndx].sh_offset + shdr[i].sh_name,
+			    ".dynstr")) {
 			sym_loc = i;
 			break;
 		}
@@ -153,7 +153,7 @@ int read_module(const char *file, struct mod **mod,
 	list_head_init(&ret->children);
 
 	for (i = 0; i < symcount; ++i) {
-		xmalloc(sym, sizeof(*sym), err = -ENOMEM; goto cleanup);
+		xmalloc(msym, sizeof(*msym), err = -ENOMEM; goto cleanup);
 
 		msym->ptr = dlsym(handle, syms[i]);
 		if ((errorstr = dlerror())) {
@@ -163,7 +163,7 @@ int read_module(const char *file, struct mod **mod,
 			continue;
 		}
 
-		msym->name = syms[i];
+		msym->name = strdup(syms[i]);
 		list_add_tail(&ret->children, &msym->node);
 	}
 
