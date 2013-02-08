@@ -73,7 +73,13 @@ static inline void add_conn(struct conn *c)
 
 static inline void rm_conn(const struct conn *c)
 {
-	htable_del(&conns, chash(c->fd), c);
+	int fdhash = chash(c->fd);
+	struct conn *tmp;
+	struct htable_iter i;
+
+	for (tmp = htable_firstval(&conns, &i, fdhash); tmp; tmp = htable_nextval(&conns, &i, fdhash))
+		if (tmp->fd == c->fd)
+			htable_delval(&conns, &i);
 }
 
 static struct listener *find_listener(int fd)
