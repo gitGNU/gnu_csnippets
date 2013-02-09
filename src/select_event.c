@@ -21,7 +21,6 @@ struct data {
 } __packed;
 
 struct pollev {
-	size_t index;
 	struct data fds[FD_SETSIZE];     /* Array of fds to poll on  */
 	struct data events[FD_SETSIZE];  /* Events occured.  */
 };
@@ -47,7 +46,6 @@ struct pollev *pollev_init(void)
 	struct pollev *ev;
 
 	xmalloc(ev, sizeof(struct pollev), return NULL);
-	ev->index = 0;
 	memset(ev->fds, 0, sizeof(ev->fds));
 	return ev;
 }
@@ -59,11 +57,10 @@ void pollev_deinit(struct pollev *p)
 
 void pollev_add(struct pollev *pev, int fd, int bits)
 {
-	size_t tmpidx = pev->index;
 	if (!pev || fd < 0)
 		return;
 
-	if (++tmpidx > FD_SETSIZE) {
+	if (fd > FD_SETSIZE) {
 #ifdef _DEBUG_POLLEV
 		dbg("can't add more file descriptors to this set, the size would exceed the maximum number of file descriptors\n");
 #endif
@@ -71,13 +68,12 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	}
 
 	if (bits & IO_READ)
-		pev->fds[pev->index].events |= IO_READ;
+		pev->fds[fd].events |= IO_READ;
 	if (bits & IO_WRITE)
-		pev->fds[pev->index].events |= IO_WRITE;
+		pev->fds[fd].events |= IO_WRITE;
 
-	pev->fds[pev->index].fd = fd;
-	pev->fds[pev->index].revents = 0;
-	++pev->index;
+	pev->fds[fd].fd = fd;
+	pev->fds[fd].revents = 0;
 }
 
 void pollev_del(struct pollev *pev, int fd)
@@ -86,7 +82,7 @@ void pollev_del(struct pollev *pev, int fd)
 	if (!pev)
 		return;
 
-	for (i = 0; i < pev->index; ++i)
+	for (i = 0; i < FD_SETSIZE; ++i)
 		if (pev->fds[i].fd == fd) {
 			pev->fds[i].fd = -1;
 			break;
@@ -102,8 +98,6 @@ int pollev_poll(struct pollev *pev, int timeout)
 
 	if (!pev)
 		return -1;
-	if (pev->index == 0)
-		return 0;
 
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
@@ -123,7 +117,7 @@ int pollev_poll(struct pollev *pev, int timeout)
 	else
 		return -1;
 
-	for (maxfd = -1, i = 0; i < pev->index; ++i) {
+	for (maxfd = -1, i = 0; i < FD_SETSIZE; ++i) {
 		d = &pev->fds[i];
 		if (d->fd <= 0)
 			continue;
@@ -184,8 +178,7 @@ __inline short pollev_revent(struct pollev *pev, int index)
 
 bool pollev_ret(struct pollev *pev, int index, int *fd, short *revents)
 {
-	if (!pev || (index < 0 || index > FD_SETSIZE)
-	     || pev->events[index].revents == 0)
+	if (!pev || (index < 0 || index > FD_SETSIZE) || pev->events[index].revents == 0)
 		return false;
 	*fd = pev->events[index].fd;
 	*revents = pev->events[index].revents;
