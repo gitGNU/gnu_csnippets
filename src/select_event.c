@@ -60,7 +60,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	if (!pev || fd < 0)
 		return;
 
-	if (fd > FD_SETSIZE) {
+	if (fd >= FD_SETSIZE) {
 #ifdef _DEBUG_POLLEV
 		dbg("can't add more file descriptors to this set, the size would exceed the maximum number of file descriptors\n");
 #endif
