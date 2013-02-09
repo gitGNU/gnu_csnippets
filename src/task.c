@@ -7,9 +7,9 @@
 #include <pthread.h>
 
 struct task {
-	task_routine start_routine;    /* See above */
-	void *param;                   /* The param to call the function (start_routine) with.  */
-	struct list_node node;         /* The next and prev task */
+	task_routine start_routine;
+	void *param;
+	struct list_node node;
 };
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
