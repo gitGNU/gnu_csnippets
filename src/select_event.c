@@ -14,10 +14,6 @@
 #include <sys/time.h>
 #endif
 
-#ifndef MAX_EVENTS
-#define MAX_EVENTS 1024
-#endif
-
 struct data {
 	int fd;
 	short events;
@@ -113,7 +109,6 @@ int pollev_poll(struct pollev *pev, int timeout)
 	FD_ZERO(&wfds);
 	FD_ZERO(&efds);
 
-	memset(&tv, 0, sizeof(tv));
 	/* The following time out code is hacked off src/poll.c */
 	if (timeout == 0) {
 		ptv = &tv;
