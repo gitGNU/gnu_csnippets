@@ -68,7 +68,8 @@ static inline struct conn *find_conn(int fd)
 
 static inline void add_conn(struct conn *c)
 {
-	assert(htable_add(&conns, chash(c->fd), c));
+	if (!htable_add(&conns, chash(c->fd), c))
+		__builtin_unreachable ();
 }
 
 static inline void rm_conn(const struct conn *c)
