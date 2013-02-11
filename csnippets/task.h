@@ -5,8 +5,6 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#include <csnippets/list.h>
-
 _BEGIN_DECLS
 
 /** The start routine of a task.

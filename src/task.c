@@ -2,6 +2,7 @@
  * Copyright (c) 2012 Ahmed Samy <f.fallen45@gmail.com>.
  * Licensed under MIT, see LICENSE.MIT for details.
  */
+#include <csnippets/list.h>
 #include <csnippets/task.h>
 
 #include <pthread.h>
