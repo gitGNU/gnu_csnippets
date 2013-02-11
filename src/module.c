@@ -4,12 +4,12 @@
  */
 #include <csnippets/module.h>
 
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-
 struct mod {
 	void *handle;
 	const char *name;
 };
+
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 
 #include <csnippets/asprintf.h>
 
@@ -74,11 +74,6 @@ bool module_symbol(struct mod *m, const char *name, void **symbol)
  * NB, This code is also untested, I have not compiled it.  */
 #include <windows.h>
 
-struct mod {
-	HINSTANCE handle;
-	const char *name;
-};
-
 struct mod *module_open(const char *filename)
 {
 	HINSTANCE h;
@@ -100,7 +95,7 @@ void module_close(struct mod *m)
 		return;
 
 	free((void *)m->name);
-	FreeLibrary(m->handle);
+	FreeLibrary((HINSTANCE)m->handle);
 	free(m);
 }
 
@@ -116,7 +111,7 @@ bool module_symbol(struct mod *m, const char *name, void **symbol)
 	if (!m)
 		return false;
 
-	ptr = GetProcAddress(m->handle, TEXT(name));
+	ptr = GetProcAddress((HINSTANCE)m->handle, TEXT(name));
 	if (!ptr)
 		return false;
 	if (symbol)
