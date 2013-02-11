@@ -78,7 +78,7 @@ debugging=no
 run_after=no
 install=no
 force_select=no
-while getopts scbgrhizd: name
+while getopts scbgrhizd:t: name
 do
 	case $name in
 	z)	static=no ;;
@@ -88,9 +88,11 @@ do
 	g)	debugging=yes ;;
 	r)	run_after=yes ;;
 	i)	install=yes ;;
+	t)	TARGET="$OPTARG" ;;
 	d)	DBG="$OPTARG" ;;
 	?|-h)	printf "Usage: %s [-s -c -b -g -r -h -i - z -d]\n" $0
 		printf "%s: run me with:\n" $0
+		printf "	%s -t <target> to build <target> instead of the default (currently is: %s)\n" $0 $TARGET
 		printf "	%s -d <debugger> to use <debugger> instead of GDB (the default).\n" $0
 		printf "	%s -z to turn off static linking\n"	$0
 		printf "	%s -s to use select interface\n"	$0

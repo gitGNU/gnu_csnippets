@@ -15,7 +15,7 @@ static int verbose = 0;
 #define prog	program_invocation_short_name
 #define __dolog(s, args...) do { \
 		fprintf(stderr, _(s), ##args); \
-		if (verbose > 0) \
+		if (verbose) \
 			fprintf(stdout, _(s), ##args); \
 	} while(0)
 

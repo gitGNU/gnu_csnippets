@@ -92,7 +92,7 @@ void pollev_del(struct pollev *pev, int fd)
 int pollev_poll(struct pollev *pev, int timeout)
 {
 	int maxfd, rc, i;
-	fd_set rfds, wfds, efds;
+	static fd_set rfds, wfds, efds;
 	struct timeval tv, *ptv;
 	struct data *d;
 
