@@ -128,9 +128,9 @@ if [ "$cross_build" = "yes" ]; then
 		rm -rf build
 	fi
 	add_opts -DCMAKE_SYSTEM_NAME=Windows \
-		   -DCMAKE_RC_COMPILER=/usr/bin/i486-mingw32-windres \
-		   -DCMAKE_C_COMPILER=/usr/bin/i486-mingw32-gcc \
-		   -DCMAKE_CXX_COMPILER=/usr/bin/i486-mingw32-g++
+		   -DCMAKE_RC_COMPILER=i486-mingw32-windres \
+		   -DCMAKE_C_COMPILER=i486-mingw32-gcc \
+		   -DCMAKE_CXX_COMPILER=i486-mingw32-g++
 fi
 
 if [ "$clean_before_build" = "yes" ]; then

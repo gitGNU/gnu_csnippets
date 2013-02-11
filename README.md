@@ -60,7 +60,7 @@ MIT (Also known as "The Expat License")
 Before compiling, make sure you have:
 
       1. CMake 2.6 or later   (get it by your package manager or from the cmake website)
-      2. gcc (GNU C Compiler) part of the GNU Compiler Collection (GCC)
+      2. gcc (GNU C Compiler) part of the GNU Compiler Collection (GCC) or CLang is recommended.
       3. GNU Make
 
 ```sh
@@ -81,6 +81,20 @@ make
 
 ### Installation
 
+For a fast installation, do:
+```sh
+./build.sh -i
+```
+
+Or manually, simply follow the [Building] section and run this instead of just `make`:
+```
+make all install
+```
+
+This will install everything to /usr/local{lib,include}.
+
+### CMake Variables
+
 To install with a custom prefix (other than /usr/local):
 ```sh
 cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/usr
@@ -89,6 +103,8 @@ To build a shared library use:
 ```sh
 cmake .. -DUSE_STATIC_LIBS=OFF
 ```
+
+build.sh can pass that as well with the -z option.
 
 Variables (i.e where the library and headers go etc):
 ```sh
@@ -100,10 +116,5 @@ SET(INCLUDE_INSTALL_DIR include CACHE PATH "Where to install headers to.")
 You can modify them when running cmake like:
 ```sh
 cmake .. -DINCLUDE_INSTALL_DIR=myinclude
-```
-
-Finally run:
-```
-make all install
 ```
 
