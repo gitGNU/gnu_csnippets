@@ -20,8 +20,8 @@
 #define COL_BLANK	"\033[0m"	/* Resets colors  */
 #else
 #define COL_RED		""
-#define COL_GREEN	""
-#define COL_BLUE	""
+#define COL_PURPLE	""
+#define COL_ORANGE	""
 #define COL_BLANK	""
 #endif
 

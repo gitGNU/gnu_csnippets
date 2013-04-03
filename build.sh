@@ -100,6 +100,7 @@ do
 		printf "	%s -g to run %s in debug mode\n"	$0 $TARGET
 		printf "	%s -r to run %s after building\n"	$0 $TARGET
 		printf "	%s -b prepare for cross-building (Linux -> MinGW)\n"	$0
+		printf "	%s -i to install after building"	$0
 		echo
 		echo   "	All of the above options can be combined together, i.e:"
 		printf "	%s -cgr would clean, build and run in debugger.\n" $0
