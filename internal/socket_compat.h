@@ -14,6 +14,7 @@
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x600
 #endif
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
@@ -33,6 +34,7 @@
 #define S_ENOTSOCK	WSAENOTSOCK
 #define S_ETIMEDOUT	WSAETIMEDOUT
 #define S_EBADF		WSAEBADF
+
 #elif defined(__unix__)
 #include <sys/socket.h>
 #include <arpa/inet.h>

@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-	struct mod *m;
+	mod_t *m;
 	void (*init) (int, char **);
 	int (*deinit) (void);
 

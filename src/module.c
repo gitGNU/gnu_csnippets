@@ -4,10 +4,10 @@
  */
 #include <csnippets/module.h>
 
-struct mod {
+typedef struct mod {
 	void *handle;
 	const char *name;
-};
+} mod_t;
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 
@@ -16,10 +16,10 @@ struct mod {
 #include <dirent.h>
 #include <dlfcn.h>
 
-struct mod *module_open(const char *filename)
+mod_t *module_open(const char *filename)
 {
 	char *tmpf;
-	struct mod *ret;
+	mod_t *ret;
 	void *d;
 
 	if (!asprintf(&tmpf, "./%s", filename))
@@ -35,7 +35,7 @@ struct mod *module_open(const char *filename)
 	return ret;
 }
 
-void module_close(struct mod *mod)
+void module_close(mod_t *mod)
 {
 	if (!mod)
 		return;
@@ -50,7 +50,7 @@ const char *module_error(void)
 	return dlerror();
 }
 
-bool module_symbol(struct mod *m, const char *name, void **symbol)
+bool module_symbol(mod_t *m, const char *name, void **symbol)
 {
 	void *ptr;
 	if (!m)
@@ -74,10 +74,10 @@ bool module_symbol(struct mod *m, const char *name, void **symbol)
  * NB, This code is also untested, I have not compiled it.  */
 #include <windows.h>
 
-struct mod *module_open(const char *filename)
+mod_t *module_open(const char *filename)
 {
 	HINSTANCE h;
-	struct mod *ret;
+	mod_t *ret;
 
 	h = LoadLibrary(TEXT(filename));
 	if (!h)
@@ -89,7 +89,7 @@ struct mod *module_open(const char *filename)
 	return ret;
 }
 
-void module_close(struct mod *m)
+void module_close(mod_t *m)
 {
 	if (!m)
 		return;
@@ -105,7 +105,7 @@ const char *module_error(void)
 	// what next?
 }
 
-bool module_symbol(struct mod *m, const char *name, void **symbol)
+bool module_symbol(mod_t *m, const char *name, void **symbol)
 {
 	void *ptr;
 	if (!m)
@@ -121,7 +121,7 @@ bool module_symbol(struct mod *m, const char *name, void **symbol)
 
 #endif    /* defined(__unix__) || (defined(__APPLE__) && defined(__MACH__) */
 
-const char *module_name(struct mod *mod)
+const char *module_name(mod_t *mod)
 {
 	return mod->name;
 }

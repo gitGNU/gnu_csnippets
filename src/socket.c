@@ -17,30 +17,30 @@ struct sk_buff {
 	size_t size;
 };
 
-struct listener {
+typedef struct listener {
 	int fd;
 
-	bool (*fn) (struct conn *, void *arg);
+	bool (*fn) (conn_t *, void *arg);
 	void *arg;
 
 	struct list_node node;
-};
+} listener_t;
 
-struct conn {
+typedef struct conn {
 	int fd;
 
-	bool (*next) (struct conn *, void *);
+	bool (*next) (conn_t *, void *);
 	void *argp;
 
-	bool (*fn) (struct conn *, void *);
+	bool (*fn) (conn_t *, void *);
 	void *farg;
 	bool in_progress;
 
 	struct sockaddr sa;
 	struct sk_buff wb;
-};
+} conn_t;
 
-static struct pollev *io_events;
+static pollev_t *io_events;
 static LIST_HEAD(listeners);
 
 static size_t chash(int fd)
@@ -50,14 +50,14 @@ static size_t chash(int fd)
 
 static size_t rehash(const void *e, void *__unused unused)
 {
-	return chash(((struct conn *)e)->fd);
+	return chash(((conn_t *)e)->fd);
 }
 static struct htable conns = HTABLE_INITIALIZER(conns, rehash, NULL);
 
-static inline struct conn *find_conn(int fd)
+static inline conn_t *find_conn(int fd)
 {
 	int fdhash = chash(fd);
-	struct conn *c;
+	conn_t *c;
 	struct htable_iter i;
 
 	for (c = htable_firstval(&conns, &i, fdhash); c; c = htable_nextval(&conns, &i, fdhash))
@@ -66,16 +66,16 @@ static inline struct conn *find_conn(int fd)
 	return NULL;
 }
 
-static inline void add_conn(struct conn *c)
+static inline void add_conn(conn_t *c)
 {
 	if (!htable_add(&conns, chash(c->fd), c))
 		__builtin_unreachable ();
 }
 
-static inline void rm_conn(const struct conn *c)
+static inline void rm_conn(const conn_t *c)
 {
 	int fdhash = chash(c->fd);
-	struct conn *tmp;
+	conn_t *tmp;
 	struct htable_iter i;
 
 	for (tmp = htable_firstval(&conns, &i, fdhash); tmp; tmp = htable_nextval(&conns, &i, fdhash))
@@ -83,9 +83,9 @@ static inline void rm_conn(const struct conn *c)
 			htable_delval(&conns, &i);
 }
 
-static struct listener *find_listener(int fd)
+static listener_t *find_listener(int fd)
 {
-	struct listener *ret;
+	listener_t *ret;
 
 	list_for_each(&listeners, ret, node)
 		if (ret->fd == fd)
@@ -93,7 +93,7 @@ static struct listener *find_listener(int fd)
 	return NULL;
 }
 
-static bool do_write(struct conn *conn, const void *data, size_t len)
+static bool do_write(conn_t *conn, const void *data, size_t len)
 {
 	int t_bytes = 0, r_bytes = len, n = -1;
 	struct sk_buff *skb = &conn->wb;
@@ -131,7 +131,7 @@ static bool do_write(struct conn *conn, const void *data, size_t len)
 	return true;
 }
 
-static bool do_write_queue(struct conn *conn)
+static bool do_write_queue(conn_t *conn)
 {
 	int t_bytes = 0, r_bytes, n;
 	struct sk_buff *skb;
@@ -190,7 +190,7 @@ static __init __used void __sock_startup(void)
 
 static __exit __used void __sock_cleanup(void)
 {
-	struct listener *li, *next;
+	listener_t *li, *next;
 
 #ifdef _WIN32
 	WSACleanup();
@@ -346,12 +346,12 @@ out:
 }
 
 bool _new_listener(const char *service,
-                  bool (*fn) (struct conn *, void *arg),
+                  bool (*fn) (conn_t *, void *arg),
                   void *arg)
 {
 	int reuse_addr;
 	struct addrinfo *addr;
-	struct listener *ret;
+	listener_t *ret;
 	int fd;
 
 	addr = net_lookup(NULL, service, AF_UNSPEC, SOCK_STREAM);
@@ -386,11 +386,11 @@ bool _new_listener(const char *service,
 }
 
 bool _new_conn(const char *node, const char *service,
-              bool (*fn) (struct conn *, void *arg),
+              bool (*fn) (conn_t *, void *arg),
               void *arg)
 {
 	struct addrinfo *addr;
-	struct conn *conn;
+	conn_t *conn;
 	int fd;
 
 	addr = net_lookup(node, service, AF_UNSPEC, SOCK_STREAM);
@@ -408,7 +408,7 @@ bool _new_conn(const char *node, const char *service,
 	return !!conn;
 }
 
-bool free_conn(struct conn *conn)
+bool free_conn(conn_t *conn)
 {
 	bool retval = false;
 	if (!conn)
@@ -423,11 +423,11 @@ bool free_conn(struct conn *conn)
 	return retval;
 }
 
-struct conn *_new_conn_fd(int fd,
-                         bool (*fn) (struct conn *, void *arg),
+conn_t *_new_conn_fd(int fd,
+                         bool (*fn) (conn_t *, void *arg),
                          void *arg)
 {
-	struct conn *ret;
+	conn_t *ret;
 	int err;
 	socklen_t errlen = sizeof(err);
 	if (fd < 0)
@@ -452,7 +452,7 @@ struct conn *_new_conn_fd(int fd,
 	return ret;
 }
 
-bool conn_read(struct conn *conn, void *data, size_t *len)
+bool conn_read(conn_t *conn, void *data, size_t *len)
 {
 	ssize_t count;
 	if (!conn)
@@ -469,14 +469,14 @@ bool conn_read(struct conn *conn, void *data, size_t *len)
 	return !(count <= 0 && !IsBlocking());
 }
 
-bool conn_write(struct conn *conn, const void *data, size_t len)
+bool conn_write(conn_t *conn, const void *data, size_t len)
 {
 	if (!conn)
 		return false;
 	return do_write(conn, data, len);
 }
 
-bool conn_writestr(struct conn *conn, const char *fmt, ...)
+bool conn_writestr(conn_t *conn, const char *fmt, ...)
 {
 	char *ptr;
 	va_list ap;
@@ -496,8 +496,8 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
 	return ret;
 }
 
-bool _conn_next(struct conn *c,
-               bool (*next) (struct conn *, void *arg),
+bool _conn_next(conn_t *c,
+               bool (*next) (conn_t *, void *arg),
                void *arg)
 {
 	if (!c)
@@ -508,7 +508,7 @@ bool _conn_next(struct conn *c,
 	return true;
 }
 
-void next_close(struct conn *conn, void *arg)
+void next_close(conn_t *conn, void *arg)
 {
 	if (!conn)
 		return;
@@ -517,7 +517,7 @@ void next_close(struct conn *conn, void *arg)
 		assert(free_conn(conn));
 }
 
-bool conn_getopt(struct conn *conn, int optname, void *optval,
+bool conn_getopt(conn_t *conn, int optname, void *optval,
                  int *optlen)
 {
 	if (!conn)
@@ -526,7 +526,7 @@ bool conn_getopt(struct conn *conn, int optname, void *optval,
 	                  optval, (socklen_t *)optlen) == 0;
 }
 
-bool conn_setopt(struct conn *conn, int optname, const void *optval,
+bool conn_setopt(conn_t *conn, int optname, const void *optval,
                  int optlen)
 {
 	if (!conn)
@@ -535,7 +535,7 @@ bool conn_setopt(struct conn *conn, int optname, const void *optval,
 	                  optval, (socklen_t)optlen) == 0;
 }
 
-bool conn_getnameinfo(struct conn *conn,
+bool conn_getnameinfo(conn_t *conn,
                       char *host, size_t hostlen,
                       char *serv, size_t servlen,
                       bool numeric_host,
@@ -556,8 +556,8 @@ bool conn_getnameinfo(struct conn *conn,
 
 void *conn_loop(void)
 {
-	struct conn *conn;
-	struct listener *li;
+	conn_t *conn;
+	listener_t *li;
 
 	while (1) {
 		int nfds, i;

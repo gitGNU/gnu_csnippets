@@ -13,11 +13,11 @@
 #include <csnippets/typesafe_cb.h>
 
 /* Forward declare conn, internal usage only.  */
-struct conn;
+typedef struct conn conn_t;
 
 #define common_cb_cast(arg, expr)					\
-	typesafe_cb_cast(bool (*) (struct conn *, void *),		\
-			 bool (*) (struct conn *, __typeof__(arg)),	\
+	typesafe_cb_cast(bool (*) (conn_t *, void *),		\
+			 bool (*) (conn_t *, __typeof__(arg)),	\
 			 (expr))
 
 /* Creates a listener and adds it to the poll queue. */
@@ -25,7 +25,7 @@ struct conn;
 	_new_listener((service), common_cb_cast(arg, fn),	\
 			(arg))
 bool _new_listener(const char *service,
-                  bool (*fn) (struct conn *, void *arg),
+                  bool (*fn) (conn_t *, void *arg),
                   void *arg);
 
 /* Creates a connection struct and adds it to the poll queue.
@@ -34,7 +34,7 @@ bool _new_listener(const char *service,
 	_new_conn((node), (service), common_cb_cast(arg, fn),	\
 		   (arg))
 bool _new_conn(const char *node, const char *service,
-              bool (*fn) (struct conn *, void *arg),
+              bool (*fn) (conn_t *, void *arg),
               void *arg);
 
 /* Like new_conn() but,  we don't look up nodes or services
@@ -44,16 +44,16 @@ bool _new_conn(const char *node, const char *service,
 #define new_conn_fd(fd, fn, arg)			\
 	_new_conn_fd((fd), common_cb_cast(arg, fn),	\
 			(arg))
-struct conn *_new_conn_fd(int fd,
-                         bool (*fn) (struct conn *, void *arg),
+conn_t *_new_conn_fd(int fd,
+                         bool (*fn) (conn_t *, void *arg),
                          void *arg);
 /* Close connected socket, and free memory. 
  * Fails if the socket file descriptor is already closed.  */
-bool free_conn(struct conn *);
+bool free_conn(conn_t *);
 
-bool conn_read(struct conn *conn, void *data, size_t *len);
-bool conn_write(struct conn *conn, const void *data, size_t len);
-bool conn_writestr(struct conn *conn, const char *fmt, ...)
+bool conn_read(conn_t *conn, void *data, size_t *len);
+bool conn_write(conn_t *conn, const void *data, size_t len);
+bool conn_writestr(conn_t *conn, const char *fmt, ...)
 	__printf(2, 3);
 
 /* Calls @next at next acitivty from the connnection,
@@ -66,12 +66,12 @@ bool conn_writestr(struct conn *conn, const char *fmt, ...)
 #define conn_next(conn, next, arg)			\
 	_conn_next(conn, common_cb_cast(arg, next),	\
 		   (arg))
-bool _conn_next(struct conn *,
-               bool (*next) (struct conn *, void *arg),
+bool _conn_next(conn_t *,
+               bool (*next) (conn_t *, void *arg),
                void *arg);
 
 /* Close the connection, calling the next callback with the argument.  */
-void next_close(struct conn *, void *arg);
+void next_close(conn_t *, void *arg);
 
 /* Similar to setsockopt but for boolean values,
  * Saves a bit of writing for boolean options, when doing something
@@ -96,9 +96,9 @@ void next_close(struct conn *, void *arg);
 	})
 
 /* Wrappers for set/getsockopt().  */
-bool conn_getopt(struct conn *, int optname, void *optval,
+bool conn_getopt(conn_t *, int optname, void *optval,
                  int *optlen);
-bool conn_setopt(struct conn *, int optname, const void *optval,
+bool conn_setopt(conn_t *, int optname, const void *optval,
                  int optlen);
 
 /* Get this connection's name information,
@@ -107,7 +107,7 @@ bool conn_setopt(struct conn *, int optname, const void *optval,
  *
  * The same for @host applies to @serv.
  */
-bool conn_getnameinfo(struct conn *,
+bool conn_getnameinfo(conn_t *,
                       char *host, size_t hostlen,
                       char *serv, size_t servlen,
                       bool numeric_host,

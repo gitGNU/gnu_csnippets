@@ -5,14 +5,14 @@
 #ifndef _MODULE_H
 #define _MODULE_H
 
-struct mod;
+typedef struct mod mod_t;
 
-struct mod *module_open(const char *filename);
-void module_close(struct mod *mod);
+mod_t *module_open(const char *filename);
+void module_close(mod_t *mod);
 
 const char *module_error(void);
-const char *module_name(struct mod *);
-bool module_symbol(struct mod *, const char *name, void **symbol);
+const char *module_name(mod_t *);
+bool module_symbol(mod_t *, const char *name, void **symbol);
 
 #endif  /* _MODULE_H */
 

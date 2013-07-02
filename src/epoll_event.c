@@ -14,13 +14,13 @@
 
 #include <sys/epoll.h>
 
-struct pollev {
+typedef struct pollev {
 	struct epoll_event *events;
 	size_t size;
 	int efd;
-};
+} pollev_t;
 
-static inline short compute_revents(struct pollev *ev, int index)
+static inline short compute_revents(pollev_t *ev, int index)
 {
 	uint32_t events = ev->events[index].events;
 	short r = 0;
@@ -34,11 +34,11 @@ static inline short compute_revents(struct pollev *ev, int index)
 	return r;
 }
 
-struct pollev *pollev_init(void)
+pollev_t *pollev_init(void)
 {
-	struct pollev *ev;
+	pollev_t *ev;
 
-	xmalloc(ev, sizeof(struct pollev), return NULL);
+	xmalloc(ev, sizeof(pollev_t), return NULL);
 	if ((ev->efd = epoll_create1(0)) < 0) {
 #ifdef _DEBUG_POLLEV
 		perror("epoll_create1");
@@ -53,7 +53,7 @@ struct pollev *pollev_init(void)
 	return ev;
 }
 
-void pollev_deinit(struct pollev *pev)
+void pollev_deinit(pollev_t *pev)
 {
 	if (!pev)
 		return;
@@ -63,7 +63,7 @@ void pollev_deinit(struct pollev *pev)
 	free(pev);
 }
 
-void pollev_add(struct pollev *pev, int fd, int bits)
+void pollev_add(pollev_t *pev, int fd, int bits)
 {
 	struct epoll_event ev;
 	if (!pev)
@@ -89,7 +89,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 		        fd, errno, strerror(errno));
 }
 
-void pollev_del(struct pollev *pev, int fd)
+void pollev_del(pollev_t *pev, int fd)
 {
 	if (!pev)
 		return;
@@ -99,7 +99,7 @@ void pollev_del(struct pollev *pev, int fd)
 		        fd, S_error, strerror(S_error));
 }
 
-int pollev_poll(struct pollev *pev, int timeout)
+int pollev_poll(pollev_t *pev, int timeout)
 {
 	int n;
 	if (!pev)
@@ -112,19 +112,19 @@ int pollev_poll(struct pollev *pev, int timeout)
 	return n;
 }
 
-__inline int pollev_activefd(struct pollev *pev, int index)
+__inline int pollev_activefd(pollev_t *pev, int index)
 {
 	return pev->events[index].data.fd;
 }
 
-short pollev_revent(struct pollev *ev, int index)
+short pollev_revent(pollev_t *ev, int index)
 {
 	if (!ev || (index < 0 || index > ev->size))
 		return false;
 	return compute_revents(ev, index);
 }
 
-bool pollev_ret(struct pollev *ev, int index, int *fd, short *revents)
+bool pollev_ret(pollev_t *ev, int index, int *fd, short *revents)
 {
 	if (!ev || (index < 0 || index > ev->size))
 		return false;

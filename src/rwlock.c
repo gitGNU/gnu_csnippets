@@ -8,7 +8,8 @@ void rwlock_wrlock(rwlock_t *l)
 	unsigned me = atomic_xadd(&l->u, (1<<16));
 	unsigned char val = me >> 16;
 
-	while (val != l->s.write) cpu_relax();
+	while (val != l->s.write)
+		cpu_relax();
 }
 
 void rwlock_wrunlock(rwlock_t *l)
@@ -41,7 +42,8 @@ void rwlock_rdlock(rwlock_t *l)
 	unsigned me = atomic_xadd(&l->u, (1<<16));
 	unsigned char val = me >> 16;
 
-	while (val != l->s.read) cpu_relax();
+	while (val != l->s.read)
+		cpu_relax();
 	l->s.read++;
 }
 

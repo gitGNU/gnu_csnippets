@@ -7,7 +7,7 @@ static bool stack_compare_string(const void *s1, const void *s2)
 
 int main(int argc, char **argv)
 {
-	struct stack on_stack;
+	stack_t on_stack;
 	int i;
 
 	stack_init(&on_stack, argc);

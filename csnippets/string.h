@@ -18,6 +18,16 @@ static inline bool strends(const char *str, const char *postfix)
 
 char *strtrim(char *str);
 char **strexplode(char *string, char seperator, int *size);
+/** Wildcard string matching.
+ *  Example:
+ *  \code
+ *	char *string = "hello_world";
+ *	if (strwildmatch("_*", string))
+ *		...
+ *  \endcode
+ *
+ *  Returns: 1 on success, 0 on failure.
+ */
 int strwildmatch(const char *pattern, const char *string);
 /* Compare each character of a string using the
  * compare function specified.  */

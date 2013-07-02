@@ -20,10 +20,10 @@ struct data {
 	short revents;
 } __packed;
 
-struct pollev {
+typedef struct pollev {
 	struct data fds[FD_SETSIZE];     /* Array of fds to poll on  */
 	struct data events[FD_SETSIZE];  /* Events occured.  */
-};
+} pollev_t;
 
 static inline int
 compute_revents(int fd, int sought, fd_set *rfds, fd_set *wfds, fd_set *efds)
@@ -41,21 +41,22 @@ compute_revents(int fd, int sought, fd_set *rfds, fd_set *wfds, fd_set *efds)
 	return happened;
 }
 
-struct pollev *pollev_init(void)
+pollev_t *pollev_init(void)
 {
-	struct pollev *ev;
+	pollev_t *ev;
 
-	xmalloc(ev, sizeof(struct pollev), return NULL);
+	xmalloc(ev, sizeof(pollev_t), return NULL);
 	memset(ev->fds, 0, sizeof(ev->fds));
+	memset(ev->events, 0, sizeof(ev->events));
 	return ev;
 }
 
-void pollev_deinit(struct pollev *p)
+void pollev_deinit(pollev_t *p)
 {
 	free(p);
 }
 
-void pollev_add(struct pollev *pev, int fd, int bits)
+void pollev_add(pollev_t *pev, int fd, int bits)
 {
 	if (!pev || fd < 0)
 		return;
@@ -76,7 +77,7 @@ void pollev_add(struct pollev *pev, int fd, int bits)
 	pev->fds[fd].revents = 0;
 }
 
-void pollev_del(struct pollev *pev, int fd)
+void pollev_del(pollev_t *pev, int fd)
 {
 	int i;
 	if (!pev)
@@ -89,7 +90,7 @@ void pollev_del(struct pollev *pev, int fd)
 		}
 }
 
-int pollev_poll(struct pollev *pev, int timeout)
+int pollev_poll(pollev_t *pev, int timeout)
 {
 	int maxfd, rc, i;
 	static fd_set rfds, wfds, efds;
@@ -158,14 +159,14 @@ int pollev_poll(struct pollev *pev, int timeout)
 	return rc;
 }
 
-__inline int pollev_activefd(struct pollev *pev, int index)
+__inline int pollev_activefd(pollev_t *pev, int index)
 {
 	if (index < 0 || index > FD_SETSIZE)
 		return -1;
 	return pev->events[index].fd;
 }
 
-__inline short pollev_revent(struct pollev *pev, int index)
+__inline short pollev_revent(pollev_t *pev, int index)
 {
 	short r = 0;
 	if (index < 0 || index > FD_SETSIZE)
@@ -176,7 +177,7 @@ __inline short pollev_revent(struct pollev *pev, int index)
 	return r;
 }
 
-bool pollev_ret(struct pollev *pev, int index, int *fd, short *revents)
+bool pollev_ret(pollev_t *pev, int index, int *fd, short *revents)
 {
 	if (!pev || (index < 0 || index > FD_SETSIZE) || pev->events[index].revents == 0)
 		return false;

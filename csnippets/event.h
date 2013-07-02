@@ -9,7 +9,7 @@
 
 _BEGIN_DECLS
 
-struct event;
+typedef struct event event_t;
 
 /**
  * Initialize events thread
@@ -28,7 +28,7 @@ extern void events_stop(void);
  *
  * @param event, create it with event_create().
  */
-extern void events_add(struct event *event);
+extern void events_add(event_t *event);
 /**
  * Create an event, NOTE: This does NOT add it to the list.
  * You must add it manually via events_add().
@@ -36,7 +36,7 @@ extern void events_add(struct event *event);
  * Example usage:
  *    events_add(event_create(10, my_func, my_param));
  */
-extern struct event *event_create(int delay, task_routine start, void *p);
+extern event_t *event_create(int delay, task_routine start, void *p);
 
 _END_DECLS
 #endif  /* _EVENT_H */

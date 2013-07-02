@@ -5,7 +5,7 @@
 #ifndef _IO_POLL_H
 #define _IO_POLL_H
 
-struct pollev;
+typedef struct pollev pollev_t;
 
 #define IO_READ		0x0001   /* There's data to be read.  */
 #define IO_WRITE	0x0002   /* We're free to send incomplete data.  */
@@ -17,7 +17,7 @@ struct pollev;
  * This structure is private for each interface;  Since
  * The members differ for each one.
  */
-struct pollev *pollev_init(void);
+pollev_t *pollev_init(void);
 
 /**
  * pollev_deinit() - deinitialize and free memory
@@ -27,17 +27,17 @@ struct pollev *pollev_init(void);
  * assiocated, unless otherwise stated in the interface
  * manual page.
  */
-void pollev_deinit(struct pollev *);
+void pollev_deinit(pollev_t *);
 
 /* Add file descriptor @fd of IO bits to the poll queue.
  *
  * Bits should be something like:
  *	IO_READ | IO_WRITE or just one of them.
  */
-void pollev_add(struct pollev *, int fd, int bits);
+void pollev_add(pollev_t *, int fd, int bits);
 
 /* Delete @fd from the poll queue. */
-void pollev_del(struct pollev *, int fd);
+void pollev_del(pollev_t *, int fd);
 
 /**
  * pollev_poll() - poll on every file descriptor added.
@@ -65,7 +65,7 @@ void pollev_del(struct pollev *, int fd);
  *			...
  *	}
  */
-int pollev_poll(struct pollev *, int timeout);
+int pollev_poll(pollev_t *, int timeout);
 
 /**
  * pollev_activefd() - get the current active file descriptor
@@ -74,7 +74,7 @@ int pollev_poll(struct pollev *, int timeout);
  *
  * See pollev_poll() for more information.
  */
-int pollev_activefd(struct pollev *, int index) __fconst;
+int pollev_activefd(pollev_t *, int index) __fconst;
 
 /**
  * pollev_revent() - get the returned events
@@ -84,7 +84,7 @@ int pollev_activefd(struct pollev *, int index) __fconst;
  *
  * See pollev_poll() for more information.
  */
-short pollev_revent(struct pollev *, int index) __fconst;
+short pollev_revent(pollev_t *, int index) __fconst;
 
 /**
  * pollev_ret() - retrieve returned fd and it's events.
@@ -92,7 +92,7 @@ short pollev_revent(struct pollev *, int index) __fconst;
  * A call to this is equivalent to:
  *	int fd = pollev_activefd(...), revent = pollev_revent(...);
  */
-bool pollev_ret(struct pollev *, int, int *, short *) __fconst;
+bool pollev_ret(pollev_t *, int, int *, short *) __fconst;
 
 #endif
 

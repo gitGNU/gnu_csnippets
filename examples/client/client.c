@@ -7,13 +7,13 @@ struct buf {
 	size_t used;
 };
 
-static bool echo_close(struct conn *conn, struct buf *buf)
+static bool echo_close(conn_t *conn, struct buf *buf)
 {
 	free(buf);
 	return true;
 }
 
-static bool echo_write(struct conn *conn, struct buf *buf)
+static bool echo_write(conn_t *conn, struct buf *buf)
 {
 	if (!conn_write(conn, buf->bytes, buf->used)) {
 		free(buf);
@@ -25,7 +25,7 @@ static bool echo_write(struct conn *conn, struct buf *buf)
 	return true;
 }
 
-static bool echo_read(struct conn *conn, struct buf *buf)
+static bool echo_read(conn_t *conn, struct buf *buf)
 {
 	buf->used = BUFFER_SIZE;
 	if (!conn_read(conn, buf->bytes, &buf->used)) {
@@ -37,7 +37,7 @@ static bool echo_read(struct conn *conn, struct buf *buf)
 	return conn_next(conn, echo_write, buf);
 }
 
-static bool echo_start(struct conn *conn, void *unused)
+static bool echo_start(conn_t *conn, void *unused)
 {
 	struct buf *buf = calloc(1,sizeof(*buf));
 	if (!buf)

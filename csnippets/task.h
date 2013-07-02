@@ -12,7 +12,7 @@ _BEGIN_DECLS
  */
 typedef void (*task_routine) (void *);
 
-struct task;
+typedef struct task task_t;
 /**
  * Initialize tasks thread.
  *
@@ -38,7 +38,7 @@ extern void tasks_stop(void);
  * If the tasks thread was not initialized this function will throw
  * a warning on console, and will do nothing.
  */
-extern void tasks_add(struct task *task);
+extern void tasks_add(task_t *task);
 /**
  * Create a task, NOTE: This does NOT add it to the queue.
  *
@@ -49,7 +49,7 @@ extern void tasks_add(struct task *task);
  * Example Usage:
  *     task_add(task_create(my_task, my_param));
  */
-extern struct task *task_create(task_routine routine, void *param);
+extern task_t *task_create(task_routine routine, void *param);
 
 _END_DECLS
 #endif  /* _TASK_H */

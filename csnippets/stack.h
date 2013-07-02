@@ -20,10 +20,10 @@
  * 'ptr' is dynamicly allocated of course depending on the size
  * needed, see stack_push().
  */
-struct stack {
+typedef struct stack {
 	void **ptr;     /* the internel array */
 	size_t size;
-};
+} stack_t;
 
 #define INITIAL_SIZE 10
 #define SIZE_INCREMENT 2
@@ -35,14 +35,14 @@ struct stack {
  * This does NOT allocate memory for the stack itself, it's intended to
  * be used like this:
  *
- *    struct stack stack;
+ *    stack_t stack;
  *    if (!stack_init(&stack, 0))
  *        ...
  *  But as note, it's not a *MUST* to use it on stack only.
  *
  * \sa stack_free().
  */
-static inline bool stack_init(struct stack *s, size_t size)
+static inline bool stack_init(stack_t *s, size_t size)
 {
 	if (!size)
 		size = INITIAL_SIZE;
@@ -61,7 +61,7 @@ static inline bool stack_init(struct stack *s, size_t size)
  *
  * \sa stack_push().
  */
-static inline void stack_free(struct stack *s, void (*destructor) (void *))
+static inline void stack_free(stack_t *s, void (*destructor) (void *))
 {
 	int i;
 
@@ -84,7 +84,7 @@ static inline void stack_free(struct stack *s, void (*destructor) (void *))
  * Does not free previous memory.
  * This is called whenever memory is needed (Internal use).
  */
-static inline bool stack_grow(struct stack *s, int new_size)
+static inline bool stack_grow(stack_t *s, int new_size)
 {
 	void *tmp;
 
@@ -105,7 +105,7 @@ static inline bool stack_grow(struct stack *s, int new_size)
  * \returns -1 on failure or pos of where the item is placed.
  * \sa stack_pop(), stack_top(), stack_remove().
  */
-static int stack_push(struct stack *s, void *ptr, int where, void (*constructor) (void *))
+static int stack_push(stack_t *s, void *ptr, int where, void (*constructor) (void *))
 {
 	int place = where;
 
@@ -132,7 +132,7 @@ static int stack_push(struct stack *s, void *ptr, int where, void (*constructor)
  *
  * \sa stack_top()
  */
-static inline void *stack_pop(struct stack *s)
+static inline void *stack_pop(stack_t *s)
 {
 	return s ? s->ptr[--s->size] : NULL;
 }
@@ -144,7 +144,7 @@ static inline void *stack_pop(struct stack *s)
  *
  * \sa stack_remove(), stack_pop()
  */
-static inline void *stack_top(struct stack *s)
+static inline void *stack_top(stack_t *s)
 {
 	return s ? s->ptr[s->size - 1] : NULL;
 }
@@ -158,7 +158,7 @@ static inline void *stack_top(struct stack *s)
  *
  * \sa stack_push().
  */
-static bool stack_remove(struct stack *s, void *ptr, bool (*compare_function) (const void *, const void *),
+static bool stack_remove(stack_t *s, void *ptr, bool (*compare_function) (const void *, const void *),
                          void (*destructor) (void *), bool duplicate)
 {
 	int i;

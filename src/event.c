@@ -10,11 +10,11 @@
 #include <errno.h>
 #include <sys/time.h>
 
-struct event {
+typedef struct event {
 	int64_t delay;
 	struct task *task;
 	struct list_node node;
-};
+} event_t;
 
 static pthread_mutex_t mutex        = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  cond         = PTHREAD_COND_INITIALIZER;
@@ -24,7 +24,7 @@ static LIST_HEAD(events);
 
 static void *events_thread(void __unused *unused)
 {
-	struct event *event = NULL, *next = NULL;
+	event_t *event = NULL, *next = NULL;
 	struct timespec ts;
 	struct timeval tv;
 
@@ -37,7 +37,7 @@ static void *events_thread(void __unused *unused)
 				break;
 			}
 		}
-		event = list_top(&events, struct event, node);
+		event = list_top(&events, event_t, node);
 		if (!event) {
 			pthread_mutex_unlock(&mutex);
 			continue;
@@ -100,13 +100,13 @@ void events_stop(void)
 	pthread_cond_destroy(&cond);
 }
 
-struct event *event_create(int delay, task_routine start, void *p)
+event_t *event_create(int delay, task_routine start, void *p)
 {
-	struct event *event;
+	event_t *event;
 	if (!start || delay < 0)
 		return NULL;
 
-	xmalloc(event, sizeof(struct event), return NULL);
+	xmalloc(event, sizeof(event_t), return NULL);
 	event->delay = delay;
 	event->task = task_create(start, p);
 
@@ -118,7 +118,7 @@ struct event *event_create(int delay, task_routine start, void *p)
 	return event;
 }
 
-void events_add(struct event *event)
+void events_add(event_t *event)
 {
 	bool empty = false;
 	if (!event)
