@@ -10,7 +10,7 @@
 #include <csnippets/htable.h>
 #include <csnippets/hash.h>
 
-#include <internal/socket_compat.h>  /* Internal definitions, for compatibility with various platforms.  */
+#include <internal/socket_compat.h>
 
 struct sk_buff {
 	char *data;
@@ -226,7 +226,7 @@ net_lookup(const char *node, const char *service,
 
 static bool set_nonblock(int fd)
 {
-	long flags;
+	long flags = 1;
 #ifndef _WIN32
 	flags = fcntl(fd, F_GETFL);
 	if (flags == -1)
@@ -236,14 +236,12 @@ static bool set_nonblock(int fd)
 		flags |= O_NONBLOCK;
 	return fcntl(fd, F_SETFL, flags) == 0;
 #else
-	flags = 1;
 	return ioctlsocket(fd, FIONBIO, (u_long *)flags) == 0;
 #endif
 }
 
 /* We only handle IPv4 and IPv6 */
 #define MAX_PROTOS 2
-
 static void remove_fd(
         struct pollfd *pfd,
         const struct addrinfo **addr,
@@ -631,20 +629,20 @@ void *conn_loop(void)
 							if (conn->fn && !conn->fn(conn, conn->farg))
 								assert(free_conn(conn));
 						} else /* Disconnected?  */
-							assert(free_conn(conn));
+							free_conn(conn);
 						continue;
 					} else if (conn->wb.data) {
 #ifdef _DEBUG_SOCKET
 						eprintf("sending incomplete data...\n");
 #endif
 						if (!do_write_queue(conn) && !IsBlocking())
-							assert(free_conn(conn));
+							free_conn(conn);
 						continue;
 					}
 				}
 
 				if (conn->next && !conn->next(conn, conn->argp))
-					assert(free_conn(conn));
+					free_conn(conn);
 			}
 		}
 	}

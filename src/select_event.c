@@ -29,13 +29,13 @@ static inline int
 compute_revents(int fd, int sought, fd_set *rfds, fd_set *wfds, fd_set *efds)
 {
 	int happened = 0;
-	if (FD_ISSET (fd, rfds))
+	if (FD_ISSET(fd, rfds))
 		happened |= IO_READ & sought;
 
-	if (FD_ISSET (fd, wfds))
+	if (FD_ISSET(fd, wfds))
 		happened |= IO_WRITE & sought;
 
-	if (FD_ISSET (fd, efds))
+	if (FD_ISSET(fd, efds))
 		happened |= IO_ERR & sought;
 
 	return happened;

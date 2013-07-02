@@ -18,11 +18,13 @@ typedef enum _Bool {
 #include <stdbool.h>
 #endif  /* _MSC_VER */
 #endif  /* __cplusplus */
+
 /* Comon headers.  */
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
 #include <stdio.h>
+
 /* This does NOT include the one from libc,
  * but csnippets/string.h if -I is passed to the compiler,
  * In order to solve this, i've added a #include_next in csnippets/string.h

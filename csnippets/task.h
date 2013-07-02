@@ -7,14 +7,12 @@
 
 _BEGIN_DECLS
 
-/** The start routine of a task.
- *  This will be called via the thread created by tasks_init().
- */
+/* The start routine of a task.  */
 typedef void (*task_routine) (void *);
 
 typedef struct task task_t;
 
-/**
+/*
  * Initialize tasks thread.
  *
  * This is where all the tasks are executed.  The thread
@@ -25,18 +23,16 @@ typedef struct task task_t;
  */
 extern void tasks_init(void);
 
-/**
- * Returns true if the tasks thread was initialized.
- */
+/* Returns true if the tasks thread was initialized.  */
 extern bool tasks_running(void);
 
-/**
+/*
  * Stops the tasks the thread, this means every waiting task
  * will be executed and memory will be free'd.
  */
 extern void tasks_stop(void);
 
-/**
+/*
  * Add a task to the task list.
  *
  * If the tasks thread was not initialized this function will throw
@@ -46,7 +42,7 @@ extern void tasks_stop(void);
  */
 extern void tasks_add(task_t *task);
 
-/**
+/*
  * Create a task, NOTE: This does NOT add it to the queue.
  *
  * Returns a malloc'd task with task_routine routine and param param.
