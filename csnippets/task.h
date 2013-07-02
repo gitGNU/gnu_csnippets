@@ -13,6 +13,7 @@ _BEGIN_DECLS
 typedef void (*task_routine) (void *);
 
 typedef struct task task_t;
+
 /**
  * Initialize tasks thread.
  *
@@ -23,22 +24,28 @@ typedef struct task task_t;
  * the tasks will be executed before we exit.
  */
 extern void tasks_init(void);
+
 /**
  * Returns true if the tasks thread was initialized.
  */
 extern bool tasks_running(void);
+
 /**
- * Stops the tasks the thread, this means every waiting every
+ * Stops the tasks the thread, this means every waiting task
  * will be executed and memory will be free'd.
  */
 extern void tasks_stop(void);
+
 /**
  * Add a task to the task list.
  *
  * If the tasks thread was not initialized this function will throw
  * a warning on console, and will do nothing.
+ *
+ * NB: Use task_create() to create the task.
  */
 extern void tasks_add(task_t *task);
+
 /**
  * Create a task, NOTE: This does NOT add it to the queue.
  *

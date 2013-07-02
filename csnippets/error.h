@@ -36,6 +36,7 @@
 #define fatal(str, args...)	error_nret(LOG_FATAL str, ##args)
 #define warning(str, args...)	dolog(LOG_WARNING str, ##args)
 #define eprintf(str, args...)	dolog(str, ##args)
+
 #ifdef _DEBUG
 #define might_bug()		dolog(LOG_WARNING " %s is not well-tested and might behave incorrectly, please report any bugs you encounter\n", __func__)
 #define dbg(fmt, args...)	dolog(LOG_DEBUG "%s:%d " fmt COL_BLANK, __func__, __LINE__, ##args)
@@ -53,11 +54,13 @@ extern void log_init(const char *tofile);
  * exit after.
  */
 extern void __noreturn __printf(1, 2) error_nret(const char *str, ...);
+
 /* dolog() - Log a formatted string.
  *
  * This function doesn't exit.
  */
 extern void __printf(1, 2) dolog(const char *str, ...);
+
 /* set_verbose_level() Set verbose level
  *
  * 0 - be quiet.

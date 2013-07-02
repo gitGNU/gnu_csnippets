@@ -8,6 +8,13 @@
 /* Shamelessly stolen from ccan/str.  */
 #define streq(a, b) (strcmp((a), (b)) == 0)
 #define strstarts(str,prefix) (strncmp((str),(prefix),strlen(prefix)) == 0)
+
+#define str_lower(str)	strconv(str, tolower)
+#define str_upper(str)	strconv(str, toupper)
+
+#define strcmp_lo(str)  strcmp(str, islower)
+#define strcmp_up(str)  strcmp(str, isupper)
+
 static inline bool strends(const char *str, const char *postfix)
 {
 	if (strlen(str) < strlen(postfix))
@@ -17,7 +24,18 @@ static inline bool strends(const char *str, const char *postfix)
 }
 
 char *strtrim(char *str);
+
+/** Split string into tokens using a character seperator.
+ *
+ * Example:
+ * \code
+ *	char *str = "hello,world,this,is,a,random,string"
+ *	int size;
+ *	char **splited = strexplode(str, ',', &size);
+ * \endcode
+ */
 char **strexplode(char *string, char seperator, int *size);
+
 /** Wildcard string matching.
  *  Example:
  *  \code
@@ -29,9 +47,11 @@ char **strexplode(char *string, char seperator, int *size);
  *  Returns: 1 on success, 0 on failure.
  */
 int strwildmatch(const char *pattern, const char *string);
+
 /* Compare each character of a string using the
  * compare function specified.  */
 bool strccmp(const char *str, int (*cmp) (int));
+
 /* Convert a string with convfun function and return
  * a malloc'd version of it.  */
 char *strconv(const char *str, int (*conv) (int));

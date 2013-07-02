@@ -26,8 +26,10 @@ mod_t *module_open(const char *filename)
 		return NULL;
 
 	d = dlopen(tmpf, RTLD_LAZY);
-	if (!d)
+	if (!d) {
+		free(tmpf);
 		return NULL;
+	}
 
 	xmalloc(ret, sizeof(*ret), free(tmpf); dlclose(d); return NULL);
 	ret->name = tmpf;
@@ -39,6 +41,7 @@ void module_close(mod_t *mod)
 {
 	if (!mod)
 		return;
+
 	free((void *)mod->name);
 	dlclose(mod->handle);
 	free(mod);
