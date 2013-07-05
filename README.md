@@ -13,6 +13,7 @@ Current modules implemented:
      3. Asynchronous sockets (with epoll and select support)
      4. Dynamic Library Loading (currently works for Linux, it can load .so files and get callable function address)
      5. Dyanmic Stack (This can be used as standalone header see the comments in csnippets/stack.h)
+     6. Red-Black Tree
 
 and much more, glance at the directory csnippets/ to see included modules (This is where the headers go)
 
