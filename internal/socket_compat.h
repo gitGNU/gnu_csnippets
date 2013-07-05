@@ -23,7 +23,10 @@
 #define S_error		WSAGetLastError()
 #define S_seterror(e)	WSASetLastError((e))
 
-#define S_EAGAIN	WSAEWOULDBLOCK     /* Windows socket does not have WSAEAGAIN it seems, define it to would block instead (Same as some POSIX-based systems).  */
+/* Windows socket does not have WSAEAGAIN it seems,
+ * define it to would block instead (Same as some POSIX-based systems).
+ */
+#define S_EAGAIN	WSAEWOULDBLOCK
 #define S_EBLOCK	WSAEWOULDBLOCK
 #define S_EINTR		WSAEINTR
 #define S_EINPROGRESS	WSAEINPROGRESS

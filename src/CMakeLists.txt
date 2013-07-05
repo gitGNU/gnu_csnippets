@@ -37,6 +37,7 @@ set(csnippets_SOURCES ${csnippets_SOURCES}
 	${CMAKE_CURRENT_LIST_DIR}/poll.c
 	${CMAKE_CURRENT_LIST_DIR}/htable.c
 	${CMAKE_CURRENT_LIST_DIR}/hash.c
+	${CMAKE_CURRENT_LIST_DIR}/rbtree.c
 	${CMAKE_CURRENT_LIST_DIR}/csnippets.c
 )
 set(csnippets_PRE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/../csnippets/csnippets.h")

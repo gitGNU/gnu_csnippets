@@ -84,6 +84,7 @@ include(examples/client/CMakeLists.txt)
 include(examples/modules/CMakeLists.txt)
 include(examples/task/CMakeLists.txt)
 include(examples/stack/CMakeLists.txt)
+include(examples/rbtree/CMakeLists.txt)
 
 # Installation paths
 set(BIN_INSTALL_DIR	bin	CACHE PATH "Where to install binaries to.")
