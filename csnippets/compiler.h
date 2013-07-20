@@ -20,7 +20,11 @@
 #define __noinline	__attribute__((noinline))
 #define __const_inline	inline __attribute__((always_inline, __const__))
 #define __noclone	__attribute__((noclone))
+
+#ifndef __unused
 #define __unused	__attribute__((unused))
+#endif
+
 #define __used		__attribute__((used))
 #define __cold		__attribute__((cold))
 #define __init		__attribute__((constructor))

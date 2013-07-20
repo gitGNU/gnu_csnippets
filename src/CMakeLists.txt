@@ -57,7 +57,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # gcc compile flags
-set(WARNS_FLAGS "-Wall -Wno-sign-compare ")
+set(WARNS_FLAGS "-Wall -Wno-unused-result -Wno-sign-compare ")
 set(CMAKE_C_FLAGS		    "${CMAKE_C_FLAGS} ${WARNS_FLAGS} ${ARCH_FLAGS} -pipe -include ${csnippets_PRE_INCLUDE}")
 set(CMAKE_C_FLAGS_DEBUG		    "-O0 -g3 -ggdb")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O1 -g3 -ggdb -fno-omit-frame-pointer")
