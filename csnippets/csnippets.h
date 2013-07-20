@@ -24,6 +24,8 @@ typedef enum _Bool {
 #include <stddef.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 
 /* This does NOT include the one from libc,
  * but csnippets/string.h if -I is passed to the compiler,
@@ -34,7 +36,6 @@ typedef enum _Bool {
  * See also: http://gcc.gnu.org/onlinedocs/cpp/Wrapper-Headers.html
  */
 #include <string.h>
-#include <stdlib.h>
 
 #include <csnippets/compiler.h>
 #include <csnippets/error.h>

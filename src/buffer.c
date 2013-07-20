@@ -3,7 +3,6 @@
  * Licensed under MIT, see LICENSE.MIT for details.
  */
 #include <csnippets/buffer.h>
-#include <sys/stat.h>
 
 typedef struct buffer {
 	int wpos, rpos, size;
