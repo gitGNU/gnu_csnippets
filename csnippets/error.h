@@ -45,6 +45,13 @@
 #define dbg(fmt, args...)
 #endif
 
+/* The Panic Function Pointer
+ *
+ * See down for details on how is this called and
+ * details on how to set it.
+ */
+typedef void (*panic_fn) (const char *);
+
 /* Initialize log file.  */
 extern void log_init(const char *tofile);
 
@@ -67,6 +74,16 @@ extern void __printf(1, 2) dolog(const char *str, ...);
  * 1 - be annoying.  (This is the default)
  */
 extern void set_verbose_level(int level);
+
+/* Set the Panic Function
+ *
+ * This function is called whenever something dangerous
+ * happened.
+ *
+ * Note: If there was a panic function already specified
+ * This one will override it.
+ */
+extern void set_panic_callback(panic_fn fptr);
 
 #endif  /* _ERROR_H */
 

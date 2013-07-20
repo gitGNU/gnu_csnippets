@@ -48,6 +48,12 @@ static __const_inline bool test_bit(uint32_t bits, uint32_t bit)
 	return (bits & bit) == bit;
 }
 
+static __const_inline bool swap_u32(uint32_t val)
+{
+	val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
+	return (val << 16) | ((val >> 16) & 0xFFFF);
+}
+
 /* C++ compatiblity.  */
 #if !defined(_BEGIN_DECLS) && !defined(_END_DECLS)
 #ifdef __cplusplus

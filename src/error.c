@@ -10,6 +10,7 @@
  */
 extern char *program_invocation_short_name;
 static int verbose = 0;
+panic_fn g_panic;
 
 /* A short name instead of a longass one.  */
 #define prog	program_invocation_short_name
@@ -35,7 +36,8 @@ void __noreturn error_nret(const char *str, ...)
 	va_end(ap);
 
 	__dolog(_("%s: %s\n%s: error is not recoverable, terminating now...\n"),
-	        prog, buff, prog);
+			prog, buff, prog);
+	g_panic(buff);
 	free(buff);
 	exit(EXIT_FAILURE);
 }
@@ -46,7 +48,7 @@ void dolog(const char *str, ...)
 	char *buff;
 
 	va_start(va, str);
-	(void) vasprintf(&buff, str, va);
+	vasprintf(&buff, str, va);
 	va_end(va);
 
 	__dolog(_("%s: %s"), prog, buff);
@@ -56,5 +58,10 @@ void dolog(const char *str, ...)
 __inline void set_verbose_level(int level)
 {
 	verbose = !!level;
+}
+
+__inline void set_panic_callback(panic_fn fptr)
+{
+	g_panic = fptr;
 }
 
