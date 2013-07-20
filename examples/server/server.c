@@ -37,7 +37,7 @@ static bool echo_read(conn_t *conn, struct buf *buf)
 		return false;
 	}
 
-	printf("%*s\n", buf->used, buf->bytes);
+	printf("%*s\n", (int)buf->used, buf->bytes);
 	return conn_next(conn, echo_write, buf);
 }
 
