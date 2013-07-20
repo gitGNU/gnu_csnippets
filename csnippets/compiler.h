@@ -8,27 +8,27 @@
 #define _COMPILER_H
 
 #if defined __GNUC__ || defined __clang__
-#define __noreturn	__attribute__((noreturn))
+#define __noreturn	__attribute__((__noreturn__))
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
 #define __warn_unused	__attribute__((warn_unused_result))
-#define __weak		__attribute__((weak))
+#define __weak		__attribute__((__weak__))
 #define __printf(nfmt, narg) \
 	__attribute__((__format__(__printf__, nfmt, narg)))
-#define __packed	__attribute__((packed))
+#define __packed	__attribute__((__packed__))
 #define __fconst	__attribute__((__const__))
-#define __noinline	__attribute__((noinline))
+#define __noinline	__attribute__((__noinline__))
 #define __const_inline	inline __attribute__((always_inline, __const__))
-#define __noclone	__attribute__((noclone))
+#define __noclone	__attribute__((__noclone__))
 
 #ifndef __unused
-#define __unused	__attribute__((unused))
+#define __unused	__attribute__((__unused__))
 #endif
 
-#define __used		__attribute__((used))
-#define __cold		__attribute__((cold))
-#define __init		__attribute__((constructor))
-#define __exit		__attribute__((destructor))
+#define __used		__attribute__((__used__))
+#define __cold		__attribute__((__cold__))
+#define __init		__attribute__((__constructor__))
+#define __exit		__attribute__((__destructor__))
 #define __construct	__init
 #define __destruct	__exit
 #define GCC_VERSION (__GNUC__ * 10000 \
