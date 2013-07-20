@@ -40,9 +40,20 @@
 #ifdef _DEBUG
 #define might_bug()		dolog(LOG_WARNING " %s is not well-tested and might behave incorrectly, please report any bugs you encounter\n", __func__)
 #define dbg(fmt, args...)	dolog(LOG_DEBUG "%s:%d " fmt COL_BLANK, __func__, __LINE__, ##args)
+#include <assert.h>
 #else
 #define might_bug()
 #define dbg(fmt, args...)
+
+/* Hack, so that when calling assert() when not in debug mode
+ * the expression is executed instead of doing nothing.
+ *
+ * Quoting from assert.h:
+ *  If NDEBUG is defined, do nothing.
+ *  If not, and EXPRESSION is zero, print an error message and abort.
+ */
+#undef assert
+#define assert(expr) (expr)
 #endif
 
 /* The Panic Function Pointer
