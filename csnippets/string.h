@@ -5,15 +5,15 @@
 /* See the comment in csnippets/csnippets.h  */
 #include_next <string.h>
 
-/* Shamelessly stolen from ccan/str.  */
-#define streq(a, b) (strcmp((a), (b)) == 0)
-#define strstarts(str,prefix) (strncmp((str),(prefix),strlen(prefix)) == 0)
-
 #define str_lower(str)	strconv(str, tolower)
 #define str_upper(str)	strconv(str, toupper)
 
-#define strcmp_lo(str)  strcmp(str, islower)
-#define strcmp_up(str)  strcmp(str, isupper)
+#define strcmp_lo(str)  strccmp(str, islower)
+#define strcmp_up(str)  strccmp(str, isupper)
+
+/* Shamelessly stolen from ccan/str.  */
+#define streq(a, b) (strcmp((a), (b)) == 0)
+#define strstarts(str,prefix) (strncmp((str),(prefix),strlen(prefix)) == 0)
 
 static inline bool strends(const char *str, const char *postfix)
 {
@@ -22,6 +22,7 @@ static inline bool strends(const char *str, const char *postfix)
 
 	return streq(str + strlen(str) - strlen(postfix), postfix);
 }
+/* End CCan's code.  */
 
 char *strtrim(char *str);
 
