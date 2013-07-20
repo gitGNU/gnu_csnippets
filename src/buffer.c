@@ -116,8 +116,8 @@ void baddbytes(buffer_t *buffer, uint8_t *bytes, size_t size)
 	if (buffer->wpos + size > buffer->size)
 		bresize(buffer, buffer->size + size);
 
-	for (i = 0; i < size; ++i, ++buffer->wpos)
-		buffer->data[buffer->wpos] = bytes[i];
+	for (i = 0; i < size; ++i)
+		buffer->data[buffer->wpos++] = bytes[i];
 }
 
 void bskip(buffer_t *buffer, int size)
