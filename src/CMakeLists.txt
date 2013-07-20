@@ -23,6 +23,7 @@ set(csnippets_LIBRARIES "")
 set(csnippets_DEFINITIONS "")
 set(csnippets_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/..")
 set(csnippets_SOURCES ${csnippets_SOURCES}
+	${CMAKE_CURRENT_LIST_DIR}/buffer.c
 	${CMAKE_CURRENT_LIST_DIR}/asprintf.c
 	${CMAKE_CURRENT_LIST_DIR}/event.c
 	${CMAKE_CURRENT_LIST_DIR}/socket.c
