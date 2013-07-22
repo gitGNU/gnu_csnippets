@@ -120,8 +120,9 @@ int pollev_poll(pollev_t *pev, int timeout)
 
 	for (maxfd = -1, i = 0; i < FD_SETSIZE; ++i) {
 		d = &pev->fds[i];
-		if (d->fd <= 0)
+		if (d->fd < 0)
 			continue;
+
 		if (d->events & IO_READ)
 			FD_SET(d->fd, &rfds);
 		if (d->events & IO_WRITE)
@@ -163,6 +164,7 @@ __inline int pollev_activefd(pollev_t *pev, int index)
 {
 	if (index < 0 || index > FD_SETSIZE)
 		return -1;
+
 	return pev->events[index].fd;
 }
 
@@ -171,6 +173,7 @@ __inline short pollev_revent(pollev_t *pev, int index)
 	short r = 0;
 	if (index < 0 || index > FD_SETSIZE)
 		return r;
+
 	r = pev->events[index].revents;
 	pev->events[index].revents = 0;
 	pev->events[index].fd = 0;
@@ -181,8 +184,10 @@ bool pollev_ret(pollev_t *pev, int index, int *fd, short *revents)
 {
 	if (!pev || (index < 0 || index > FD_SETSIZE) || pev->events[index].revents == 0)
 		return false;
+
 	*fd = pev->events[index].fd;
 	*revents = pev->events[index].revents;
+
 	pev->events[index].revents = 0;
 	pev->events[index].fd = 0;
 	return true;

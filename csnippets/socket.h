@@ -88,12 +88,11 @@ void next_close(conn_t *, void *arg);
  *	if (!conn_setopt_bool(conn, SO_KEEPALIVE, true))
  *		...
  */
-#define conn_setopt_bool(conn, optname, enable)					\
-	__extension__ ({							\
-		int __enable = !!(enable);					\
-		assert(conn_setopt(conn, optname, &(__enable), sizeof(int)));	\
-		__enable;							\
-	})
+#define conn_setopt_bool(conn, optname, enable)		({			\
+	int __enable = !!(enable);					\
+	assert(conn_setopt(conn, optname, &(__enable), sizeof(int)));	\
+	__enable;							\
+})
 
 /* Wrappers for set/getsockopt().  */
 bool conn_getopt(conn_t *, int optname, void *optval,
