@@ -56,16 +56,16 @@ void pollev_deinit(pollev_t *p)
 	free(p);
 }
 
-void pollev_add(pollev_t *pev, int fd, int bits)
+bool pollev_add(pollev_t *pev, int fd, int bits)
 {
 	if (!pev || fd < 0)
-		return;
+		return false;
 
 	if (fd >= FD_SETSIZE) {
 #ifdef _DEBUG_POLLEV
 		dbg("can't add more file descriptors to this set, the size would exceed the maximum number of file descriptors\n");
 #endif
-		return;
+		return false;
 	}
 
 	if (bits & IO_READ)
@@ -75,19 +75,23 @@ void pollev_add(pollev_t *pev, int fd, int bits)
 
 	pev->fds[fd].fd = fd;
 	pev->fds[fd].revents = 0;
+	return true;
 }
 
-void pollev_del(pollev_t *pev, int fd)
+bool pollev_del(pollev_t *pev, int fd)
 {
 	int i;
 	if (!pev)
-		return;
+		return false;
 
-	for (i = 0; i < FD_SETSIZE; ++i)
+	for (i = 0; i < FD_SETSIZE; ++i) {
 		if (pev->fds[i].fd == fd) {
 			pev->fds[i].fd = -1;
 			break;
 		}
+	}
+
+	return true;
 }
 
 int pollev_poll(pollev_t *pev, int timeout)

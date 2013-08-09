@@ -29,6 +29,7 @@ set(csnippets_SOURCES ${csnippets_SOURCES}
 	${CMAKE_CURRENT_LIST_DIR}/socket.c
 	${CMAKE_CURRENT_LIST_DIR}/select_event.c
 	${CMAKE_CURRENT_LIST_DIR}/epoll_event.c
+	${CMAKE_CURRENT_LIST_DIR}/kqueue_event.c
 	${CMAKE_CURRENT_LIST_DIR}/string.c
 	${CMAKE_CURRENT_LIST_DIR}/error.c
 	${CMAKE_CURRENT_LIST_DIR}/list.c

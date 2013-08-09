@@ -63,17 +63,17 @@ void pollev_deinit(pollev_t *pev)
 	free(pev);
 }
 
-void pollev_add(pollev_t *pev, int fd, int bits)
+bool pollev_add(pollev_t *pev, int fd, int bits)
 {
 	struct epoll_event ev;
 	if (!pev)
-		return;
+		return false;
 
 	if (fd >= pev->size) {
 		size_t tmp = pev->size;
 		pev->size = fd;
 		alloc_grow(pev->events, sizeof(struct epoll_event),
-		            pev->size = tmp; return);
+		            pev->size = tmp; return false);
 	}
 
 	ev.events = EPOLLET | EPOLLPRI;
@@ -84,19 +84,27 @@ void pollev_add(pollev_t *pev, int fd, int bits)
 
 	memset(&ev.data, 0, sizeof(ev.data));
 	ev.data.fd = fd;
-	if (epoll_ctl(pev->efd, EPOLL_CTL_ADD, fd, &ev) < 0)
+	if (epoll_ctl(pev->efd, EPOLL_CTL_ADD, fd, &ev) < 0) {
 		eprintf("pollev_add(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, errno, strerror(errno));
+		return false;
+	}
+
+	return true;
 }
 
-void pollev_del(pollev_t *pev, int fd)
+bool pollev_del(pollev_t *pev, int fd)
 {
 	if (!pev)
-		return;
+		return false;
 
-	if (epoll_ctl(pev->efd, EPOLL_CTL_DEL, fd, NULL) < 0)
+	if (epoll_ctl(pev->efd, EPOLL_CTL_DEL, fd, NULL) < 0) {
 		eprintf("pollev_del(): epoll_ctl(%d) returned an error %d(%s)\n",
 		        fd, S_error, strerror(S_error));
+		return false;
+	}
+
+	return true;
 }
 
 int pollev_poll(pollev_t *pev, int timeout)

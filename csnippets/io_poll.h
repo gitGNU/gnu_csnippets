@@ -34,10 +34,10 @@ void pollev_deinit(pollev_t *);
  * Bits should be something like:
  *	IO_READ | IO_WRITE or just one of them.
  */
-void pollev_add(pollev_t *, int fd, int bits);
+bool pollev_add(pollev_t *, int fd, int bits);
 
 /* Delete @fd from the poll queue. */
-void pollev_del(pollev_t *, int fd);
+bool pollev_del(pollev_t *, int fd);
 
 /**
  * pollev_poll() - poll on every file descriptor added.

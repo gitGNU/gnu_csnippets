@@ -365,6 +365,12 @@ bool _new_listener(const char *service,
 	}
 
 	set_nonblock(fd);
+	if (!pollev_add(io_events, fd, IO_READ)) {
+		S_close(fd);
+		freeaddrinfo(addr);
+		return false;
+	}
+
 	reuse_addr = 1; /* ON */
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) != 0
 		|| bind(fd, addr->ai_addr, addr->ai_addrlen) != 0
@@ -376,8 +382,8 @@ bool _new_listener(const char *service,
 	freeaddrinfo(addr);
 
 	xmalloc(ret, sizeof(*ret), S_close(fd); return false);
+	
 	list_add_tail(&listeners, &ret->node);
-	pollev_add(io_events, fd, IO_READ);
 
 	ret->fd  = fd;
 	ret->fn  = fn;
@@ -437,6 +443,11 @@ conn_t *_new_conn_fd(int fd,
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) != 0 && S_error == S_EBADF)
 		return NULL;
 
+	if (!pollev_add(io_events, fd, IO_READ | IO_WRITE)) {
+		S_close(fd);
+		return NULL;
+	}
+
 	xmalloc(ret, sizeof(*ret), return NULL);
 	ret->fd		= fd;
 	ret->fn		= fn;
@@ -448,7 +459,6 @@ conn_t *_new_conn_fd(int fd,
 	ret->argp = NULL;
 
 	add_conn(ret);
-	pollev_add(io_events, ret->fd, IO_READ | IO_WRITE);
 	return ret;
 }
 
