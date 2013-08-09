@@ -79,8 +79,10 @@ static inline void rm_conn(const conn_t *c)
 	struct htable_iter i;
 
 	for (tmp = htable_firstval(&conns, &i, fdhash); tmp; tmp = htable_nextval(&conns, &i, fdhash))
-		if (tmp->fd == c->fd && htable_delval(&conns, &i))
+		if (tmp->fd == c->fd) {
+			htable_delval(&conns, &i);
 			break;
+		}
 }
 
 static listener_t *find_listener(int fd)
