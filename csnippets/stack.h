@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Ahmed Samy <f.fallen45@gmail.com>
+ * Copyright (c) 2012-2013 Ahmed Samy <f.fallen45@gmail.com>
  * Licensed under MIT, see LICENSE.MIT for details.
  */
 /**
@@ -15,7 +15,7 @@
 /**
  * This stack does not actually act as stacks in C, it was made
  * to be used on "stack" and not heap allocated but of course can be
- * heap-allocated.
+ * heap-allocated.  This is sometimes referenced as "Dynamic Array"
  *
  * 'ptr' is dynamicly allocated of course depending on the size
  * needed, see stack_push().
@@ -27,6 +27,9 @@ typedef struct stack {
 
 #define INITIAL_SIZE 10
 #define SIZE_INCREMENT 2
+
+#define stack_foreach(stack, out)	\
+	for ((out) = &(stack).ptr[0]; (out) < &(stack).ptr[(stack).size]; ++(out))
 
 /**
  * Initialize stack `s'.  Allocates memory of size `size` if > 0
@@ -42,57 +45,23 @@ typedef struct stack {
  *
  * \sa stack_free().
  */
-static inline bool stack_init(stack_t *s, size_t size)
-{
-	if (!size)
-		size = INITIAL_SIZE;
-	s->ptr = calloc(size, sizeof(void *));
-	if (!s->ptr)
-		return false;
-	s->size = size;
-	return true;
-}
+extern bool stack_init(stack_t *s, size_t size);
 
 /**
  * Free memory used.
- *
- * if destructor is not NULL, this function calls destructor on each pointer
- * that's going to be destroyed  (which means, the user must free it himself).
+ * Note: This does not free the stack itself.
  *
  * \sa stack_push().
  */
-static inline void stack_free(stack_t *s, void (*destructor) (void *))
-{
-	int i;
+extern void stack_free(stack_t *s, bool freeAll);
 
-	for (i = 0; i < s->size; ++i) {
-		if (!s->ptr[i])
-			continue;
-		if (!destructor)
-			free(s->ptr[i]);
-		else
-			(*destructor) (s->ptr[i]);
-	}
-
-	free(s->ptr);
-	s->size = 0;
-	s->ptr = NULL;
-}
 
 /**
  * Preserve some memory of size `new_size'.
  * Does not free previous memory.
  * This is called whenever memory is needed (Internal use).
  */
-static inline bool stack_grow(stack_t *s, int new_size)
-{
-	void *tmp;
-
-	xrealloc(tmp, s->ptr, new_size * sizeof(void *), return false);
-	s->ptr = tmp;
-	s->size = new_size;
-	return true;
-}
+extern bool stack_grow(stack_t *s, int newSize);
 
 /**
  * Push item `ptr' on this stack
@@ -105,25 +74,7 @@ static inline bool stack_grow(stack_t *s, int new_size)
  * \returns -1 on failure or pos of where the item is placed.
  * \sa stack_pop(), stack_top(), stack_remove().
  */
-static int stack_push(stack_t *s, void *ptr, int where, void (*constructor) (void *))
-{
-	int place = where;
-
-	if (place < 0) {
-		/* Find the first empty place.  */
-		for (place = 0; place < s->size && s->ptr[place]; ++place);
-		/* If there's no space left, reallocate  */
-		if (place == s->size && s->ptr[place] != NULL
-		    && !stack_grow(s, s->size + SIZE_INCREMENT))
-			return -1;
-	} else if (place > s->size && !stack_grow(s, (place - s->size) + 1))
-		return -1;
-
-	s->ptr[place] = ptr;
-	if (constructor)
-		(*constructor) (ptr);
-	return place;
-}
+extern int stack_push(stack_t *s, void *ptr, int where, void (*constructor) (void *));
 
 /**
  * Pop an item from the top stack.
@@ -132,10 +83,7 @@ static int stack_push(stack_t *s, void *ptr, int where, void (*constructor) (voi
  *
  * \sa stack_top()
  */
-static inline void *stack_pop(stack_t *s)
-{
-	return s ? s->ptr[--s->size] : NULL;
-}
+extern void *stack_pop(stack_t *s);
 
 /**
  * Get an item off the top of the stack.
@@ -144,10 +92,7 @@ static inline void *stack_pop(stack_t *s)
  *
  * \sa stack_remove(), stack_pop()
  */
-static inline void *stack_top(stack_t *s)
-{
-	return s ? s->ptr[s->size - 1] : NULL;
-}
+extern void *stack_top(stack_t *s);
 
 /**
  * Remove an item from the stack.
@@ -158,39 +103,8 @@ static inline void *stack_top(stack_t *s)
  *
  * \sa stack_push().
  */
-static bool stack_remove(stack_t *s, void *ptr, bool (*compare_function) (const void *, const void *),
-                         void (*destructor) (void *), bool duplicate)
-{
-	int i;
-	bool r;
-
-	for (i = 0; i < s->size; ++i) {
-		if (!compare_function) {
-			r = !!(s->ptr[i] == ptr);
-			if (r) {
-				if (!destructor)
-					free(s->ptr[i]);
-				else
-					(*destructor) (s->ptr[i]);
-				s->ptr[i] = NULL;
-			}
-		} else {
-			r = (*compare_function) (s->ptr[i], ptr);
-			if (r) {
-				if (!destructor)
-					free(s->ptr[i]);
-				else
-					(*destructor) (s->ptr[i]);
-				s->ptr[i] = NULL;
-			}
-		}
-
-		if (!duplicate && r)
-			break;
-	}
-
-	return r;
-}
+bool stack_remove(stack_t *s, void *ptr, bool (*compare_function) (const void *, const void *),
+                         void (*destructor) (void *), bool duplicate);
 
 #endif  /* _STACK_H */
 
